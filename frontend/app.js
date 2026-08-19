@@ -133,7 +133,7 @@ function showHome() {
         return;
     }
 
-    app.innerHTML = `
+    app.innerHTML = 
 
         <header class="header">
 
@@ -200,7 +200,7 @@ function showHome() {
                     </strong>
 
                     <small>
-                        ثبت سریع اطلاعات شهید در محل
+                        ثبت اطلاعات شهید 
                     </small>
 
                 </span>
