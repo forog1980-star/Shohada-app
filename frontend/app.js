@@ -1,20 +1,29 @@
 // ============================================================
 // GolzarStone
-// سامانه مدیریت و پایش سنگ مزار شهدا
-// نسخه موبایل - اتصال به Supabase
+// سامانه ساده مدیریت و پایش سنگ مزار شهدا
+// نسخه موبایل
 // ============================================================
 
 "use strict";
 
+
 // ============================================================
-// تنظیمات Supabase
+// اتصال به Supabase
+// ============================================================
+//
+// نکته:
+// SUPABASE_URL و SUPABASE_PUBLISHABLE_KEY را از
+// Supabase > Settings > API Keys دریافت کن.
+//
+// Secret Key را هرگز اینجا قرار نده.
 // ============================================================
 
 const SUPABASE_URL =
-    "https://bafrksgdcmglahyrppfy.supabase.co";
+    "اینجا آدرس Project URL را قرار بده";
 
 const SUPABASE_PUBLISHABLE_KEY =
-    "sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX";
+    "اینجا Publishable Key را قرار بده";
+
 
 const supabaseClient =
     window.supabase.createClient(
@@ -24,10 +33,8 @@ const supabaseClient =
 
 
 // ============================================================
-// تنظیمات برنامه
+// تنظیمات
 // ============================================================
-
-const TABLE_NAME = "martyrs";
 
 const PIECES = [
     "17",
@@ -39,6 +46,26 @@ const PIECES = [
     "40",
     "53"
 ];
+
+
+// ============================================================
+// ابزار اعداد فارسی
+// ============================================================
+
+function toPersianDigits(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+    return String(value).replace(
+        /[0-9]/g,
+        digit => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]
+    );
+}
 
 
 // ============================================================
@@ -56,108 +83,99 @@ document.addEventListener(
     "DOMContentLoaded",
     () => {
 
+        setupHomeButtons();
+
         showHome();
+
+        testSupabaseConnection();
 
     }
 );
 
 
 // ============================================================
-// اعداد فارسی
+// تست اتصال به Supabase
 // ============================================================
 
-function toPersianDigits(value) {
+async function testSupabaseConnection() {
 
-    if (
-        value === null ||
-        value === undefined
-    ) {
+    try {
 
-        return "";
-
-    }
-
-    return String(value).replace(
-        /[0-9]/g,
-        digit =>
-            "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]
-    );
-
-}
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from("martyrs")
+            .select("id")
+            .limit(1);
 
 
-// ============================================================
-// اعداد انگلیسی
-// ============================================================
+        if (error) {
 
-function toEnglishDigits(value) {
+            console.error(
+                "خطا در اتصال به Supabase:",
+                error
+            );
 
-    if (
-        value === null ||
-        value === undefined
-    ) {
+            return;
+        }
 
-        return "";
 
-    }
-
-    return String(value)
-
-        .replace(
-            /[۰-۹]/g,
-            digit =>
-                String(
-                    "۰۱۲۳۴۵۶۷۸۹".indexOf(digit)
-                )
-        )
-
-        .replace(
-            /[^0-9]/g,
-            ""
+        console.log(
+            "اتصال به Supabase موفق بود.",
+            data
         );
 
-}
 
+    } catch (error) {
 
-// ============================================================
-// جلوگیری از HTML
-// ============================================================
-
-function escapeHtml(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-
-        return "";
+        console.error(
+            "خطای غیرمنتظره در اتصال به Supabase:",
+            error
+        );
 
     }
-
-    return String(value)
-
-        .replace(/&/g, "&amp;")
-
-        .replace(/</g, "&lt;")
-
-        .replace(/>/g, "&gt;")
-
-        .replace(/"/g, "&quot;")
-
-        .replace(/'/g, "&#039;");
-
 }
 
 
 // ============================================================
-// پیام خطا
+// دکمه‌های صفحه اصلی
 // ============================================================
 
-function showError(message) {
+function setupHomeButtons() {
 
-    alert(
-        "خطا\n\n" +
-        message
+    const buttons =
+        document.querySelectorAll(
+            ".menu-button"
+        );
+
+
+    if (buttons.length < 3) {
+        return;
+    }
+
+
+    // جستجوی شهید
+
+    buttons[0].addEventListener(
+        "click",
+        showSearch
+    );
+
+
+    // ثبت شهید جدید
+
+    buttons[1].addEventListener(
+        "click",
+        showNewRecord
+    );
+
+
+    // اطلاعات ثبت شده
+
+    buttons[2].addEventListener(
+        "click",
+        showPendingRecords
     );
 
 }
@@ -171,13 +189,13 @@ function showHome() {
 
     currentScreen = "home";
 
+
     const app =
         document.querySelector(".app");
 
+
     if (!app) {
-
         return;
-
     }
 
 
@@ -315,7 +333,7 @@ function internalHeader(title) {
             </button>
 
             <h2>
-                ${escapeHtml(title)}
+                ${title}
             </h2>
 
         </div>
@@ -333,6 +351,7 @@ function showNewRecord() {
 
     currentScreen = "new";
 
+
     const app =
         document.querySelector(".app");
 
@@ -345,9 +364,6 @@ function showNewRecord() {
         <main class="content">
 
             <div class="card">
-
-
-                <!-- نام -->
 
                 <div class="form-group">
 
@@ -364,8 +380,6 @@ function showNewRecord() {
                 </div>
 
 
-                <!-- نام خانوادگی -->
-
                 <div class="form-group">
 
                     <label>
@@ -381,10 +395,7 @@ function showNewRecord() {
                 </div>
 
 
-                <!-- محل مزار -->
-
                 <div class="form-row">
-
 
                     <div class="form-group">
 
@@ -399,11 +410,10 @@ function showNewRecord() {
                             </option>
 
                             ${PIECES.map(
-                                piece => `
-                                    <option value="${piece}">
-                                        ${toPersianDigits(piece)}
-                                    </option>
-                                `
+                                piece =>
+                                `<option value="${piece}">
+                                    ${toPersianDigits(piece)}
+                                </option>`
                             ).join("")}
 
                         </select>
@@ -421,7 +431,6 @@ function showNewRecord() {
                             type="text"
                             id="new-row"
                             inputmode="numeric"
-                            autocomplete="off"
                         >
 
                     </div>
@@ -437,26 +446,19 @@ function showNewRecord() {
                             type="text"
                             id="new-number"
                             inputmode="numeric"
-                            autocomplete="off"
                         >
 
                     </div>
 
-
                 </div>
 
 
-                <!-- نوع کار -->
-
                 <div class="section-title">
-
-                    نوع کار
-
+                    وضعیت سنگ
                 </div>
 
 
                 <div class="main-status">
-
 
                     <label class="status-option">
 
@@ -487,23 +489,15 @@ function showNewRecord() {
 
                     </label>
 
-
                 </div>
 
 
-                <!-- مرحله فعلی -->
-
                 <div class="section-title">
-
                     مرحله فعلی کار
-
                 </div>
 
 
                 <div class="stage-list">
-
-
-                    <!-- مرمت -->
 
                     <label class="check-option">
 
@@ -511,7 +505,6 @@ function showNewRecord() {
                             type="radio"
                             name="stage"
                             value="ارسال به واحد مرمت"
-                            data-type="مرمتی"
                         >
 
                         <span>
@@ -527,7 +520,6 @@ function showNewRecord() {
                             type="radio"
                             name="stage"
                             value="سنگ مرمتی آماده"
-                            data-type="مرمتی"
                         >
 
                         <span>
@@ -543,7 +535,6 @@ function showNewRecord() {
                             type="radio"
                             name="stage"
                             value="نصب مرمتی شده"
-                            data-type="مرمتی"
                         >
 
                         <span>
@@ -553,15 +544,12 @@ function showNewRecord() {
                     </label>
 
 
-                    <!-- تعویض -->
-
                     <label class="check-option">
 
                         <input
                             type="radio"
                             name="stage"
                             value="ارسال به واحد تعویض"
-                            data-type="تعویضی"
                         >
 
                         <span>
@@ -577,7 +565,6 @@ function showNewRecord() {
                             type="radio"
                             name="stage"
                             value="سنگ تعویضی آماده"
-                            data-type="تعویضی"
                         >
 
                         <span>
@@ -593,7 +580,6 @@ function showNewRecord() {
                             type="radio"
                             name="stage"
                             value="تعویضی نصب شده"
-                            data-type="تعویضی"
                         >
 
                         <span>
@@ -602,11 +588,8 @@ function showNewRecord() {
 
                     </label>
 
-
                 </div>
 
-
-                <!-- توضیحات -->
 
                 <div class="form-group">
 
@@ -629,7 +612,6 @@ function showNewRecord() {
                 >
                     ذخیره اطلاعات
                 </button>
-
 
             </div>
 
@@ -657,9 +639,6 @@ function showNewRecord() {
     setupNumberInputs();
 
 
-    setupStageLogic();
-
-
     document
         .getElementById("new-name")
         .focus();
@@ -668,87 +647,14 @@ function showNewRecord() {
 
 
 // ============================================================
-// منطق هماهنگی نوع کار و مرحله
-// ============================================================
-
-function setupStageLogic() {
-
-    const typeInputs =
-        document.querySelectorAll(
-            'input[name="stone-type"]'
-        );
-
-
-    const stageInputs =
-        document.querySelectorAll(
-            'input[name="stage"]'
-        );
-
-
-    typeInputs.forEach(
-        input => {
-
-            input.addEventListener(
-                "change",
-                () => {
-
-                    const selectedType =
-                        input.value;
-
-
-                    stageInputs.forEach(
-                        stage => {
-
-                            if (
-                                stage.dataset.type ===
-                                selectedType
-                            ) {
-
-                                stage.disabled =
-                                    false;
-
-                            } else {
-
-                                stage.checked =
-                                    false;
-
-                                stage.disabled =
-                                    true;
-
-                            }
-
-                        }
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    stageInputs.forEach(
-        stage => {
-
-            stage.disabled = true;
-
-        }
-    );
-
-}
-
-
-// ============================================================
 // ذخیره شهید جدید
 // ============================================================
+//
+// فعلاً این بخش هنوز اطلاعات را در LocalStorage نگه می‌دارد.
+// در مرحله بعدی آن را به Supabase منتقل می‌کنیم.
+// ============================================================
 
-async function saveNewRecord() {
-
-    const saveButton =
-        document.getElementById(
-            "save-new"
-        );
-
+function saveNewRecord() {
 
     const name =
         document
@@ -771,21 +677,17 @@ async function saveNewRecord() {
 
 
     const row =
-        toEnglishDigits(
-            document
-                .getElementById("new-row")
-                .value
-                .trim()
-        );
+        document
+            .getElementById("new-row")
+            .value
+            .trim();
 
 
     const number =
-        toEnglishDigits(
-            document
-                .getElementById("new-number")
-                .value
-                .trim()
-        );
+        document
+            .getElementById("new-number")
+            .value
+            .trim();
 
 
     const stoneType =
@@ -807,10 +709,6 @@ async function saveNewRecord() {
             .trim();
 
 
-    // --------------------------------------------------------
-    // کنترل اطلاعات
-    // --------------------------------------------------------
-
     if (!name) {
 
         alert(
@@ -818,7 +716,6 @@ async function saveNewRecord() {
         );
 
         return;
-
     }
 
 
@@ -829,7 +726,6 @@ async function saveNewRecord() {
         );
 
         return;
-
     }
 
 
@@ -840,7 +736,6 @@ async function saveNewRecord() {
         );
 
         return;
-
     }
 
 
@@ -851,7 +746,6 @@ async function saveNewRecord() {
         );
 
         return;
-
     }
 
 
@@ -862,18 +756,16 @@ async function saveNewRecord() {
         );
 
         return;
-
     }
 
 
     if (!stoneType) {
 
         alert(
-            "مرمتی یا تعویضی را مشخص کنید."
+            "وضعیت سنگ را مشخص کنید."
         );
 
         return;
-
     }
 
 
@@ -884,39 +776,12 @@ async function saveNewRecord() {
         );
 
         return;
-
     }
 
-
-    if (
-        stage.dataset.type !==
-        stoneType.value
-    ) {
-
-        alert(
-            "مرحله انتخاب‌شده با نوع کار هماهنگ نیست."
-        );
-
-        return;
-
-    }
-
-
-    // --------------------------------------------------------
-    // جلوگیری از دوبار کلیک
-    // --------------------------------------------------------
-
-    saveButton.disabled = true;
-
-    saveButton.textContent =
-        "در حال ذخیره...";
-
-
-    // --------------------------------------------------------
-    // اطلاعات برای Supabase
-    // --------------------------------------------------------
 
     const record = {
+
+        id: Date.now(),
 
         name: name,
 
@@ -924,70 +789,36 @@ async function saveNewRecord() {
 
         piece: piece,
 
-        grave_row: row,
+        row: row,
 
-        grave_number: number,
+        number: number,
 
-        stone_type: stoneType.value,
+        stoneType: stoneType.value,
 
         stage: stage.value,
 
-        notes: notes || null,
+        notes: notes,
 
-        status: "در انتظار تأیید"
+        createdAt:
+            new Date().toISOString(),
+
+        status:
+            "در انتظار تأیید"
 
     };
 
 
-    // --------------------------------------------------------
-    // INSERT
-    // --------------------------------------------------------
-
-    const {
-        data,
-        error
-    } = await supabaseClient
-
-        .from(TABLE_NAME)
-
-        .insert(record)
-
-        .select();
+    const records =
+        getPendingRecords();
 
 
-    // --------------------------------------------------------
-    // خطا
-    // --------------------------------------------------------
-
-    if (error) {
-
-        console.error(
-            "Supabase INSERT error:",
-            error
-        );
+    records.push(record);
 
 
-        saveButton.disabled =
-            false;
+    savePendingRecords(
+        records
+    );
 
-        saveButton.textContent =
-            "ذخیره اطلاعات";
-
-
-        showError(
-            "ذخیره اطلاعات انجام نشد.\n\n" +
-            error.message
-        );
-
-
-        return;
-
-    }
-
-
-    // --------------------------------------------------------
-    // موفقیت
-    // --------------------------------------------------------
 
     alert(
         "اطلاعات شهید با موفقیت ثبت شد.\n\n" +
@@ -1004,9 +835,14 @@ async function saveNewRecord() {
 // اطلاعات ثبت شده
 // ============================================================
 
-async function showPendingRecords() {
+function showPendingRecords() {
 
     currentScreen = "pending";
+
+
+    const records =
+        getPendingRecords();
+
 
     const app =
         document.querySelector(".app");
@@ -1014,25 +850,36 @@ async function showPendingRecords() {
 
     app.innerHTML = `
 
-        ${internalHeader(
-            "اطلاعات ثبت‌شده"
-        )}
+        ${internalHeader("اطلاعات ثبت‌شده")}
 
 
         <main class="content">
 
             <div class="card">
 
-                <div
-                    id="pending-container"
-                    class="search-results"
-                >
+                ${
+                    records.length === 0
 
-                    <div class="loading-message">
-                        در حال دریافت اطلاعات...
+                    ?
+
+                    `
+                    <div class="empty-message">
+
+                        هنوز اطلاعاتی ثبت نشده است.
+
                     </div>
+                    `
 
-                </div>
+                    :
+
+                    records
+                        .slice()
+                        .reverse()
+                        .map(
+                            recordCard
+                        )
+                        .join("")
+                }
 
             </div>
 
@@ -1049,88 +896,26 @@ async function showPendingRecords() {
         );
 
 
-    const {
-        data,
-        error
-    } = await supabaseClient
+    records.forEach(
+        record => {
 
-        .from(TABLE_NAME)
+            const button =
+                document.getElementById(
+                    `delete-${record.id}`
+                );
 
-        .select("*")
 
-        .order(
-            "created_at",
-            {
-                ascending: false
+            if (button) {
+
+                button.addEventListener(
+                    "click",
+                    () => deleteRecord(record.id)
+                );
+
             }
-        );
 
-
-    const container =
-        document.getElementById(
-            "pending-container"
-        );
-
-
-    if (error) {
-
-        console.error(
-            "Supabase SELECT error:",
-            error
-        );
-
-
-        container.innerHTML = `
-
-            <div class="empty-message">
-
-                دریافت اطلاعات انجام نشد.
-
-                <br><br>
-
-                ${escapeHtml(
-                    error.message
-                )}
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    if (
-        !data ||
-        data.length === 0
-    ) {
-
-        container.innerHTML = `
-
-            <div class="empty-message">
-
-                هنوز اطلاعاتی ثبت نشده است.
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-        data
-            .map(
-                record =>
-                    recordCard(
-                        record,
-                        false
-                    )
-            )
-            .join("");
+        }
+    );
 
 }
 
@@ -1139,25 +924,16 @@ async function showPendingRecords() {
 // کارت رکورد
 // ============================================================
 
-function recordCard(
-    record,
-    showDelete = false
-) {
+function recordCard(record) {
 
     return `
 
         <div class="record-card">
 
-
             <div class="record-name">
 
-                ${escapeHtml(
-                    record.name
-                )}
-
-                ${escapeHtml(
-                    record.lastname
-                )}
+                ${escapeHtml(record.name)}
+                ${escapeHtml(record.lastname)}
 
             </div>
 
@@ -1165,33 +941,25 @@ function recordCard(
             <div class="record-info">
 
                 قطعه
-                ${toPersianDigits(
-                    record.piece
-                )}
+                ${toPersianDigits(record.piece)}
 
                 -
 
                 ردیف
-                ${toPersianDigits(
-                    record.grave_row
-                )}
+                ${toPersianDigits(record.row)}
 
                 -
 
                 شماره
-                ${toPersianDigits(
-                    record.grave_number
-                )}
+                ${toPersianDigits(record.number)}
 
             </div>
 
 
             <div class="record-info">
 
-                نوع کار:
-                ${escapeHtml(
-                    record.stone_type
-                )}
+                وضعیت:
+                ${escapeHtml(record.stoneType)}
 
             </div>
 
@@ -1199,9 +967,7 @@ function recordCard(
             <div class="record-info">
 
                 مرحله:
-                ${escapeHtml(
-                    record.stage
-                )}
+                ${escapeHtml(record.stage)}
 
             </div>
 
@@ -1214,10 +980,7 @@ function recordCard(
                 `
                 <div class="record-notes">
 
-                    توضیحات:
-                    ${escapeHtml(
-                        record.notes
-                    )}
+                    ${escapeHtml(record.notes)}
 
                 </div>
                 `
@@ -1230,40 +993,57 @@ function recordCard(
 
             <div class="record-status">
 
-                ${escapeHtml(
-                    record.status ||
-                    "در انتظار تأیید"
-                )}
+                ${escapeHtml(record.status)}
 
             </div>
 
 
-            ${
-                showDelete
-
-                ?
-
-                `
-                <button
-                    type="button"
-                    class="danger-button"
-                    data-id="${escapeHtml(
-                        record.id
-                    )}"
-                >
-                    حذف
-                </button>
-                `
-
-                :
-
-                ""
-            }
-
+            <button
+                type="button"
+                class="danger-button"
+                id="delete-${record.id}"
+            >
+                حذف
+            </button>
 
         </div>
 
     `;
+
+}
+
+
+// ============================================================
+// حذف رکورد
+// ============================================================
+
+function deleteRecord(id) {
+
+    const answer =
+        confirm(
+            "آیا از حذف این اطلاعات مطمئن هستید؟"
+        );
+
+
+    if (!answer) {
+        return;
+    }
+
+
+    const records =
+        getPendingRecords()
+            .filter(
+                record =>
+                    record.id !== id
+            );
+
+
+    savePendingRecords(
+        records
+    );
+
+
+    showPendingRecords();
 
 }
 
@@ -1276,21 +1056,19 @@ function showSearch() {
 
     currentScreen = "search";
 
+
     const app =
         document.querySelector(".app");
 
 
     app.innerHTML = `
 
-        ${internalHeader(
-            "جستجوی شهید"
-        )}
+        ${internalHeader("جستجوی شهید")}
 
 
         <main class="content">
 
             <div class="card">
-
 
                 <div class="form-group">
 
@@ -1309,7 +1087,6 @@ function showSearch() {
 
                 <div class="form-row">
 
-
                     <div class="form-group">
 
                         <label>
@@ -1323,11 +1100,10 @@ function showSearch() {
                             </option>
 
                             ${PIECES.map(
-                                piece => `
-                                    <option value="${piece}">
-                                        ${toPersianDigits(piece)}
-                                    </option>
-                                `
+                                piece =>
+                                `<option value="${piece}">
+                                    ${toPersianDigits(piece)}
+                                </option>`
                             ).join("")}
 
                         </select>
@@ -1345,11 +1121,9 @@ function showSearch() {
                             type="text"
                             id="search-number"
                             inputmode="numeric"
-                            autocomplete="off"
                         >
 
                     </div>
-
 
                 </div>
 
@@ -1367,7 +1141,6 @@ function showSearch() {
                     id="search-results"
                     class="search-results"
                 ></div>
-
 
             </div>
 
@@ -1406,25 +1179,14 @@ function showSearch() {
 // اجرای جستجو
 // ============================================================
 
-async function performSearch() {
-
-    const button =
-        document.getElementById(
-            "search-button"
-        );
-
-
-    const container =
-        document.getElementById(
-            "search-results"
-        );
-
+function performSearch() {
 
     const text =
         document
             .getElementById("search-text")
             .value
-            .trim();
+            .trim()
+            .toLowerCase();
 
 
     const piece =
@@ -1434,161 +1196,68 @@ async function performSearch() {
 
 
     const number =
-        toEnglishDigits(
-            document
-                .getElementById("search-number")
-                .value
-                .trim()
-        );
+        document
+            .getElementById("search-number")
+            .value
+            .trim();
 
 
-    button.disabled = true;
-
-    button.textContent =
-        "در حال جستجو...";
+    const records =
+        getPendingRecords();
 
 
-    container.innerHTML = `
+    const results =
+        records.filter(
+            record => {
 
-        <div class="loading-message">
-
-            در حال جستجو...
-
-        </div>
-
-    `;
+                const fullName =
+                    `${record.name} ${record.lastname}`
+                        .toLowerCase();
 
 
-    // --------------------------------------------------------
-    // ساخت Query
-    // --------------------------------------------------------
+                if (
+                    text &&
+                    !fullName.includes(text)
+                ) {
 
-    let query =
-        supabaseClient
+                    return false;
 
-            .from(TABLE_NAME)
-
-            .select("*");
+                }
 
 
-    if (piece) {
+                if (
+                    piece &&
+                    record.piece !== piece
+                ) {
 
-        query =
-            query.eq(
-                "piece",
-                piece
-            );
+                    return false;
 
-    }
-
-
-    if (number) {
-
-        query =
-            query.eq(
-                "grave_number",
-                number
-            );
-
-    }
+                }
 
 
-    // --------------------------------------------------------
-    // دریافت اطلاعات
-    // --------------------------------------------------------
+                if (
+                    number &&
+                    record.number !== number
+                ) {
 
-    const {
-        data,
-        error
-    } = await query
+                    return false;
 
-        .order(
-            "name",
-            {
-                ascending: true
+                }
+
+
+                return true;
+
             }
         );
 
 
-    button.disabled = false;
-
-    button.textContent =
-        "جستجو";
-
-
-    // --------------------------------------------------------
-    // خطا
-    // --------------------------------------------------------
-
-    if (error) {
-
-        console.error(
-            "Supabase SEARCH error:",
-            error
+    const container =
+        document.getElementById(
+            "search-results"
         );
 
 
-        container.innerHTML = `
-
-            <div class="empty-message">
-
-                جستجو انجام نشد.
-
-                <br><br>
-
-                ${escapeHtml(
-                    error.message
-                )}
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    // --------------------------------------------------------
-    // فیلتر نام
-    // --------------------------------------------------------
-
-    let results =
-        data || [];
-
-
-    if (text) {
-
-        const searchText =
-            text.toLowerCase();
-
-
-        results =
-            results.filter(
-                record => {
-
-                    const fullName =
-                        `${record.name || ""} ${record.lastname || ""}`
-                            .toLowerCase();
-
-
-                    return fullName.includes(
-                        searchText
-                    );
-
-                }
-            );
-
-    }
-
-
-    // --------------------------------------------------------
-    // نتیجه
-    // --------------------------------------------------------
-
-    if (
-        results.length === 0
-    ) {
+    if (results.length === 0) {
 
         container.innerHTML = `
 
@@ -1606,39 +1275,62 @@ async function performSearch() {
 
 
     container.innerHTML =
-
-        `
-
-        <div class="result-count">
-
-            تعداد نتایج:
-            ${toPersianDigits(
-                results.length
-            )}
-
-        </div>
-
-        `
-
-        +
-
         results
-
-            .map(
-                record =>
-                    recordCard(
-                        record,
-                        false
-                    )
-            )
-
+            .map(recordCard)
             .join("");
 
 }
 
 
 // ============================================================
-// ورودی‌های عددی
+// LocalStorage
+// ============================================================
+
+function getPendingRecords() {
+
+    try {
+
+        const data =
+            localStorage.getItem(
+                "golzarstone_pending_records"
+            );
+
+
+        if (!data) {
+            return [];
+        }
+
+
+        return JSON.parse(data);
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+        return [];
+
+    }
+
+}
+
+
+// ============================================================
+
+function savePendingRecords(
+    records
+) {
+
+    localStorage.setItem(
+        "golzarstone_pending_records",
+        JSON.stringify(records)
+    );
+
+}
+
+
+// ============================================================
+// اعداد ورودی
 // ============================================================
 
 function setupNumberInputs() {
@@ -1657,9 +1349,19 @@ function setupNumberInputs() {
                 () => {
 
                     input.value =
-                        toEnglishDigits(
-                            input.value
-                        );
+                        input.value
+                            .replace(
+                                /[۰-۹]/g,
+                                digit =>
+                                    String(
+                                        "۰۱۲۳۴۵۶۷۸۹"
+                                            .indexOf(digit)
+                                    )
+                            )
+                            .replace(
+                                /[^0-9]/g,
+                                ""
+                            );
 
                 }
             );
@@ -1671,51 +1373,46 @@ function setupNumberInputs() {
 
 
 // ============================================================
-// تست اتصال Supabase
+// جلوگیری از ورود HTML
 // ============================================================
 
-async function testSupabaseConnection() {
+function escapeHtml(value) {
 
-    try {
+    if (
+        value === null ||
+        value === undefined
+    ) {
 
-        const {
-            error
-        } = await supabaseClient
-
-            .from(TABLE_NAME)
-
-            .select("id")
-
-            .limit(1);
-
-
-        if (error) {
-
-            console.error(
-                "Supabase connection error:",
-                error
-            );
-
-            return false;
-
-        }
-
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            error
-        );
-
-        return false;
+        return "";
 
     }
 
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
 }
-
-
-// ============================================================
-// پایان
-// ============================================================
