@@ -1690,4 +1690,4 @@ function setupNumberInputs() {
 
     });
 }
-```
+
