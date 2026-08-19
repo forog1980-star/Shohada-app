@@ -1,45 +1,136 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>GolzarStone</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <style>
-        body {
-            font-family: Tahoma, Arial, sans-serif;
-            direction: rtl;
-            margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
-        }
+    <meta
+        name="theme-color"
+        content="#263238"
+    >
 
-        .container {
-            max-width: 500px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-        }
+    <title>
+        GolzarStone
+    </title>
 
-        h1 {
-            text-align: center;
-        }
-    </style>
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 </head>
 
 <body>
 
-<div class="container">
+<div class="app">
 
-    <h1>بهسازی سنگ شهدا</h1>
+    <!-- ==================================================
+         سربرگ
+    =================================================== -->
 
-    <p>
-        نسخه اولیه سامانه GolzarStone
-    </p>
+    <header class="header">
+
+        <h1>
+            بهسازی سنگ شهدا
+        </h1>
+
+        <p>
+            سامانه مدیریت و پایش سنگ مزار
+        </p>
+
+    </header>
+
+
+    <!-- ==================================================
+         منوی اصلی
+    =================================================== -->
+
+    <main class="menu">
+
+        <!-- جستجو -->
+
+        <button
+            class="menu-button"
+            type="button"
+        >
+
+            <span class="icon">
+                🔎
+            </span>
+
+            جستجوی شهید
+
+            <span class="description">
+                مشاهده اطلاعات و وضعیت سنگ
+            </span>
+
+        </button>
+
+
+        <!-- ثبت شهید جدید -->
+
+        <button
+            class="menu-button"
+            type="button"
+        >
+
+            <span class="icon">
+                ➕
+            </span>
+
+            ثبت شهید جدید
+
+            <span class="description">
+                ثبت سریع اطلاعات شهید در محل
+            </span>
+
+        </button>
+
+
+        <!-- موارد ثبت شده -->
+
+        <button
+            class="menu-button"
+            type="button"
+        >
+
+            <span class="icon">
+                📋
+            </span>
+
+            اطلاعات ثبت‌شده
+
+            <span class="description">
+                مشاهده موارد ثبت‌شده و در انتظار تأیید
+            </span>
+
+        </button>
+
+    </main>
+
+
+    <!-- ==================================================
+         پایین صفحه
+    =================================================== -->
+
+    <footer class="footer">
+
+        GolzarStone
+
+        <br>
+
+        پروژه بهسازی سنگ‌های شهدا
+
+    </footer>
 
 </div>
 
 </body>
+
 </html>
