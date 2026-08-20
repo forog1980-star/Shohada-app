@@ -45,10 +45,15 @@ let lastSearchResults = [];
 let lastSearchFilters = null;
 
 // ============================================================
-// مراحل مجاز
+// مراحل مرجع
+// ============================================================
+// نکته مهم:
+// نوع عملیات فقط «ترمیمی» و «تعویضی» است.
+// هر نوع عملیات فقط سه مرحله مربوط به خودش را دارد.
 // ============================================================
 
 const STAGES = {
+
     "ترمیمی": [
         "طرح سنگ به واحد مرمت ارسال شد",
         "سنگ مرمتی آماده است",
@@ -60,6 +65,7 @@ const STAGES = {
         "سنگ تعویضی آماده است",
         "سنگ تعویضی نصب شد"
     ]
+
 };
 
 // ============================================================
@@ -127,8 +133,9 @@ function escapeHtml(value) {
         .replace(/'/g, "&#039;");
 }
 
+
 // ============================================================
-// اعتبارسنجی نوع عملیات و مرحله
+// کنترل اعتبار نوع عملیات و مرحله
 // ============================================================
 
 function isValidStageForStoneType(
@@ -140,7 +147,10 @@ function isValidStageForStoneType(
         return false;
     }
 
-    if (!STAGES[stoneType]) {
+    if (!Object.prototype.hasOwnProperty.call(
+        STAGES,
+        stoneType
+    )) {
         return false;
     }
 
@@ -160,6 +170,7 @@ document.addEventListener(
 
     }
 );
+
 
 // ============================================================
 // CSS داخلی
@@ -200,7 +211,6 @@ function applyAppStyles() {
             --shadow: 0 5px 18px rgba(23, 99, 61, 0.08);
         }
 
-
         .app {
             direction: rtl;
             font-family:
@@ -213,7 +223,6 @@ function applyAppStyles() {
             background: var(--bg);
             min-height: 100vh;
         }
-
 
         .header {
             background:
@@ -229,7 +238,6 @@ function applyAppStyles() {
             box-shadow: var(--shadow);
         }
 
-
         .header-badge {
             display: inline-block;
             background: rgba(255,255,255,.14);
@@ -240,13 +248,11 @@ function applyAppStyles() {
             margin-bottom: 12px;
         }
 
-
         .header h1 {
             margin: 0;
             font-size: 27px;
             font-weight: 700;
         }
-
 
         .header p {
             margin: 9px 0 0;
@@ -254,14 +260,12 @@ function applyAppStyles() {
             opacity: .9;
         }
 
-
         .menu {
             padding: 22px 16px;
             display: flex;
             flex-direction: column;
             gap: 14px;
         }
-
 
         .menu-button {
             border: none;
@@ -279,11 +283,9 @@ function applyAppStyles() {
             transition: .15s ease;
         }
 
-
         .menu-button:active {
             transform: scale(.985);
         }
-
 
         .menu-button .icon {
             width: 52px;
@@ -296,26 +298,21 @@ function applyAppStyles() {
             flex-shrink: 0;
         }
 
-
         .menu-search .icon {
             background: var(--blue-light);
         }
-
 
         .menu-new .icon {
             background: var(--green-light);
         }
 
-
         .menu-pending .icon {
             background: var(--orange-light);
         }
 
-
         .menu-test .icon {
             background: #edf0f0;
         }
-
 
         .button-text {
             flex: 1;
@@ -324,23 +321,19 @@ function applyAppStyles() {
             gap: 5px;
         }
 
-
         .button-text strong {
             font-size: 18px;
         }
-
 
         .button-text small {
             font-size: 13px;
             color: var(--muted);
         }
 
-
         .button-arrow {
             font-size: 29px;
             color: #9aa8a1;
         }
-
 
         .footer {
             text-align: center;
@@ -350,13 +343,11 @@ function applyAppStyles() {
             line-height: 2;
         }
 
-
         .footer a {
             color: var(--green-dark);
             text-decoration: none;
             font-weight: bold;
         }
-
 
         .internal-header {
             display: flex;
@@ -370,7 +361,6 @@ function applyAppStyles() {
             z-index: 10;
         }
 
-
         .back-button {
             border: none;
             background: var(--green-light);
@@ -383,17 +373,14 @@ function applyAppStyles() {
             white-space: nowrap;
         }
 
-
         .internal-title {
             flex: 1;
         }
-
 
         .internal-title h2 {
             margin: 0;
             font-size: 20px;
         }
-
 
         .internal-title p {
             margin: 4px 0 0;
@@ -401,11 +388,9 @@ function applyAppStyles() {
             font-size: 12px;
         }
 
-
         .content {
             padding: 16px;
         }
-
 
         .card {
             background: white;
@@ -415,14 +400,12 @@ function applyAppStyles() {
             border: 1px solid var(--border);
         }
 
-
         .card-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 20px;
             color: var(--green-dark);
         }
-
 
         .section-title {
             font-size: 16px;
@@ -433,11 +416,9 @@ function applyAppStyles() {
             margin: 22px 0 13px;
         }
 
-
         .form-group {
             margin-bottom: 15px;
         }
-
 
         .form-group label {
             display: block;
@@ -445,7 +426,6 @@ function applyAppStyles() {
             font-size: 14px;
             font-weight: bold;
         }
-
 
         input,
         select,
@@ -462,7 +442,6 @@ function applyAppStyles() {
             outline: none;
         }
 
-
         input:focus,
         select:focus,
         textarea:focus {
@@ -472,11 +451,9 @@ function applyAppStyles() {
                 rgba(35,139,87,.10);
         }
 
-
         textarea {
             resize: vertical;
         }
-
 
         .form-row {
             display: grid;
@@ -485,13 +462,11 @@ function applyAppStyles() {
             gap: 10px;
         }
 
-
         .choice-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
-
 
         .choice-card {
             position: relative;
@@ -508,20 +483,17 @@ function applyAppStyles() {
             transition: .15s ease;
         }
 
-
         .choice-card input {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
 
-
         .choice-card:has(input:checked) {
             border-color: var(--green);
             background: var(--green-light);
             color: var(--green-dark);
         }
-
 
         .choice-card span::before {
             content: "";
@@ -535,7 +507,6 @@ function applyAppStyles() {
             box-sizing: border-box;
         }
 
-
         .choice-card:has(input:checked)
         span::before {
             border-color: var(--green);
@@ -547,13 +518,11 @@ function applyAppStyles() {
                 );
         }
 
-
         .stage-list {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
-
 
         .stage-option {
             position: relative;
@@ -570,20 +539,17 @@ function applyAppStyles() {
             transition: .15s ease;
         }
 
-
         .stage-option.disabled {
             opacity: .35;
             cursor: not-allowed;
             background: #f1f3f2;
         }
 
-
         .stage-option input {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
-
 
         .stage-option span::before {
             content: "";
@@ -597,14 +563,12 @@ function applyAppStyles() {
             box-sizing: border-box;
         }
 
-
         .stage-option:has(input:checked) {
             border-color: var(--orange);
             background: var(--orange-light);
             color: #8a4f13;
             font-weight: bold;
         }
-
 
         .stage-option:has(input:checked)
         span::before {
@@ -616,7 +580,6 @@ function applyAppStyles() {
                     transparent 58%
                 );
         }
-
 
         .primary-button {
             width: 100%;
@@ -632,21 +595,18 @@ function applyAppStyles() {
             margin-top: 10px;
         }
 
-
         .primary-button:disabled {
             opacity: .65;
             cursor: wait;
         }
 
-
         .records-summary {
             display: grid;
             grid-template-columns:
-                1fr 1fr 1fr;
+                1fr 1fr;
             gap: 8px;
             margin-bottom: 15px;
         }
-
 
         .summary-box {
             border-radius: 14px;
@@ -655,28 +615,23 @@ function applyAppStyles() {
             background: var(--green-light);
         }
 
-
         .summary-box.warning {
             background: var(--orange-light);
         }
 
-
         .summary-box.approved {
             background: var(--blue-light);
         }
-
 
         .summary-box strong {
             display: block;
             font-size: 21px;
         }
 
-
         .summary-box small {
             font-size: 11px;
             color: var(--muted);
         }
-
 
         .records-container {
             display: flex;
@@ -684,14 +639,12 @@ function applyAppStyles() {
             gap: 12px;
         }
 
-
         .record-card {
             border: 1px solid var(--border);
             border-radius: 18px;
             padding: 15px;
             background: white;
         }
-
 
         .record-card-header {
             display: flex;
@@ -701,13 +654,11 @@ function applyAppStyles() {
             margin-bottom: 12px;
         }
 
-
         .record-name {
             font-size: 18px;
             font-weight: bold;
             color: var(--green-dark);
         }
-
 
         .status-badge {
             background: var(--orange-light);
@@ -718,12 +669,10 @@ function applyAppStyles() {
             white-space: nowrap;
         }
 
-
         .status-badge.approved {
             background: var(--green-light);
             color: var(--green-dark);
         }
-
 
         .location-box {
             display: grid;
@@ -733,7 +682,6 @@ function applyAppStyles() {
             margin-bottom: 12px;
         }
 
-
         .location-box > div {
             background: var(--bg);
             border-radius: 12px;
@@ -741,20 +689,17 @@ function applyAppStyles() {
             text-align: center;
         }
 
-
         .location-box small {
             display: block;
             color: var(--muted);
             font-size: 11px;
         }
 
-
         .location-box strong {
             display: block;
             margin-top: 3px;
             font-size: 16px;
         }
-
 
         .record-info {
             display: flex;
@@ -763,11 +708,9 @@ function applyAppStyles() {
             font-size: 14px;
         }
 
-
         .record-info span {
             color: var(--muted);
         }
-
 
         .record-notes {
             margin-top: 11px;
@@ -778,11 +721,9 @@ function applyAppStyles() {
             line-height: 1.8;
         }
 
-
         .record-notes span {
             font-weight: bold;
         }
-
 
         .danger-button {
             width: 100%;
@@ -796,16 +737,13 @@ function applyAppStyles() {
             cursor: pointer;
         }
 
-
         .record-card.clickable {
             cursor: pointer;
         }
 
-
         .record-card.clickable:active {
             transform: scale(.99);
         }
-
 
         .search-count {
             background: var(--blue-light);
@@ -818,14 +756,12 @@ function applyAppStyles() {
             font-weight: bold;
         }
 
-
         .filter-title {
             margin-top: 18px;
             margin-bottom: 10px;
             color: var(--green-dark);
             font-weight: bold;
         }
-
 
         .loading-message,
         .empty-message,
@@ -836,13 +772,11 @@ function applyAppStyles() {
             line-height: 2;
         }
 
-
         .error-message {
             color: var(--red);
             background: #fff4f4;
             border-radius: 14px;
         }
-
 
         .detail-card {
             background: white;
@@ -852,14 +786,12 @@ function applyAppStyles() {
             box-shadow: var(--shadow);
         }
 
-
         .detail-title {
             font-size: 22px;
             font-weight: bold;
             color: var(--green-dark);
             margin-bottom: 18px;
         }
-
 
         .detail-row {
             display: flex;
@@ -870,16 +802,13 @@ function applyAppStyles() {
             font-size: 14px;
         }
 
-
         .detail-row span {
             color: var(--muted);
         }
 
-
         .detail-row strong {
             text-align: left;
         }
-
 
         .detail-actions {
             margin-top: 20px;
@@ -887,7 +816,6 @@ function applyAppStyles() {
             flex-direction: column;
             gap: 9px;
         }
-
 
         .approve-button {
             border: none;
@@ -901,7 +829,6 @@ function applyAppStyles() {
             cursor: pointer;
         }
 
-
         .back-secondary {
             border: 1px solid var(--border);
             border-radius: 13px;
@@ -911,7 +838,6 @@ function applyAppStyles() {
             font-family: inherit;
             cursor: pointer;
         }
-
 
         @media (max-width: 600px) {
 
@@ -926,7 +852,6 @@ function applyAppStyles() {
             }
 
         }
-
 
         @media (max-width: 390px) {
 
@@ -949,6 +874,7 @@ function applyAppStyles() {
 
     document.head.appendChild(style);
 }
+
 
 // ============================================================
 // سربرگ داخلی
@@ -994,6 +920,7 @@ function internalHeader(
     `;
 }
 
+
 // ============================================================
 // صفحه اصلی
 // ============================================================
@@ -1027,7 +954,6 @@ function showHome() {
 
         </header>
 
-
         <main class="menu">
 
             <button
@@ -1035,13 +961,11 @@ function showHome() {
                 type="button"
                 id="btn-search"
             >
-
                 <span class="icon">
                     🔎
                 </span>
 
                 <span class="button-text">
-
                     <strong>
                         جستجوی شهید
                     </strong>
@@ -1049,13 +973,11 @@ function showHome() {
                     <small>
                         جستجو و مشاهده اطلاعات شهید
                     </small>
-
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
-
             </button>
 
 
@@ -1064,13 +986,11 @@ function showHome() {
                 type="button"
                 id="btn-new"
             >
-
                 <span class="icon">
                     ➕
                 </span>
 
                 <span class="button-text">
-
                     <strong>
                         ثبت اطلاعات شهید جدید
                     </strong>
@@ -1078,13 +998,11 @@ function showHome() {
                     <small>
                         ثبت اطلاعات اولیه شهید برای بررسی و تأیید
                     </small>
-
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
-
             </button>
 
 
@@ -1093,13 +1011,11 @@ function showHome() {
                 type="button"
                 id="btn-pending"
             >
-
                 <span class="icon">
                     📋
                 </span>
 
                 <span class="button-text">
-
                     <strong>
                         اطلاعات ثبت‌شده
                     </strong>
@@ -1107,13 +1023,11 @@ function showHome() {
                     <small>
                         بررسی، تأیید و مدیریت اطلاعات ثبت‌شده
                     </small>
-
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
-
             </button>
 
 
@@ -1122,13 +1036,11 @@ function showHome() {
                 type="button"
                 id="btn-test"
             >
-
                 <span class="icon">
                     🔗
                 </span>
 
                 <span class="button-text">
-
                     <strong>
                         تست اتصال
                     </strong>
@@ -1136,17 +1048,14 @@ function showHome() {
                     <small>
                         بررسی ارتباط با بانک اطلاعاتی
                     </small>
-
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
-
             </button>
 
         </main>
-
 
         <footer class="footer">
 
@@ -1172,14 +1081,12 @@ function showHome() {
 
     `;
 
-
     document
         .getElementById("btn-search")
         .addEventListener(
             "click",
             showSearch
         );
-
 
     document
         .getElementById("btn-new")
@@ -1188,7 +1095,6 @@ function showHome() {
             showNewRecord
         );
 
-
     document
         .getElementById("btn-pending")
         .addEventListener(
@@ -1196,15 +1102,14 @@ function showHome() {
             showPendingRecords
         );
 
-
     document
         .getElementById("btn-test")
         .addEventListener(
             "click",
             testSupabaseConnection
         );
-
 }
+
 
 // ============================================================
 // تست اتصال
@@ -1222,7 +1127,6 @@ async function testSupabaseConnection() {
             .select("id")
             .limit(1);
 
-
         if (error) {
 
             console.error(
@@ -1237,7 +1141,6 @@ async function testSupabaseConnection() {
 
             return;
         }
-
 
         alert(
             "اتصال به Supabase با موفقیت برقرار شد."
@@ -1256,6 +1159,7 @@ async function testSupabaseConnection() {
 
 }
 
+
 // ============================================================
 // صفحه ثبت اطلاعات شهید جدید
 // ============================================================
@@ -1265,14 +1169,12 @@ function showNewRecord() {
     const app =
         document.querySelector(".app");
 
-
     app.innerHTML = `
 
         ${internalHeader(
             "ثبت اطلاعات شهید جدید",
             "ثبت اطلاعات اولیه برای بررسی و تأیید"
         )}
-
 
         <main class="content">
 
@@ -1281,7 +1183,6 @@ function showNewRecord() {
                 <div class="card-title">
                     اطلاعات شهید
                 </div>
-
 
                 <div class="form-group">
 
@@ -1298,7 +1199,6 @@ function showNewRecord() {
 
                 </div>
 
-
                 <div class="form-group">
 
                     <label for="new-lastname">
@@ -1314,11 +1214,9 @@ function showNewRecord() {
 
                 </div>
 
-
                 <div class="section-title">
                     نوع عملیات سنگ
                 </div>
-
 
                 <div class="choice-grid">
 
@@ -1336,7 +1234,6 @@ function showNewRecord() {
 
                     </label>
 
-
                     <label class="choice-card">
 
                         <input
@@ -1353,11 +1250,9 @@ function showNewRecord() {
 
                 </div>
 
-
                 <div class="section-title">
                     محل مزار
                 </div>
-
 
                 <div class="form-row">
 
@@ -1386,7 +1281,6 @@ function showNewRecord() {
 
                     </div>
 
-
                     <div class="form-group">
 
                         <label for="new-row">
@@ -1401,7 +1295,6 @@ function showNewRecord() {
                         >
 
                     </div>
-
 
                     <div class="form-group">
 
@@ -1420,11 +1313,9 @@ function showNewRecord() {
 
                 </div>
 
-
                 <div class="section-title">
                     مرحله فعلی کار
                 </div>
-
 
                 <div
                     class="stage-list"
@@ -1435,11 +1326,9 @@ function showNewRecord() {
 
                 </div>
 
-
                 <div class="section-title">
                     توضیحات
                 </div>
-
 
                 <div class="form-group">
 
@@ -1450,7 +1339,6 @@ function showNewRecord() {
                     ></textarea>
 
                 </div>
-
 
                 <button
                     type="button"
@@ -1466,7 +1354,6 @@ function showNewRecord() {
 
     `;
 
-
     document
         .getElementById("back-home")
         .addEventListener(
@@ -1474,14 +1361,12 @@ function showNewRecord() {
             showHome
         );
 
-
     document
         .getElementById("save-new")
         .addEventListener(
             "click",
             saveNewRecord
         );
-
 
     document
         .querySelectorAll(
@@ -1496,15 +1381,14 @@ function showNewRecord() {
 
         });
 
-
     document
         .getElementById("new-name")
         .focus();
-
 }
 
+
 // ============================================================
-// ساخت گزینه‌های مرحله
+// ساخت شش گزینه مرحله
 // ============================================================
 
 function renderStageOptions(
@@ -1547,8 +1431,9 @@ function renderStageOptions(
         .join("");
 }
 
+
 // ============================================================
-// فعال‌سازی فقط مراحل مربوط به نوع عملیات
+// فعال‌سازی فقط سه مرحله مربوط به نوع انتخاب‌شده
 // ============================================================
 
 function updateStageOptions() {
@@ -1604,8 +1489,9 @@ function updateStageOptions() {
 
 }
 
+
 // ============================================================
-// ذخیره اطلاعات شهید جدید
+// ذخیره اطلاعات جدید
 // ============================================================
 
 async function saveNewRecord() {
@@ -1616,19 +1502,16 @@ async function saveNewRecord() {
             .value
             .trim();
 
-
     const lastname =
         document
             .getElementById("new-lastname")
             .value
             .trim();
 
-
     const piece =
         document
             .getElementById("new-piece")
             .value;
-
 
     const row =
         document
@@ -1636,25 +1519,21 @@ async function saveNewRecord() {
             .value
             .trim();
 
-
     const number =
         document
             .getElementById("new-number")
             .value
             .trim();
 
-
     const stoneType =
         document.querySelector(
             'input[name="stone-type"]:checked'
         );
 
-
     const stage =
         document.querySelector(
             'input[name="stage"]:checked'
         );
-
 
     const notes =
         document
@@ -1662,12 +1541,10 @@ async function saveNewRecord() {
             .value
             .trim();
 
-
     if (!name) {
         alert("نام شهید را وارد کنید.");
         return;
     }
-
 
     if (!lastname) {
         alert(
@@ -1676,14 +1553,12 @@ async function saveNewRecord() {
         return;
     }
 
-
     if (!stoneType) {
         alert(
             "نوع عملیات سنگ را مشخص کنید."
         );
         return;
     }
-
 
     if (!piece) {
         alert(
@@ -1692,14 +1567,12 @@ async function saveNewRecord() {
         return;
     }
 
-
     if (!row) {
         alert(
             "ردیف مزار را وارد کنید."
         );
         return;
     }
-
 
     if (!number) {
         alert(
@@ -1708,7 +1581,6 @@ async function saveNewRecord() {
         return;
     }
 
-
     if (!stage) {
         alert(
             "مرحله فعلی کار را مشخص کنید."
@@ -1716,8 +1588,6 @@ async function saveNewRecord() {
         return;
     }
 
-
-    // کنترل دوم در زمان ذخیره
     if (
         !isValidStageForStoneType(
             stoneType.value,
@@ -1732,18 +1602,15 @@ async function saveNewRecord() {
         return;
     }
 
-
     const button =
         document.getElementById(
             "save-new"
         );
 
-
     button.disabled = true;
 
     button.textContent =
         "در حال ثبت اطلاعات...";
-
 
     try {
 
@@ -1780,7 +1647,6 @@ async function saveNewRecord() {
             .select()
             .single();
 
-
         if (error) {
 
             console.error(
@@ -1801,12 +1667,10 @@ async function saveNewRecord() {
             return;
         }
 
-
         alert(
             "اطلاعات شهید با موفقیت ثبت شد.\n\n" +
             "وضعیت: در انتظار تأیید"
         );
-
 
         showPendingRecords();
 
@@ -1828,8 +1692,14 @@ async function saveNewRecord() {
 
 }
 
+
 // ============================================================
-// صفحه اطلاعات ثبت‌شده
+// اطلاعات ثبت‌شده
+// ============================================================
+// بسیار مهم:
+// این صفحه فقط «در انتظار تأیید» را نمایش می‌دهد.
+// رکورد تأییدشده از این صفحه خارج می‌شود.
+// اما در جستجوی اصلی همچنان قابل مشاهده است.
 // ============================================================
 
 async function showPendingRecords() {
@@ -1837,14 +1707,12 @@ async function showPendingRecords() {
     const app =
         document.querySelector(".app");
 
-
     app.innerHTML = `
 
         ${internalHeader(
             "اطلاعات ثبت‌شده",
-            "بررسی، تأیید و مدیریت اطلاعات ثبت‌شده"
+            "رکوردهای در انتظار تأیید"
         )}
-
 
         <main class="content">
 
@@ -1854,7 +1722,6 @@ async function showPendingRecords() {
                     id="records-summary"
                     class="records-summary"
                 ></div>
-
 
                 <div
                     id="pending-container"
@@ -1873,14 +1740,12 @@ async function showPendingRecords() {
 
     `;
 
-
     document
         .getElementById("back-home")
         .addEventListener(
             "click",
             showHome
         );
-
 
     try {
 
@@ -1890,13 +1755,16 @@ async function showPendingRecords() {
         } = await supabaseClient
             .from("martyrs")
             .select("*")
+            .eq(
+                "status",
+                "در انتظار تأیید"
+            )
             .order(
                 "created_at",
                 {
                     ascending: false
                 }
             );
-
 
         if (error) {
 
@@ -1907,93 +1775,50 @@ async function showPendingRecords() {
             return;
         }
 
-
         const records =
             data || [];
 
-
-        const waiting =
-            records.filter(
-                record =>
-                    (
-                        record.status ||
-                        "در انتظار تأیید"
-                    )
-                    ===
-                    "در انتظار تأیید"
-            );
-
-
-        const approved =
-            records.filter(
-                record =>
-                    (
-                        record.status ||
-                        ""
-                    )
-                    ===
-                    "تأیید شده"
-            );
-
-
-        document
-            .getElementById(
+        const summary =
+            document.getElementById(
                 "records-summary"
-            )
-            .innerHTML = `
+            );
 
-                <div class="summary-box">
+        summary.innerHTML = `
 
-                    <strong>
-                        ${toPersianDigits(
-                            records.length
-                        )}
-                    </strong>
+            <div class="summary-box warning">
 
-                    <small>
-                        کل رکوردها
-                    </small>
+                <strong>
+                    ${toPersianDigits(
+                        records.length
+                    )}
+                </strong>
 
-                </div>
+                <small>
+                    در انتظار تأیید
+                </small>
 
+            </div>
 
-                <div class="summary-box warning">
+            <div class="summary-box">
 
-                    <strong>
-                        ${toPersianDigits(
-                            waiting.length
-                        )}
-                    </strong>
+                <strong>
+                    ${toPersianDigits(
+                        records.length
+                    )}
+                </strong>
 
-                    <small>
-                        در انتظار تأیید
-                    </small>
+                <small>
+                    قابل بررسی
+                </small>
 
-                </div>
+            </div>
 
-
-                <div class="summary-box approved">
-
-                    <strong>
-                        ${toPersianDigits(
-                            approved.length
-                        )}
-                    </strong>
-
-                    <small>
-                        تأیید شده
-                    </small>
-
-                </div>
-
-            `;
-
+        `;
 
         const container =
             document.getElementById(
                 "pending-container"
             );
-
 
         if (records.length === 0) {
 
@@ -2001,7 +1826,7 @@ async function showPendingRecords() {
 
                 <div class="empty-message">
 
-                    هنوز اطلاعاتی ثبت نشده است.
+                    رکوردی در انتظار تأیید وجود ندارد.
 
                 </div>
 
@@ -2009,7 +1834,6 @@ async function showPendingRecords() {
 
             return;
         }
-
 
         container.innerHTML =
             records
@@ -2021,14 +1845,12 @@ async function showPendingRecords() {
                 )
                 .join("");
 
-
         records.forEach(record => {
 
             const card =
                 document.getElementById(
                     `record-summary-${record.id}`
                 );
-
 
             if (card) {
 
@@ -2058,6 +1880,7 @@ async function showPendingRecords() {
 
 }
 
+
 // ============================================================
 // کارت خلاصه رکورد
 // ============================================================
@@ -2068,14 +1891,12 @@ function recordSummaryCard(record) {
         record.status ||
         "در انتظار تأیید";
 
-
     const statusClass =
         status === "تأیید شده"
         ?
         "approved"
         :
         "";
-
 
     return `
 
@@ -2098,7 +1919,6 @@ function recordSummaryCard(record) {
 
                 </div>
 
-
                 <span
                     class="status-badge ${statusClass}"
                 >
@@ -2108,7 +1928,6 @@ function recordSummaryCard(record) {
                 </span>
 
             </div>
-
 
             <div class="location-box">
 
@@ -2126,7 +1945,6 @@ function recordSummaryCard(record) {
 
                 </div>
 
-
                 <div>
 
                     <small>
@@ -2140,7 +1958,6 @@ function recordSummaryCard(record) {
                     </strong>
 
                 </div>
-
 
                 <div>
 
@@ -2158,7 +1975,6 @@ function recordSummaryCard(record) {
 
             </div>
 
-
             <div class="record-info">
 
                 <span>
@@ -2173,18 +1989,29 @@ function recordSummaryCard(record) {
 
             </div>
 
+            <div class="record-info">
+
+                <span>
+                    مرحله:
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        record.stage
+                    )}
+                </strong>
+
+            </div>
+
         </div>
 
     `;
 
 }
 
+
 // ============================================================
-// نمایش جزئیات رکورد
-// ============================================================
-// source:
-// "records" = از اطلاعات ثبت‌شده
-// "search"  = از جستجو
+// نمایش جزئیات
 // ============================================================
 
 async function showRecordDetail(
@@ -2194,7 +2021,6 @@ async function showRecordDetail(
 
     const app =
         document.querySelector(".app");
-
 
     app.innerHTML = `
 
@@ -2206,7 +2032,6 @@ async function showRecordDetail(
             :
             "بررسی و تصمیم نهایی کارشناس"
         )}
-
 
         <main class="content">
 
@@ -2225,7 +2050,6 @@ async function showRecordDetail(
 
     `;
 
-
     document
         .getElementById("back-home")
         .addEventListener(
@@ -2241,13 +2065,12 @@ async function showRecordDetail(
                 }
                 else {
 
-                    showHome();
+                    showPendingRecords();
 
                 }
 
             }
         );
-
 
     try {
 
@@ -2262,7 +2085,6 @@ async function showRecordDetail(
                 id
             )
             .single();
-
 
         if (error) {
 
@@ -2289,19 +2111,20 @@ async function showRecordDetail(
             return;
         }
 
-
         const status =
             data.status ||
             "در انتظار تأیید";
 
-
         const isApproved =
             status === "تأیید شده";
 
+        // ----------------------------------------------------
+        // فقط در صفحه اطلاعات ثبت‌شده مدیریت مجاز است.
+        // در جستجو هیچ تأیید یا حذف وجود ندارد.
+        // ----------------------------------------------------
 
         const showManagementActions =
             source === "records";
-
 
         document
             .getElementById(
@@ -2321,7 +2144,6 @@ async function showRecordDetail(
 
                 </div>
 
-
                 <div class="detail-row">
 
                     <span>
@@ -2333,7 +2155,6 @@ async function showRecordDetail(
                     </strong>
 
                 </div>
-
 
                 <div class="detail-row">
 
@@ -2349,7 +2170,6 @@ async function showRecordDetail(
 
                 </div>
 
-
                 <div class="detail-row">
 
                     <span>
@@ -2363,7 +2183,6 @@ async function showRecordDetail(
                     </strong>
 
                 </div>
-
 
                 <div class="detail-row">
 
@@ -2379,7 +2198,6 @@ async function showRecordDetail(
 
                 </div>
 
-
                 <div class="detail-row">
 
                     <span>
@@ -2394,7 +2212,6 @@ async function showRecordDetail(
 
                 </div>
 
-
                 <div class="detail-row">
 
                     <span>
@@ -2408,7 +2225,6 @@ async function showRecordDetail(
                     </strong>
 
                 </div>
-
 
                 ${
                     data.notes
@@ -2432,11 +2248,11 @@ async function showRecordDetail(
                     ""
                 }
 
-
                 ${
                     showManagementActions
                     ?
                     `
+
                     <div class="detail-actions">
 
                         ${
@@ -2461,7 +2277,6 @@ async function showRecordDetail(
                             `
                         }
 
-
                         <button
                             type="button"
                             class="danger-button"
@@ -2469,7 +2284,6 @@ async function showRecordDetail(
                         >
                             حذف این رکورد
                         </button>
-
 
                         <button
                             type="button"
@@ -2480,9 +2294,11 @@ async function showRecordDetail(
                         </button>
 
                     </div>
+
                     `
                     :
                     `
+
                     <div class="detail-actions">
 
                         <button
@@ -2494,11 +2310,11 @@ async function showRecordDetail(
                         </button>
 
                     </div>
+
                     `
                 }
 
             `;
-
 
         if (
             showManagementActions &&
@@ -2519,7 +2335,6 @@ async function showRecordDetail(
 
         }
 
-
         if (
             showManagementActions
         ) {
@@ -2537,7 +2352,6 @@ async function showRecordDetail(
                 );
 
         }
-
 
         document
             .getElementById(
@@ -2586,8 +2400,9 @@ async function showRecordDetail(
 
 }
 
+
 // ============================================================
-// تأیید تک‌به‌تک
+// تأیید
 // ============================================================
 
 async function approveRecord(id) {
@@ -2597,11 +2412,9 @@ async function approveRecord(id) {
             "آیا اطلاعات این شهید را تأیید می‌کنید؟"
         );
 
-
     if (!answer) {
         return;
     }
-
 
     try {
 
@@ -2623,7 +2436,6 @@ async function approveRecord(id) {
             .select()
             .single();
 
-
         if (error) {
 
             console.error(
@@ -2639,7 +2451,6 @@ async function approveRecord(id) {
             return;
         }
 
-
         if (!data) {
 
             alert(
@@ -2648,7 +2459,6 @@ async function approveRecord(id) {
 
             return;
         }
-
 
         if (
             data.status !==
@@ -2662,16 +2472,16 @@ async function approveRecord(id) {
             return;
         }
 
-
         alert(
             "اطلاعات این شهید با موفقیت تأیید شد."
         );
 
+        // ----------------------------------------------------
+        // رکورد تأییدشده دیگر در «اطلاعات ثبت‌شده» نمایش داده
+        // نمی‌شود.
+        // ----------------------------------------------------
 
-        showRecordDetail(
-            id,
-            "records"
-        );
+        showPendingRecords();
 
     }
     catch (error) {
@@ -2686,6 +2496,7 @@ async function approveRecord(id) {
 
 }
 
+
 // ============================================================
 // حذف
 // ============================================================
@@ -2697,11 +2508,9 @@ async function deleteRecord(id) {
             "آیا از حذف این اطلاعات مطمئن هستید؟"
         );
 
-
     if (!answer) {
         return;
     }
-
 
     try {
 
@@ -2716,7 +2525,6 @@ async function deleteRecord(id) {
                 id
             )
             .select();
-
 
         if (error) {
 
@@ -2733,7 +2541,6 @@ async function deleteRecord(id) {
             return;
         }
 
-
         if (
             !data ||
             data.length === 0
@@ -2747,11 +2554,9 @@ async function deleteRecord(id) {
             return;
         }
 
-
         alert(
             "رکورد با موفقیت حذف شد."
         );
-
 
         showPendingRecords();
 
@@ -2768,6 +2573,7 @@ async function deleteRecord(id) {
 
 }
 
+
 // ============================================================
 // جستجوی اطلاعات شهید
 // ============================================================
@@ -2779,14 +2585,12 @@ function showSearch(
     const app =
         document.querySelector(".app");
 
-
     app.innerHTML = `
 
         ${internalHeader(
             "جستجوی اطلاعات شهید",
             "جستجو در اطلاعات ثبت‌شده"
         )}
-
 
         <main class="content">
 
@@ -2795,7 +2599,6 @@ function showSearch(
                 <div class="card-title">
                     معیارهای جستجو
                 </div>
-
 
                 <div class="form-group">
 
@@ -2812,7 +2615,6 @@ function showSearch(
 
                 </div>
 
-
                 <div class="form-group">
 
                     <label for="search-lastname">
@@ -2828,11 +2630,9 @@ function showSearch(
 
                 </div>
 
-
                 <div class="section-title">
                     محل مزار
                 </div>
-
 
                 <div class="form-row">
 
@@ -2861,7 +2661,6 @@ function showSearch(
 
                     </div>
 
-
                     <div class="form-group">
 
                         <label for="search-row">
@@ -2876,7 +2675,6 @@ function showSearch(
                         >
 
                     </div>
-
 
                     <div class="form-group">
 
@@ -2895,11 +2693,9 @@ function showSearch(
 
                 </div>
 
-
                 <div class="section-title">
                     وضعیت سنگ
                 </div>
-
 
                 <div class="form-group">
 
@@ -2925,7 +2721,6 @@ function showSearch(
 
                 </div>
 
-
                 <button
                     type="button"
                     class="primary-button"
@@ -2933,7 +2728,6 @@ function showSearch(
                 >
                     جستجو
                 </button>
-
 
                 <div
                     id="search-results"
@@ -2946,14 +2740,12 @@ function showSearch(
 
     `;
 
-
     document
         .getElementById("back-home")
         .addEventListener(
             "click",
             showHome
         );
-
 
     document
         .getElementById("search-button")
@@ -2962,8 +2754,6 @@ function showSearch(
             performSearch
         );
 
-
-    // اجرای جستجو با Enter
     [
         "search-name",
         "search-lastname",
@@ -2994,8 +2784,10 @@ function showSearch(
 
     });
 
-
-    if (restore && lastSearchFilters) {
+    if (
+        restore &&
+        lastSearchFilters
+    ) {
 
         document
             .getElementById(
@@ -3004,14 +2796,12 @@ function showSearch(
             .value =
             lastSearchFilters.name || "";
 
-
         document
             .getElementById(
                 "search-lastname"
             )
             .value =
             lastSearchFilters.lastname || "";
-
 
         document
             .getElementById(
@@ -3020,14 +2810,12 @@ function showSearch(
             .value =
             lastSearchFilters.piece || "";
 
-
         document
             .getElementById(
                 "search-row"
             )
             .value =
             lastSearchFilters.row || "";
-
 
         document
             .getElementById(
@@ -3036,14 +2824,12 @@ function showSearch(
             .value =
             lastSearchFilters.number || "";
 
-
         document
             .getElementById(
                 "search-status"
             )
             .value =
             lastSearchFilters.status || "";
-
 
         renderSearchResults(
             lastSearchResults
@@ -3052,12 +2838,12 @@ function showSearch(
         return;
     }
 
-
     document
         .getElementById("search-name")
         .focus();
 
 }
+
 
 // ============================================================
 // اجرای جستجو
@@ -3071,19 +2857,16 @@ async function performSearch() {
             .value
             .trim();
 
-
     const lastname =
         document
             .getElementById("search-lastname")
             .value
             .trim();
 
-
     const piece =
         document
             .getElementById("search-piece")
             .value;
-
 
     const row =
         document
@@ -3091,27 +2874,23 @@ async function performSearch() {
             .value
             .trim();
 
-
     const number =
         document
             .getElementById("search-number")
             .value
             .trim();
 
-
     const status =
         document
             .getElementById("search-status")
             .value;
-
 
     const container =
         document.getElementById(
             "search-results"
         );
 
-
-    // ذخیره فیلترها برای بازگشت از پرونده
+    // حفظ آخرین فیلترها
     lastSearchFilters = {
         name,
         lastname,
@@ -3120,7 +2899,6 @@ async function performSearch() {
         number,
         status
     };
-
 
     container.innerHTML = `
 
@@ -3132,14 +2910,12 @@ async function performSearch() {
 
     `;
 
-
     try {
 
         let query =
             supabaseClient
                 .from("martyrs")
                 .select("*");
-
 
         if (name) {
 
@@ -3151,7 +2927,6 @@ async function performSearch() {
 
         }
 
-
         if (lastname) {
 
             query =
@@ -3161,7 +2936,6 @@ async function performSearch() {
                 );
 
         }
-
 
         if (piece) {
 
@@ -3173,7 +2947,6 @@ async function performSearch() {
 
         }
 
-
         if (row) {
 
             query =
@@ -3183,7 +2956,6 @@ async function performSearch() {
                 );
 
         }
-
 
         if (number) {
 
@@ -3195,7 +2967,6 @@ async function performSearch() {
 
         }
 
-
         if (status) {
 
             query =
@@ -3205,7 +2976,6 @@ async function performSearch() {
                 );
 
         }
-
 
         const {
             data,
@@ -3217,7 +2987,6 @@ async function performSearch() {
                     ascending: false
                 }
             );
-
 
         if (error) {
 
@@ -3245,14 +3014,11 @@ async function performSearch() {
             return;
         }
 
-
         const results =
             data || [];
 
-
         lastSearchResults =
             results;
-
 
         renderSearchResults(
             results
@@ -3277,6 +3043,7 @@ async function performSearch() {
 
 }
 
+
 // ============================================================
 // نمایش نتایج جستجو
 // ============================================================
@@ -3290,11 +3057,9 @@ function renderSearchResults(
             "search-results"
         );
 
-
     if (!container) {
         return;
     }
-
 
     container.innerHTML = `
 
@@ -3307,7 +3072,6 @@ function renderSearchResults(
             رکورد پیدا شد.
 
         </div>
-
 
         <div class="records-container">
 
@@ -3336,14 +3100,12 @@ function renderSearchResults(
 
     `;
 
-
     results.forEach(record => {
 
         const card =
             document.getElementById(
                 `record-summary-${record.id}`
             );
-
 
         if (card) {
 
@@ -3362,8 +3124,9 @@ function renderSearchResults(
 
 }
 
+
 // ============================================================
-// بازسازی صفحه جستجو و نتایج قبلی
+// بازسازی صفحه جستجو
 // ============================================================
 
 function restoreSearchPage() {
@@ -3372,8 +3135,9 @@ function restoreSearchPage() {
 
 }
 
+
 // ============================================================
-// خطای دریافت اطلاعات
+// خطای اطلاعات ثبت‌شده
 // ============================================================
 
 function showRecordsError(
@@ -3385,11 +3149,9 @@ function showRecordsError(
             "pending-container"
         );
 
-
     if (!container) {
         return;
     }
-
 
     container.innerHTML = `
 
