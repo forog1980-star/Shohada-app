@@ -2,11 +2,9 @@
 // Shohada-app / GolzarStone
 // نسخه موبایل
 // Supabase + UI کامل
-// خروجی Excel از نتایج جستجو
 // ============================================================
 
 "use strict";
-
 
 // ============================================================
 // Supabase
@@ -83,7 +81,7 @@ const STAGES = {
 
 
 // ============================================================
-// ابزارها
+// ابزارهای عمومی
 // ============================================================
 
 function toPersianDigits(value) {
@@ -130,6 +128,26 @@ function toEnglishDigits(value) {
 }
 
 
+function normalizeSearchValue(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+    return toEnglishDigits(
+        String(value)
+            .trim()
+            .replace(/ي/g, "ی")
+            .replace(/ى/g, "ی")
+            .replace(/ك/g, "ک")
+            .replace(/\u200c/g, " ")
+    );
+}
+
+
 function escapeHtml(value) {
 
     if (
@@ -149,72 +167,277 @@ function escapeHtml(value) {
 
 
 // ============================================================
+// تبدیل تاریخ میلادی Supabase به شمسی
+// ============================================================
+
+function gregorianToJalali(
+    gy,
+    gm,
+    gd
+) {
+
+    const gdm = [
+        0,
+        31,
+        59,
+        90,
+        120,
+        151,
+        181,
+        212,
+        243,
+        273,
+        304,
+        334
+    ];
+
+    let jy;
+
+    if (gy > 1600) {
+
+        jy = 979;
+
+        gy -= 1600;
+
+    }
+    else {
+
+        jy = 0;
+
+        gy -= 621;
+
+    }
+
+    const gy2 =
+        gm > 2
+        ?
+        gy + 1
+        :
+        gy;
+
+    let days =
+        365 * gy +
+        Math.floor(
+            (gy2 + 3) / 4
+        ) -
+        Math.floor(
+            (gy2 + 99) / 100
+        ) +
+        Math.floor(
+            (gy2 + 399) / 400
+        ) -
+        80 +
+        gd +
+        gdm[gm - 1];
+
+    jy +=
+        33 *
+        Math.floor(
+            days / 12053
+        );
+
+    days %= 12053;
+
+    jy +=
+        4 *
+        Math.floor(
+            days / 1461
+        );
+
+    days %= 1461;
+
+    if (days > 365) {
+
+        jy +=
+            Math.floor(
+                (days - 1) / 365
+            );
+
+        days =
+            (days - 1) %
+            365;
+
+    }
+
+    let jm;
+    let jd;
+
+    if (days < 186) {
+
+        jm =
+            1 +
+            Math.floor(
+                days / 31
+            );
+
+        jd =
+            1 +
+            (days % 31);
+
+    }
+    else {
+
+        jm =
+            7 +
+            Math.floor(
+                (days - 186) / 30
+            );
+
+        jd =
+            1 +
+            ((days - 186) % 30);
+
+    }
+
+    return {
+        jy,
+        jm,
+        jd
+    };
+
+}
+
+
+function formatCreatedAt(
+    value
+) {
+
+    if (!value) {
+        return "";
+    }
+
+    const date =
+        new Date(value);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "";
+    }
+
+    const jalali =
+        gregorianToJalali(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            date.getDate()
+        );
+
+    const hours =
+        String(
+            date.getHours()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const minutes =
+        String(
+            date.getMinutes()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    return (
+        toPersianDigits(
+            `${jalali.jy}/${String(jalali.jm).padStart(2, "0")}/${String(jalali.jd).padStart(2, "0")}`
+        ) +
+        " - " +
+        toPersianDigits(
+            `${hours}:${minutes}`
+        )
+    );
+
+}
+
+
+// ============================================================
+// تاریخ برای Excel
+// ============================================================
+
+function formatCreatedAtForExcel(
+    value
+) {
+
+    if (!value) {
+        return "";
+    }
+
+    const date =
+        new Date(value);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "";
+    }
+
+    const jalali =
+        gregorianToJalali(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            date.getDate()
+        );
+
+    const hours =
+        String(
+            date.getHours()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const minutes =
+        String(
+            date.getMinutes()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    return (
+        `${jalali.jy}/` +
+        `${String(jalali.jm).padStart(2, "0")}/` +
+        `${String(jalali.jd).padStart(2, "0")}` +
+        ` ${hours}:${minutes}`
+    );
+
+}
+
+
+// ============================================================
 // بارگذاری کتابخانه Excel
 // ============================================================
 
-let excelLibraryPromise = null;
+let xlsxLoadPromise = null;
 
 
-function loadExcelLibrary() {
+function loadXLSXLibrary() {
 
     if (
-        typeof XLSX !== "undefined"
+        window.XLSX
     ) {
-        return Promise.resolve();
+        return Promise.resolve(
+            window.XLSX
+        );
     }
 
-    if (excelLibraryPromise) {
-        return excelLibraryPromise;
+    if (
+        xlsxLoadPromise
+    ) {
+        return xlsxLoadPromise;
     }
 
-    excelLibraryPromise =
+    xlsxLoadPromise =
         new Promise(
-            (resolve, reject) => {
-
-                const existingScript =
-                    document.querySelector(
-                        'script[data-golzar-xlsx="true"]'
-                    );
-
-                if (existingScript) {
-
-                    existingScript.addEventListener(
-                        "load",
-                        () => {
-
-                            if (
-                                typeof XLSX !==
-                                "undefined"
-                            ) {
-                                resolve();
-                            }
-                            else {
-                                reject(
-                                    new Error(
-                                        "کتابخانه Excel بارگذاری نشد."
-                                    )
-                                );
-                            }
-
-                        }
-                    );
-
-                    existingScript.addEventListener(
-                        "error",
-                        () => {
-
-                            reject(
-                                new Error(
-                                    "بارگذاری کتابخانه Excel ناموفق بود."
-                                )
-                            );
-
-                        }
-                    );
-
-                    return;
-                }
-
+            (
+                resolve,
+                reject
+            ) => {
 
                 const script =
                     document.createElement(
@@ -226,26 +449,23 @@ function loadExcelLibrary() {
 
                 script.async = true;
 
-                script.dataset.golzarXlsx =
-                    "true";
-
-
                 script.onload =
                     () => {
 
                         if (
-                            typeof XLSX !==
-                            "undefined"
+                            window.XLSX
                         ) {
 
-                            resolve();
+                            resolve(
+                                window.XLSX
+                            );
 
                         }
                         else {
 
                             reject(
                                 new Error(
-                                    "کتابخانه Excel در دسترس نیست."
+                                    "کتابخانه Excel بارگذاری نشد."
                                 )
                             );
 
@@ -253,18 +473,16 @@ function loadExcelLibrary() {
 
                     };
 
-
                 script.onerror =
                     () => {
 
                         reject(
                             new Error(
-                                "اتصال برای دریافت کتابخانه Excel برقرار نشد."
+                                "اتصال به کتابخانه Excel برقرار نشد."
                             )
                         );
 
                     };
-
 
                 document.head.appendChild(
                     script
@@ -273,85 +491,16 @@ function loadExcelLibrary() {
             }
         );
 
-    return excelLibraryPromise;
+    return xlsxLoadPromise;
+
 }
 
 
 // ============================================================
-// ساخت نام فایل Excel
+// ساخت خروجی Excel
 // ============================================================
 
-function getExcelFileName() {
-
-    const now =
-        new Date();
-
-    const year =
-        now.getFullYear();
-
-    const month =
-        String(
-            now.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const day =
-        String(
-            now.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const hour =
-        String(
-            now.getHours()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const minute =
-        String(
-            now.getMinutes()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const second =
-        String(
-            now.getSeconds()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    return (
-        "خروجی_جستجوی_شهدا_" +
-        year +
-        "-" +
-        month +
-        "-" +
-        day +
-        "_" +
-        hour +
-        "-" +
-        minute +
-        "-" +
-        second +
-        ".xlsx"
-    );
-}
-
-
-// ============================================================
-// خروجی Excel از نتایج فعلی جستجو
-// ============================================================
-
-async function exportSearchResultsToExcel() {
+async function exportSearchResults() {
 
     if (
         !lastSearchResults ||
@@ -359,70 +508,67 @@ async function exportSearchResultsToExcel() {
     ) {
 
         alert(
-            "برای تهیه خروجی، ابتدا حداقل یک رکورد پیدا کنید."
+            "نتیجه‌ای برای خروجی گرفتن وجود ندارد."
         );
 
         return;
-    }
 
+    }
 
     const button =
         document.getElementById(
-            "export-search-excel"
+            "export-excel"
         );
-
 
     if (button) {
 
         button.disabled = true;
 
         button.textContent =
-            "در حال ساخت Excel...";
+            "در حال آماده‌سازی Excel...";
 
     }
 
-
     try {
 
-        await loadExcelLibrary();
-
+        const XLSX =
+            await loadXLSXLibrary();
 
         const rows =
             lastSearchResults.map(
                 record => ({
 
-                    "شناسه":
-                        record.id ?? "",
-
                     "نام":
-                        record.name ?? "",
+                        record.name || "",
 
                     "نام خانوادگی":
-                        record.lastname ?? "",
+                        record.lastname || "",
 
                     "قطعه":
-                        record.piece ?? "",
+                        record.piece || "",
 
                     "ردیف":
-                        record.grave_row ?? "",
+                        record.grave_row || "",
 
                     "شماره":
-                        record.grave_number ?? "",
+                        record.grave_number || "",
 
                     "نوع عملیات":
-                        record.stone_type ?? "",
+                        record.stone_type || "",
 
                     "مرحله":
-                        record.stage ?? "",
+                        record.stage || "",
 
                     "وضعیت ثبت":
-                        record.status ?? "",
+                        record.status || "",
 
                     "توضیحات":
-                        record.notes ?? "",
+                        record.notes || "",
 
                     "تاریخ ثبت":
-                        record.created_at ?? ""
+                        formatCreatedAtForExcel(
+                            record.created_at
+                        )
 
                 })
             );
@@ -437,15 +583,11 @@ async function exportSearchResultsToExcel() {
         worksheet["!cols"] = [
 
             {
-                wch: 16
-            },
-
-            {
                 wch: 18
             },
 
             {
-                wch: 22
+                wch: 24
             },
 
             {
@@ -453,7 +595,11 @@ async function exportSearchResultsToExcel() {
             },
 
             {
-                wch: 15
+                wch: 18
+            },
+
+            {
+                wch: 18
             },
 
             {
@@ -461,23 +607,19 @@ async function exportSearchResultsToExcel() {
             },
 
             {
-                wch: 16
+                wch: 25
             },
 
             {
-                wch: 24
+                wch: 18
             },
 
             {
-                wch: 20
+                wch: 45
             },
 
             {
-                wch: 35
-            },
-
-            {
-                wch: 24
+                wch: 22
             }
 
         ];
@@ -494,8 +636,19 @@ async function exportSearchResultsToExcel() {
         );
 
 
+        const now =
+            new Date();
+
+        const jalali =
+            gregorianToJalali(
+                now.getFullYear(),
+                now.getMonth() + 1,
+                now.getDate()
+            );
+
+
         const fileName =
-            getExcelFileName();
+            `خروجی-جستجوی-شهدا-${jalali.jy}-${String(jalali.jm).padStart(2, "0")}-${String(jalali.jd).padStart(2, "0")}.xlsx`;
 
 
         XLSX.writeFile(
@@ -505,11 +658,7 @@ async function exportSearchResultsToExcel() {
 
 
         alert(
-            "خروجی Excel با موفقیت تهیه شد.\n\n" +
-            "تعداد رکوردها: " +
-            toPersianDigits(
-                lastSearchResults.length
-            )
+            "خروجی Excel با موفقیت آماده شد."
         );
 
     }
@@ -521,11 +670,8 @@ async function exportSearchResultsToExcel() {
         );
 
         alert(
-            "تهیه خروجی Excel انجام نشد.\n\n" +
-            (
-                error.message ||
-                "خطای غیرمنتظره"
-            )
+            "خروجی Excel انجام نشد.\n\n" +
+            error.message
         );
 
     }
@@ -551,7 +697,9 @@ async function exportSearchResultsToExcel() {
 
 function initializeHistory() {
 
-    if (!window.history.state) {
+    if (
+        !window.history.state
+    ) {
 
         window.history.replaceState(
             {
@@ -564,16 +712,22 @@ function initializeHistory() {
 
     }
 
-    currentAppPage = "home";
+    currentAppPage =
+        "home";
 
 }
 
 
-function pushAppHistory(page) {
+function pushAppHistory(
+    page
+) {
 
-    if (isHandlingHistory) {
+    if (
+        isHandlingHistory
+    ) {
 
-        currentAppPage = page;
+        currentAppPage =
+            page;
 
         return;
 
@@ -588,7 +742,8 @@ function pushAppHistory(page) {
         window.location.href
     );
 
-    currentAppPage = page;
+    currentAppPage =
+        page;
 
 }
 
@@ -600,15 +755,19 @@ function handleBackNavigation() {
 
 
     if (
-        currentAppPage === "home"
+        currentAppPage ===
+        "home"
     ) {
 
         if (
-            now - firstBackPressTime
-            <= DOUBLE_BACK_INTERVAL
+            now -
+            firstBackPressTime
+            <=
+            DOUBLE_BACK_INTERVAL
         ) {
 
-            firstBackPressTime = 0;
+            firstBackPressTime =
+                0;
 
             return true;
 
@@ -638,7 +797,6 @@ function handleBackNavigation() {
 
     }
 
-
     return false;
 
 }
@@ -658,7 +816,8 @@ window.addEventListener(
         ) {
 
             if (
-                currentAppPage === "home"
+                currentAppPage ===
+                "home"
             ) {
 
                 const allowed =
@@ -680,7 +839,8 @@ window.addEventListener(
             "home";
 
 
-        isHandlingHistory = true;
+        isHandlingHistory =
+            true;
 
 
         try {
@@ -708,7 +868,6 @@ window.addEventListener(
 
             }
 
-
             currentAppPage =
                 page;
 
@@ -725,7 +884,7 @@ window.addEventListener(
 
 
 // ============================================================
-// کنترل اعتبار نوع عملیات و مرحله
+// کنترل اعتبار مرحله
 // ============================================================
 
 function isValidStageForStoneType(
@@ -737,11 +896,8 @@ function isValidStageForStoneType(
         !stoneType ||
         !stage
     ) {
-
         return false;
-
     }
-
 
     if (
         !Object.prototype.hasOwnProperty.call(
@@ -749,11 +905,8 @@ function isValidStageForStoneType(
             stoneType
         )
     ) {
-
         return false;
-
     }
-
 
     return STAGES[
         stoneType
@@ -791,9 +944,7 @@ function applyAppStyles() {
             "golzar-app-styles"
         )
     ) {
-
         return;
-
     }
 
 
@@ -1023,31 +1174,9 @@ function applyAppStyles() {
         }
 
 
-        .export-button {
-            border: none;
-            background: var(--green-light);
-            color: var(--green-dark);
-            border-radius: 13px;
-            padding: 10px 12px;
-            font-family: inherit;
-            font-size: 14px;
-            cursor: pointer;
-            white-space: nowrap;
-            margin-top: 10px;
-        }
-
-
-        .export-button:active,
         .refresh-button:active,
         .back-button:active {
             transform: scale(.97);
-        }
-
-
-        .export-button:disabled,
-        .refresh-button:disabled {
-            opacity: .65;
-            cursor: wait;
         }
 
 
@@ -1155,7 +1284,8 @@ function applyAppStyles() {
 
         .choice-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns:
+                1fr 1fr;
             gap: 12px;
         }
 
@@ -1217,7 +1347,8 @@ function applyAppStyles() {
 
         .stage-list {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns:
+                1fr 1fr;
             gap: 10px;
         }
 
@@ -1301,6 +1432,27 @@ function applyAppStyles() {
 
 
         .primary-button:disabled {
+            opacity: .65;
+            cursor: wait;
+        }
+
+
+        .export-button {
+            width: 100%;
+            border: none;
+            border-radius: 15px;
+            padding: 13px;
+            background: var(--blue);
+            color: white;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+
+        .export-button:disabled {
             opacity: .65;
             cursor: wait;
         }
@@ -1432,6 +1584,21 @@ function applyAppStyles() {
 
 
         .record-info span {
+            color: var(--muted);
+        }
+
+
+        .record-date {
+            display: flex;
+            gap: 7px;
+            margin-top: 9px;
+            padding-top: 9px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+
+        .record-date span {
             color: var(--muted);
         }
 
@@ -1938,12 +2105,10 @@ async function testSupabaseConnection() {
                 error
             );
 
-
             alert(
                 "اتصال به Supabase برقرار نشد.\n\n" +
                 error.message
             );
-
 
             return;
 
@@ -1957,8 +2122,9 @@ async function testSupabaseConnection() {
     }
     catch (error) {
 
-        console.error(error);
-
+        console.error(
+            error
+        );
 
         alert(
             "خطای غیرمنتظره در اتصال به Supabase."
@@ -1975,7 +2141,9 @@ async function testSupabaseConnection() {
 
 function showNewRecord() {
 
-    if (!isHandlingHistory) {
+    if (
+        !isHandlingHistory
+    ) {
 
         pushAppHistory(
             "new"
@@ -2261,13 +2429,9 @@ function renderStageOptions(
 
     const allStages = [
 
-        ...STAGES[
-            "ترمیمی"
-        ],
+        ...STAGES["ترمیمی"],
 
-        ...STAGES[
-            "تعویضی"
-        ]
+        ...STAGES["تعویضی"]
 
     ];
 
@@ -2287,8 +2451,7 @@ function renderStageOptions(
                         value="${escapeHtml(stage)}"
                         disabled
                         ${
-                            stage ===
-                            selectedStage
+                            stage === selectedStage
                             ?
                             "checked"
                             :
@@ -2309,7 +2472,7 @@ function renderStageOptions(
 
 
 // ============================================================
-// فعال‌سازی مراحل مربوط به نوع انتخاب‌شده
+// فعال‌سازی مراحل
 // ============================================================
 
 function updateStageOptions() {
@@ -2604,20 +2767,16 @@ async function saveNewRecord() {
                 error
             );
 
-
             alert(
                 "ذخیره اطلاعات انجام نشد.\n\n" +
                 error.message
             );
 
-
             button.disabled =
                 false;
 
-
             button.textContent =
                 "ذخیره اطلاعات";
-
 
             return;
 
@@ -2639,15 +2798,12 @@ async function saveNewRecord() {
             error
         );
 
-
         alert(
             "خطای غیرمنتظره هنگام ذخیره اطلاعات."
         );
 
-
         button.disabled =
             false;
-
 
         button.textContent =
             "ذخیره اطلاعات";
@@ -2779,9 +2935,7 @@ async function loadPendingRecords() {
         !container ||
         !summary
     ) {
-
         return;
-
     }
 
 
@@ -2809,7 +2963,8 @@ async function loadPendingRecords() {
             .order(
                 "created_at",
                 {
-                    ascending: false
+                    ascending:
+                        false
                 }
             );
 
@@ -2826,8 +2981,7 @@ async function loadPendingRecords() {
 
 
         const records =
-            data ||
-            [];
+            data || [];
 
 
         summary.innerHTML = `
@@ -2926,7 +3080,6 @@ async function loadPendingRecords() {
             error
         );
 
-
         showRecordsError(
             "خطای غیرمنتظره هنگام دریافت اطلاعات."
         );
@@ -2989,7 +3142,8 @@ function recordSummaryCard(
 
 
     const statusClass =
-        status === "تأیید شده"
+        status ===
+        "تأیید شده"
         ?
         "approved"
         :
@@ -3109,6 +3263,31 @@ function recordSummaryCard(
 
             </div>
 
+
+            ${
+                record.created_at
+                ?
+                `
+                <div class="record-date">
+
+                    <span>
+                        تاریخ ثبت:
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(
+                            formatCreatedAt(
+                                record.created_at
+                            )
+                        )}
+                    </strong>
+
+                </div>
+                `
+                :
+                ""
+            }
+
         </div>
 
     `;
@@ -3117,7 +3296,7 @@ function recordSummaryCard(
 
 
 // ============================================================
-// نمایش جزئیات
+// جزئیات رکورد
 // ============================================================
 
 async function showRecordDetail(
@@ -3170,7 +3349,8 @@ async function showRecordDetail(
             () => {
 
                 if (
-                    source === "search"
+                    source ===
+                    "search"
                 ) {
 
                     restoreSearchPage();
@@ -3355,6 +3535,31 @@ async function showRecordDetail(
 
 
                 ${
+                    data.created_at
+                    ?
+                    `
+                    <div class="detail-row">
+
+                        <span>
+                            تاریخ ثبت
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(
+                                formatCreatedAt(
+                                    data.created_at
+                                )
+                            )}
+                        </strong>
+
+                    </div>
+                    `
+                    :
+                    ""
+                }
+
+
+                ${
                     data.notes
                     ?
                     `
@@ -3496,7 +3701,8 @@ async function showRecordDetail(
                 () => {
 
                     if (
-                        source === "search"
+                        source ===
+                        "search"
                     ) {
 
                         restoreSearchPage();
@@ -3541,7 +3747,7 @@ async function showRecordDetail(
 
 
 // ============================================================
-// تأیید
+// تأیید رکورد
 // ============================================================
 
 async function approveRecord(
@@ -3587,12 +3793,10 @@ async function approveRecord(
                 error
             );
 
-
             alert(
                 "تأیید اطلاعات انجام نشد.\n\n" +
                 error.message
             );
-
 
             return;
 
@@ -3604,7 +3808,6 @@ async function approveRecord(
             alert(
                 "رکورد پیدا نشد یا اجازه تغییر آن وجود ندارد."
             );
-
 
             return;
 
@@ -3619,7 +3822,6 @@ async function approveRecord(
             alert(
                 "وضعیت رکورد تغییر نکرد."
             );
-
 
             return;
 
@@ -3640,7 +3842,6 @@ async function approveRecord(
             error
         );
 
-
         alert(
             "خطای غیرمنتظره هنگام تأیید."
         );
@@ -3651,7 +3852,7 @@ async function approveRecord(
 
 
 // ============================================================
-// حذف
+// حذف رکورد
 // ============================================================
 
 async function deleteRecord(
@@ -3691,12 +3892,10 @@ async function deleteRecord(
                 error
             );
 
-
             alert(
                 "حذف انجام نشد.\n\n" +
                 error.message
             );
-
 
             return;
 
@@ -3712,7 +3911,6 @@ async function deleteRecord(
                 "رکورد حذف نشد.\n\n" +
                 "احتمالاً اجازه حذف از طریق برنامه وجود ندارد یا رکورد پیدا نشد."
             );
-
 
             return;
 
@@ -3733,7 +3931,6 @@ async function deleteRecord(
             error
         );
 
-
         alert(
             "خطای غیرمنتظره هنگام حذف."
         );
@@ -3744,14 +3941,16 @@ async function deleteRecord(
 
 
 // ============================================================
-// جستجوی اطلاعات شهید
+// صفحه جستجو
 // ============================================================
 
 function showSearch(
     restore = false
 ) {
 
-    if (!isHandlingHistory) {
+    if (
+        !isHandlingHistory
+    ) {
 
         pushAppHistory(
             "search"
@@ -4080,7 +4279,7 @@ function showSearch(
 
 async function performSearch() {
 
-    const name =
+    const nameInput =
         document
             .getElementById(
                 "search-name"
@@ -4089,7 +4288,7 @@ async function performSearch() {
             .trim();
 
 
-    const lastname =
+    const lastnameInput =
         document
             .getElementById(
                 "search-lastname"
@@ -4106,7 +4305,7 @@ async function performSearch() {
             .value;
 
 
-    const row =
+    const rowInput =
         document
             .getElementById(
                 "search-row"
@@ -4115,7 +4314,7 @@ async function performSearch() {
             .trim();
 
 
-    const number =
+    const numberInput =
         document
             .getElementById(
                 "search-number"
@@ -4132,6 +4331,30 @@ async function performSearch() {
             .value;
 
 
+    const name =
+        normalizeSearchValue(
+            nameInput
+        );
+
+
+    const lastname =
+        normalizeSearchValue(
+            lastnameInput
+        );
+
+
+    const row =
+        normalizeSearchValue(
+            rowInput
+        );
+
+
+    const number =
+        normalizeSearchValue(
+            numberInput
+        );
+
+
     const container =
         document.getElementById(
             "search-results"
@@ -4140,12 +4363,23 @@ async function performSearch() {
 
     lastSearchFilters = {
 
-        name,
-        lastname,
-        piece,
-        row,
-        number,
-        status
+        name:
+            nameInput,
+
+        lastname:
+            lastnameInput,
+
+        piece:
+            piece,
+
+        row:
+            rowInput,
+
+        number:
+            numberInput,
+
+        status:
+            status
 
     };
 
@@ -4242,7 +4476,8 @@ async function performSearch() {
             .order(
                 "created_at",
                 {
-                    ascending: false
+                    ascending:
+                        false
                 }
             );
 
@@ -4271,15 +4506,13 @@ async function performSearch() {
 
             `;
 
-
             return;
 
         }
 
 
         const results =
-            data ||
-            [];
+            data || [];
 
 
         lastSearchResults =
@@ -4332,9 +4565,31 @@ function renderSearchResults(
     }
 
 
-    const hasResults =
-        results &&
-        results.length > 0;
+    if (
+        !results ||
+        results.length === 0
+    ) {
+
+        container.innerHTML = `
+
+            <div class="search-count">
+
+                ۰ رکورد پیدا شد.
+
+            </div>
+
+
+            <div class="empty-message">
+
+                رکوردی با این مشخصات پیدا نشد.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
 
 
     container.innerHTML = `
@@ -4350,36 +4605,21 @@ function renderSearchResults(
         </div>
 
 
-        ${
-            hasResults
-            ?
-            `
-            <button
-                type="button"
-                class="export-button"
-                id="export-search-excel"
-            >
-                📊 خروجی Excel
-            </button>
-            `
-            :
-            ""
-        }
+        <button
+            type="button"
+            class="export-button"
+            id="export-excel"
+        >
+            📊 خروجی Excel
+        </button>
 
 
-        <div class="records-container">
+        <div
+            class="records-container"
+            style="margin-top: 12px;"
+        >
 
             ${
-                results.length === 0
-                ?
-                `
-                <div class="empty-message">
-
-                    رکوردی با این مشخصات پیدا نشد.
-
-                </div>
-                `
-                :
                 results
                     .map(
                         record =>
@@ -4395,24 +4635,14 @@ function renderSearchResults(
     `;
 
 
-    if (hasResults) {
-
-        const exportButton =
-            document.getElementById(
-                "export-search-excel"
-            );
-
-
-        if (exportButton) {
-
-            exportButton.addEventListener(
-                "click",
-                exportSearchResultsToExcel
-            );
-
-        }
-
-    }
+    document
+        .getElementById(
+            "export-excel"
+        )
+        .addEventListener(
+            "click",
+            exportSearchResults
+        );
 
 
     results.forEach(
