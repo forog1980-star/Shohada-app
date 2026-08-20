@@ -1,7 +1,7 @@
 // ============================================================
 // Shohada-app / GolzarStone
 // نسخه موبایل
-// Supabase + UI کامل
+// Supabase + UI کامل + خروجی Excel
 // ============================================================
 
 "use strict";
@@ -40,7 +40,7 @@ const PIECES = [
 
 
 // ============================================================
-// وضعیت صفحه جستجو
+// وضعیت جستجو
 // ============================================================
 
 let lastSearchResults = [];
@@ -61,8 +61,6 @@ const DOUBLE_BACK_INTERVAL = 2000;
 
 // ============================================================
 // مراحل مرجع
-// ============================================================
-// متن این شش مرحله دقیقاً طبق قرارداد است.
 // ============================================================
 
 const STAGES = {
@@ -168,7 +166,6 @@ function initializeHistory() {
     }
 
     currentAppPage = "home";
-
 }
 
 
@@ -196,12 +193,6 @@ function handleBackNavigation() {
 
     const now = Date.now();
 
-    // --------------------------------------------------------
-    // اگر در صفحه اصلی هستیم:
-    // یک Back فقط هشدار می‌دهد و برنامه خارج نمی‌شود.
-    // Back دوم در فاصله کوتاه اجازه خروج می‌دهد.
-    // --------------------------------------------------------
-
     if (
         currentAppPage === "home"
     ) {
@@ -214,7 +205,6 @@ function handleBackNavigation() {
             firstBackPressTime = 0;
 
             return true;
-
         }
 
         firstBackPressTime = now;
@@ -246,10 +236,6 @@ window.addEventListener(
         const state =
             event.state;
 
-        // ----------------------------------------------------
-        // صفحه اصلی
-        // ----------------------------------------------------
-
         if (
             !state ||
             state.golzarApp !== true
@@ -265,7 +251,6 @@ window.addEventListener(
                 if (!allowed) {
                     return;
                 }
-
             }
 
             return;
@@ -275,10 +260,6 @@ window.addEventListener(
         const page =
             state.page || "home";
 
-
-        // ----------------------------------------------------
-        // Back از صفحات داخلی
-        // ----------------------------------------------------
 
         isHandlingHistory = true;
 
@@ -334,10 +315,12 @@ function isValidStageForStoneType(
         return false;
     }
 
-    if (!Object.prototype.hasOwnProperty.call(
-        STAGES,
-        stoneType
-    )) {
+    if (
+        !Object.prototype.hasOwnProperty.call(
+            STAGES,
+            stoneType
+        )
+    ) {
         return false;
     }
 
@@ -806,31 +789,27 @@ function applyAppStyles() {
             cursor: wait;
         }
 
-        /* =====================================================
-           دکمه خروجی اکسل
-           ===================================================== */
-
         .export-button {
             width: 100%;
             border: none;
             border-radius: 15px;
-            padding: 14px;
-            background: var(--blue);
-            color: white;
+            padding: 13px;
+            background: #eaf4ed;
+            color: var(--green-dark);
             font-family: inherit;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 9px;
+        }
+
+        .export-button:active {
+            transform: scale(.985);
         }
 
         .export-button:disabled {
-            opacity: .45;
-            cursor: not-allowed;
-        }
-
-        .export-button:not(:disabled):active {
-            transform: scale(.985);
+            opacity: .6;
+            cursor: wait;
         }
 
         .records-summary {
@@ -1213,11 +1192,13 @@ function showHome() {
                 type="button"
                 id="btn-search"
             >
+
                 <span class="icon">
                     🔎
                 </span>
 
                 <span class="button-text">
+
                     <strong>
                         جستجوی شهید
                     </strong>
@@ -1225,11 +1206,13 @@ function showHome() {
                     <small>
                         جستجو و مشاهده اطلاعات شهید
                     </small>
+
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
+
             </button>
 
 
@@ -1238,11 +1221,13 @@ function showHome() {
                 type="button"
                 id="btn-new"
             >
+
                 <span class="icon">
                     ➕
                 </span>
 
                 <span class="button-text">
+
                     <strong>
                         ثبت اطلاعات شهید جدید
                     </strong>
@@ -1250,11 +1235,13 @@ function showHome() {
                     <small>
                         ثبت اطلاعات اولیه شهید برای بررسی و تأیید
                     </small>
+
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
+
             </button>
 
 
@@ -1263,11 +1250,13 @@ function showHome() {
                 type="button"
                 id="btn-pending"
             >
+
                 <span class="icon">
                     📋
                 </span>
 
                 <span class="button-text">
+
                     <strong>
                         اطلاعات ثبت‌شده
                     </strong>
@@ -1275,11 +1264,13 @@ function showHome() {
                     <small>
                         بررسی، تأیید و مدیریت اطلاعات ثبت‌شده
                     </small>
+
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
+
             </button>
 
 
@@ -1288,11 +1279,13 @@ function showHome() {
                 type="button"
                 id="btn-test"
             >
+
                 <span class="icon">
                     🔗
                 </span>
 
                 <span class="button-text">
+
                     <strong>
                         تست اتصال
                     </strong>
@@ -1300,11 +1293,13 @@ function showHome() {
                     <small>
                         بررسی ارتباط با بانک اطلاعاتی
                     </small>
+
                 </span>
 
                 <span class="button-arrow">
                     ‹
                 </span>
+
             </button>
 
         </main>
@@ -1704,7 +1699,7 @@ function renderStageOptions(
 
 
 // ============================================================
-// فعال‌سازی فقط سه مرحله مربوط به نوع انتخاب‌شده
+// فعال‌سازی مراحل
 // ============================================================
 
 function updateStageOptions() {
@@ -1942,10 +1937,6 @@ async function saveNewRecord() {
             "اطلاعات شهید با موفقیت ثبت شد.\n\n" +
             "وضعیت: در انتظار تأیید"
         );
-
-        // ----------------------------------------------------
-        // بعد از ثبت موفق، فرم جدید باز می‌شود.
-        // ----------------------------------------------------
 
         showNewRecord();
 
@@ -2208,7 +2199,7 @@ async function loadPendingRecords() {
 
 
 // ============================================================
-// تازه‌سازی صفحه اطلاعات ثبت‌شده
+// تازه‌سازی اطلاعات ثبت‌شده
 // ============================================================
 
 async function refreshPendingRecords() {
@@ -3090,16 +3081,7 @@ function showSearch(
                     class="primary-button"
                     id="search-button"
                 >
-                    🔎 جستجو
-                </button>
-
-                <button
-                    type="button"
-                    class="export-button"
-                    id="export-excel-button"
-                    disabled
-                >
-                    📊 خروجی اکسل
+                    جستجو
                 </button>
 
                 <div
@@ -3129,13 +3111,6 @@ function showSearch(
         .addEventListener(
             "click",
             performSearch
-        );
-
-    document
-        .getElementById("export-excel-button")
-        .addEventListener(
-            "click",
-            exportSearchResultsToExcel
         );
 
     [
@@ -3274,11 +3249,6 @@ async function performSearch() {
             "search-results"
         );
 
-    const exportButton =
-        document.getElementById(
-            "export-excel-button"
-        );
-
     lastSearchFilters = {
         name,
         lastname,
@@ -3287,16 +3257,6 @@ async function performSearch() {
         number,
         status
     };
-
-    // --------------------------------------------------------
-    // قبل از شروع جستجو، خروجی غیرفعال شود.
-    // --------------------------------------------------------
-
-    if (exportButton) {
-
-        exportButton.disabled = true;
-
-    }
 
     container.innerHTML = `
 
@@ -3459,23 +3419,6 @@ function renderSearchResults(
         return;
     }
 
-    // --------------------------------------------------------
-    // فعال/غیرفعال کردن خروجی اکسل
-    // --------------------------------------------------------
-
-    const exportButton =
-        document.getElementById(
-            "export-excel-button"
-        );
-
-    if (exportButton) {
-
-        exportButton.disabled =
-            !results ||
-            results.length === 0;
-
-    }
-
 
     container.innerHTML = `
 
@@ -3488,6 +3431,22 @@ function renderSearchResults(
             رکورد پیدا شد.
 
         </div>
+
+        ${
+            results.length > 0
+            ?
+            `
+            <button
+                type="button"
+                class="export-button"
+                id="export-excel-button"
+            >
+                📊 خروجی اکسل
+            </button>
+            `
+            :
+            ""
+        }
 
         <div class="records-container">
 
@@ -3516,6 +3475,29 @@ function renderSearchResults(
 
     `;
 
+
+    if (results.length > 0) {
+
+        const exportButton =
+            document.getElementById(
+                "export-excel-button"
+            );
+
+        if (exportButton) {
+
+            exportButton.addEventListener(
+                "click",
+                () =>
+                    exportSearchResultsToExcel(
+                        results
+                    )
+            );
+
+        }
+
+    }
+
+
     results.forEach(record => {
 
         const card =
@@ -3542,62 +3524,78 @@ function renderSearchResults(
 
 
 // ============================================================
-// خروجی اکسل از نتایج آخرین جستجو
+// خروجی Excel از نتایج جستجوی فعلی
 // ============================================================
 
-async function exportSearchResultsToExcel() {
+function exportSearchResultsToExcel(
+    results
+) {
 
     if (
-        !lastSearchResults ||
-        lastSearchResults.length === 0
+        !results ||
+        results.length === 0
     ) {
 
         alert(
-            "ابتدا یک جستجو انجام دهید و حداقل یک رکورد پیدا کنید."
+            "نتیجه‌ای برای خروجی گرفتن وجود ندارد."
         );
 
         return;
     }
 
-    const button =
+
+    // --------------------------------------------------------
+    // بررسی وجود کتابخانه SheetJS
+    // --------------------------------------------------------
+
+    if (
+        typeof XLSX === "undefined"
+    ) {
+
+        alert(
+            "کتابخانه خروجی Excel بارگذاری نشده است.\n\n" +
+            "لطفاً اتصال اینترنت را بررسی کنید و صفحه را دوباره باز کنید."
+        );
+
+        console.error(
+            "SheetJS / XLSX library not found."
+        );
+
+        return;
+    }
+
+
+    const exportButton =
         document.getElementById(
             "export-excel-button"
         );
 
-    if (button) {
+    if (exportButton) {
 
-        button.disabled = true;
+        exportButton.disabled = true;
 
-        button.textContent =
-            "📊 در حال آماده‌سازی خروجی...";
+        exportButton.textContent =
+            "در حال ساخت فایل Excel...";
 
     }
+
 
     try {
 
         // ----------------------------------------------------
-        // بارگذاری SheetJS در صورت نیاز
+        // ساخت داده خروجی
+        //
+        // عمداً id فنی Supabase در خروجی نمی‌آید.
         // ----------------------------------------------------
 
-        if (
-            typeof XLSX === "undefined"
-        ) {
-
-            await loadSheetJS();
-
-        }
-
-
-        // ----------------------------------------------------
-        // تبدیل نتایج جستجو به اطلاعات Excel
-        // ----------------------------------------------------
-
-        const exportData =
-            lastSearchResults.map(
+        const rows =
+            results.map(
                 (record, index) => ({
 
-                    "ردیف":
-                        index + 1,
+                    "ردیف خروجی":
+                        toPersianDigits(
+                            index + 1
+                        ),
 
                     "نام":
                         record.name || "",
@@ -3608,10 +3606,10 @@ async function exportSearchResultsToExcel() {
                     "قطعه":
                         record.piece || "",
 
-                    "ردیف مزار":
+                    "ردیف":
                         record.grave_row || "",
 
-                    "شماره مزار":
+                    "شماره":
                         record.grave_number || "",
 
                     "نوع عملیات":
@@ -3626,8 +3624,10 @@ async function exportSearchResultsToExcel() {
                     "توضیحات":
                         record.notes || "",
 
-                    "شناسه":
-                        record.id || ""
+                    "تاریخ ثبت":
+                        formatDateForExcel(
+                            record.created_at
+                        )
 
                 })
             );
@@ -3639,7 +3639,7 @@ async function exportSearchResultsToExcel() {
 
         const worksheet =
             XLSX.utils.json_to_sheet(
-                exportData
+                rows
             );
 
 
@@ -3649,17 +3649,49 @@ async function exportSearchResultsToExcel() {
 
         worksheet["!cols"] = [
 
-            { wch: 8 },
-            { wch: 18 },
-            { wch: 25 },
-            { wch: 10 },
-            { wch: 18 },
-            { wch: 18 },
-            { wch: 18 },
-            { wch: 28 },
-            { wch: 20 },
-            { wch: 40 },
-            { wch: 38 }
+            {
+                wch: 12
+            },
+
+            {
+                wch: 18
+            },
+
+            {
+                wch: 24
+            },
+
+            {
+                wch: 10
+            },
+
+            {
+                wch: 16
+            },
+
+            {
+                wch: 14
+            },
+
+            {
+                wch: 14
+            },
+
+            {
+                wch: 25
+            },
+
+            {
+                wch: 18
+            },
+
+            {
+                wch: 40
+            },
+
+            {
+                wch: 22
+            }
 
         ];
 
@@ -3671,6 +3703,7 @@ async function exportSearchResultsToExcel() {
         const workbook =
             XLSX.utils.book_new();
 
+
         XLSX.utils.book_append_sheet(
             workbook,
             worksheet,
@@ -3679,29 +3712,23 @@ async function exportSearchResultsToExcel() {
 
 
         // ----------------------------------------------------
-        // ساخت نام فایل
+        // نام فایل
         // ----------------------------------------------------
 
-        const now =
+        const date =
             new Date();
 
-        const datePart =
-            now
-                .toISOString()
-                .slice(0, 10);
-
-        const timePart =
-            now
-                .toTimeString()
-                .slice(0, 8)
-                .replace(/:/g, "-");
+        const fileDate =
+            createFileDate(
+                date
+            );
 
         const fileName =
-            `خروجی-جستجوی-شهدا-${datePart}-${timePart}.xlsx`;
+            `خروجی_جستجو_${fileDate}.xlsx`;
 
 
         // ----------------------------------------------------
-        // ایجاد فایل Excel
+        // دانلود فایل
         // ----------------------------------------------------
 
         XLSX.writeFile(
@@ -3711,11 +3738,7 @@ async function exportSearchResultsToExcel() {
 
 
         alert(
-            "خروجی اکسل با موفقیت ایجاد شد.\n\n" +
-            "تعداد رکوردها: " +
-            toPersianDigits(
-                lastSearchResults.length
-            )
+            "فایل Excel با موفقیت ساخته شد."
         );
 
     }
@@ -3727,25 +3750,18 @@ async function exportSearchResultsToExcel() {
         );
 
         alert(
-            "ایجاد خروجی اکسل انجام نشد.\n\n" +
-            (
-                error.message ||
-                "خطای نامشخص"
-            )
+            "ساخت فایل Excel انجام نشد.\n\n" +
+            error.message
         );
 
     }
     finally {
 
-        if (button) {
+        if (exportButton) {
 
-            button.disabled =
-                !(
-                    lastSearchResults &&
-                    lastSearchResults.length > 0
-                );
+            exportButton.disabled = false;
 
-            button.textContent =
+            exportButton.textContent =
                 "📊 خروجی اکسل";
 
         }
@@ -3756,128 +3772,113 @@ async function exportSearchResultsToExcel() {
 
 
 // ============================================================
-// بارگذاری کتابخانه SheetJS
+// تبدیل تاریخ برای خروجی Excel
 // ============================================================
 
-function loadSheetJS() {
+function formatDateForExcel(
+    value
+) {
 
-    return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
+    if (
+        !value
+    ) {
+        return "";
+    }
 
-            // ------------------------------------------------
-            // اگر قبلاً بارگذاری شده
-            // ------------------------------------------------
+    try {
 
-            if (
-                typeof XLSX !== "undefined"
-            ) {
+        const date =
+            new Date(value);
 
-                resolve();
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
 
-                return;
-            }
-
-
-            // ------------------------------------------------
-            // اگر قبلاً در حال بارگذاری است
-            // ------------------------------------------------
-
-            const existingScript =
-                document.querySelector(
-                    'script[data-sheetjs="true"]'
-                );
-
-            if (existingScript) {
-
-                existingScript.addEventListener(
-                    "load",
-                    () => resolve()
-                );
-
-                existingScript.addEventListener(
-                    "error",
-                    () =>
-                        reject(
-                            new Error(
-                                "کتابخانه Excel بارگذاری نشد."
-                            )
-                        )
-                );
-
-                return;
-            }
-
-
-            // ------------------------------------------------
-            // ساخت Script
-            // ------------------------------------------------
-
-            const script =
-                document.createElement(
-                    "script"
-                );
-
-            script.src =
-                "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
-
-            script.async = true;
-
-            script.dataset.sheetjs =
-                "true";
-
-
-            // ------------------------------------------------
-            // موفقیت
-            // ------------------------------------------------
-
-            script.onload =
-                () => {
-
-                    if (
-                        typeof XLSX !==
-                        "undefined"
-                    ) {
-
-                        resolve();
-
-                    }
-                    else {
-
-                        reject(
-                            new Error(
-                                "کتابخانه Excel در دسترس نیست."
-                            )
-                        );
-
-                    }
-
-                };
-
-
-            // ------------------------------------------------
-            // خطا
-            // ------------------------------------------------
-
-            script.onerror =
-                () => {
-
-                    reject(
-                        new Error(
-                            "اتصال برای دریافت ابزار Excel برقرار نشد."
-                        )
-                    );
-
-                };
-
-
-            document.head.appendChild(
-                script
-            );
+            return String(value);
 
         }
+
+        const year =
+            date.getFullYear();
+
+        const month =
+            String(
+                date.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const day =
+            String(
+                date.getDate()
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const hour =
+            String(
+                date.getHours()
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const minute =
+            String(
+                date.getMinutes()
+            ).padStart(
+                2,
+                "0"
+            );
+
+        return (
+            `${year}/${month}/${day} ` +
+            `${hour}:${minute}`
+        );
+
+    }
+    catch (error) {
+
+        return String(value);
+
+    }
+
+}
+
+
+// ============================================================
+// ساخت تاریخ نام فایل
+// ============================================================
+
+function createFileDate(
+    date
+) {
+
+    const year =
+        date.getFullYear();
+
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const day =
+        String(
+            date.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    return (
+        `${year}-${month}-${day}`
     );
 
 }
