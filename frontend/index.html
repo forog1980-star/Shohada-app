@@ -12,7 +12,7 @@
 
     <meta
         name="theme-color"
-        content="#263238"
+        content="#17633d"
     >
 
     <meta
@@ -34,6 +34,10 @@
         GolzarStone
     </title>
 
+    <!-- ==================================================
+         CSS اصلی
+    ================================================== -->
+
     <link
         rel="stylesheet"
         href="style.css"
@@ -41,14 +45,23 @@
 
 </head>
 
+
 <body>
 
 <div class="app">
 
+    <!-- ==================================================
+         محتوای برنامه توسط app.js ساخته می‌شود
+    ================================================== -->
+
     <header class="header">
 
+        <div class="header-badge">
+            گلزار شهدای تهران
+        </div>
+
         <h1>
-            بهسازی سنگ شهدا
+            گلزار شهدای تهران
         </h1>
 
         <p>
@@ -57,57 +70,136 @@
 
     </header>
 
+
     <main class="menu">
 
+        <!-- ==================================================
+             جستجوی شهید
+        ================================================== -->
+
         <button
-            class="menu-button"
+            class="menu-button menu-search"
             type="button"
+            id="btn-search"
         >
 
             <span class="icon">
                 🔎
             </span>
 
-            جستجوی شهید
+            <span class="button-text">
 
-            <span class="description">
-                مشاهده اطلاعات و وضعیت سنگ
+                <strong>
+                    جستجوی شهید
+                </strong>
+
+                <small>
+                    جستجو و مشاهده اطلاعات شهید
+                </small>
+
+            </span>
+
+            <span class="button-arrow">
+                ‹
             </span>
 
         </button>
 
 
+        <!-- ==================================================
+             ثبت اطلاعات شهید جدید
+        ================================================== -->
+
         <button
-            class="menu-button"
+            class="menu-button menu-new"
             type="button"
+            id="btn-new"
         >
 
             <span class="icon">
                 ➕
             </span>
 
-            ثبت شهید جدید
+            <span class="button-text">
 
-            <span class="description">
-                ثبت سریع اطلاعات شهید در محل
+                <strong>
+                    ثبت اطلاعات شهید جدید
+                </strong>
+
+                <small>
+                    ثبت اطلاعات اولیه شهید برای بررسی و تأیید
+                </small>
+
+            </span>
+
+            <span class="button-arrow">
+                ‹
             </span>
 
         </button>
 
 
+        <!-- ==================================================
+             اطلاعات ثبت‌شده
+        ================================================== -->
+
         <button
-            class="menu-button"
+            class="menu-button menu-pending"
             type="button"
+            id="btn-pending"
         >
 
             <span class="icon">
                 📋
             </span>
 
-            اطلاعات ثبت‌شده
+            <span class="button-text">
 
-            <span class="description">
-                مشاهده موارد ثبت‌شده و در انتظار تأیید
+                <strong>
+                    اطلاعات ثبت‌شده
+                </strong>
+
+                <small>
+                    بررسی، تأیید و مدیریت اطلاعات ثبت‌شده
+                </small>
+
+            </span>
+
+            <span class="button-arrow">
+                ‹
+            </span>
+
+        </button>
+
+
+        <!-- ==================================================
+             تست اتصال
+        ================================================== -->
+
+        <button
+            class="menu-button menu-test"
+            type="button"
+            id="btn-test"
+        >
+
+            <span class="icon">
+                🔗
+            </span>
+
+            <span class="button-text">
+
+                <strong>
+                    تست اتصال
+                </strong>
+
+                <small>
+                    بررسی ارتباط با بانک اطلاعاتی
+                </small>
+
+            </span>
+
+            <span class="button-arrow">
+                ‹
             </span>
 
         </button>
@@ -115,13 +207,29 @@
     </main>
 
 
+    <!-- ==================================================
+         Footer
+    ================================================== -->
+
     <footer class="footer">
 
-        GolzarStone
+        <strong>
+            گلزار شهدای تهران
+        </strong>
 
         <br>
 
-        پروژه بهسازی سنگ‌های شهدا
+        سامانه بهسازی و پایش سنگ مزار شهدا
+
+        <br>
+
+        <a
+            href="https://golzarteh.ir/"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            golzarteh.ir
+        </a>
 
     </footer>
 
@@ -130,6 +238,8 @@
 
 <!-- ==================================================
      Supabase JavaScript Client
+     
+     این باید قبل از app.js بارگذاری شود.
 ================================================== -->
 
 <script
@@ -138,19 +248,11 @@
 
 
 <!-- ==================================================
-     کتابخانه SheetJS برای ساخت فایل Excel
-================================================== -->
-
-<script
-    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
-></script>
-
-
-<!-- ==================================================
-     برنامه GolzarStone
+     برنامه اصلی GolzarStone
 ================================================== -->
 
 <script src="app.js"></script>
+
 
 </body>
 
