@@ -2,9 +2,11 @@
 // Shohada-app / GolzarStone
 // نسخه موبایل
 // Supabase + UI کامل + خروجی Excel
+// نسخه اصلاح‌شده تاریخ شمسی و خروجی Excel
 // ============================================================
 
 "use strict";
+
 
 // ============================================================
 // Supabase
@@ -98,6 +100,7 @@ function toPersianDigits(value) {
         digit =>
             "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]
     );
+
 }
 
 
@@ -111,6 +114,7 @@ function toEnglishDigits(value) {
     }
 
     return String(value)
+
         .replace(
             /[۰-۹]/g,
             digit =>
@@ -118,6 +122,7 @@ function toEnglishDigits(value) {
                     "۰۱۲۳۴۵۶۷۸۹".indexOf(digit)
                 )
         )
+
         .replace(
             /[٠-٩]/g,
             digit =>
@@ -125,6 +130,7 @@ function toEnglishDigits(value) {
                     "٠١٢٣٤٥٦٧٨٩".indexOf(digit)
                 )
         );
+
 }
 
 
@@ -151,6 +157,7 @@ function normalizeSearchText(value) {
         .replace(/ى/g, "ی")
         .replace(/ك/g, "ک")
         .toLowerCase();
+
 }
 
 
@@ -173,11 +180,12 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+
 }
 
 
 // ============================================================
-// تاریخ شمسی
+// تبدیل میلادی به شمسی
 // ============================================================
 
 function gregorianToJalali(
@@ -206,24 +214,20 @@ function gregorianToJalali(
     if (gy > 1600) {
 
         jy = 979;
-
         gy -= 1600;
 
     }
     else {
 
         jy = 0;
-
         gy -= 621;
 
     }
 
     const gy2 =
         gm > 2
-        ?
-        gy + 1
-        :
-        gy;
+            ? gy + 1
+            : gy;
 
     let days =
         365 * gy
@@ -276,25 +280,15 @@ function gregorianToJalali(
 
     const jm =
         days < 186
-        ?
-        1 +
-        Math.floor(
-            days / 31
-        )
-        :
-        7 +
-        Math.floor(
-            (days - 186) / 30
-        );
+            ? 1 + Math.floor(days / 31)
+            : 7 + Math.floor((days - 186) / 30);
 
     const jd =
         1 +
         (
             days < 186
-            ?
-            days % 31
-            :
-            (days - 186) % 30
+                ? days % 31
+                : (days - 186) % 30
         );
 
     return [
@@ -306,24 +300,52 @@ function gregorianToJalali(
 }
 
 
-function formatJalaliDate(
+// ============================================================
+// تبدیل تاریخ Supabase به Date
+// ============================================================
+
+function parseSupabaseDate(
     dateValue
 ) {
 
     if (
         !dateValue
     ) {
-        return "";
+        return null;
     }
 
     const date =
-        new Date(dateValue);
+        dateValue instanceof Date
+            ? dateValue
+            : new Date(dateValue);
 
     if (
         Number.isNaN(
             date.getTime()
         )
     ) {
+        return null;
+    }
+
+    return date;
+
+}
+
+
+// ============================================================
+// تاریخ شمسی برای نمایش
+// ============================================================
+
+function formatJalaliDate(
+    dateValue
+) {
+
+    const date =
+        parseSupabaseDate(
+            dateValue
+        );
+
+    if (!date) {
         return "";
     }
 
@@ -355,30 +377,66 @@ function formatJalaliDate(
 }
 
 
+// ============================================================
+// تاریخ شمسی برای Excel
+// اعداد انگلیسی تا Excel و Windows مشکلی نداشته باشند
+// ============================================================
+
+function formatJalaliDateForExcel(
+    dateValue
+) {
+
+    const date =
+        parseSupabaseDate(
+            dateValue
+        );
+
+    if (!date) {
+        return "";
+    }
+
+    const result =
+        gregorianToJalali(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            date.getDate()
+        );
+
+    return (
+        String(result[0]).padStart(4, "0")
+        +
+        "-"
+        +
+        String(result[1]).padStart(2, "0")
+        +
+        "-"
+        +
+        String(result[2]).padStart(2, "0")
+    );
+
+}
+
+
+// ============================================================
+// تاریخ شمسی + ساعت برای نمایش
+// ============================================================
+
 function getJalaliDateTime(
     dateValue
 ) {
 
-    if (
-        !dateValue
-    ) {
-        return "";
-    }
-
     const date =
-        new Date(dateValue);
+        parseSupabaseDate(
+            dateValue
+        );
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return "";
     }
 
     const datePart =
         formatJalaliDate(
-            dateValue
+            date
         );
 
     const hours =
@@ -392,11 +450,32 @@ function getJalaliDateTime(
         ).padStart(2, "0");
 
     return (
-        datePart +
-        " - " +
-        toPersianDigits(hours) +
-        ":" +
+        datePart
+        +
+        " - "
+        +
+        toPersianDigits(hours)
+        +
+        ":"
+        +
         toPersianDigits(minutes)
+    );
+
+}
+
+
+// ============================================================
+// تاریخ امروز برای نام فایل
+// مثال: 1405-05-29
+// ============================================================
+
+function getTodayJalaliForFileName() {
+
+    const now =
+        new Date();
+
+    return formatJalaliDateForExcel(
+        now
     );
 
 }
@@ -1530,19 +1609,26 @@ function applyAppStyles() {
         }
 
 
+        /* ====================================================
+           دکمه خروجی Excel - بزرگ و واضح
+           ==================================================== */
+
         .export-button {
 
             width:
                 100%;
 
+            min-height:
+                58px;
+
             border:
                 none;
 
             border-radius:
-                15px;
+                16px;
 
             padding:
-                14px;
+                15px 18px;
 
             background:
                 var(--blue);
@@ -1554,7 +1640,7 @@ function applyAppStyles() {
                 inherit;
 
             font-size:
-                17px;
+                18px;
 
             font-weight:
                 bold;
@@ -1562,12 +1648,12 @@ function applyAppStyles() {
             cursor:
                 pointer;
 
-            margin-top:
-                10px;
+            margin:
+                12px 0 18px;
 
             box-shadow:
-                0 4px 12px
-                rgba(40,120,184,.18);
+                0 5px 15px
+                rgba(40,120,184,.22);
 
         }
 
@@ -2677,11 +2763,7 @@ function showNewRecord() {
         .getElementById("back-home")
         .addEventListener(
             "click",
-            () => {
-
-                window.history.back();
-
-            }
+            () => window.history.back()
         );
 
 
@@ -2727,7 +2809,6 @@ function renderStageOptions(
     const allStages = [
 
         ...STAGES["ترمیمی"],
-
         ...STAGES["تعویضی"]
 
     ];
@@ -2750,10 +2831,8 @@ function renderStageOptions(
                     disabled
                     ${
                         stage === selectedStage
-                        ?
-                        "checked"
-                        :
-                        ""
+                            ? "checked"
+                            : ""
                     }
                 >
 
@@ -2997,12 +3076,22 @@ async function saveNewRecord() {
     button.disabled =
         true;
 
-
     button.textContent =
         "در حال ثبت اطلاعات...";
 
 
     try {
+
+        /*
+         * created_at را عمداً اینجا ارسال نمی‌کنیم.
+         *
+         * Supabase:
+         * created_at timestamp with time zone
+         * default now()
+         *
+         * بنابراین تاریخ ثبت توسط خود دیتابیس
+         * ثبت می‌شود.
+         */
 
         const {
             data,
@@ -3041,7 +3130,7 @@ async function saveNewRecord() {
                         "در انتظار تأیید"
 
                 })
-                .select()
+                .select("*")
                 .single();
 
 
@@ -3068,9 +3157,51 @@ async function saveNewRecord() {
         }
 
 
+        console.log(
+            "Inserted record:",
+            data
+        );
+
+
+        /*
+         * کنترل مهم:
+         * بررسی می‌کنیم آیا Supabase واقعاً
+         * created_at را برگردانده است یا نه.
+         */
+
+        if (
+            !data ||
+            !data.created_at
+        ) {
+
+            console.warn(
+                "created_at was not returned by Supabase.",
+                data
+            );
+
+        }
+
+
+        const registeredDate =
+            data &&
+            data.created_at
+                ? getJalaliDateTime(
+                    data.created_at
+                )
+                : "";
+
+
         alert(
-            "اطلاعات شهید با موفقیت ثبت شد.\n\n" +
-            "تاریخ ثبت خودکار توسط سامانه ذخیره شد."
+            "اطلاعات شهید با موفقیت ثبت شد."
+            +
+            (
+                registeredDate
+                    ?
+                    "\n\nتاریخ ثبت: " +
+                    registeredDate
+                    :
+                    ""
+            )
         );
 
 
@@ -3167,11 +3298,7 @@ async function showPendingRecords(
         .getElementById("back-home")
         .addEventListener(
             "click",
-            () => {
-
-                window.history.back();
-
-            }
+            () => window.history.back()
         );
 
 
@@ -3416,10 +3543,8 @@ function recordSummaryCard(
 
     const statusClass =
         status === "تأیید شده"
-        ?
-        "approved"
-        :
-        "";
+            ? "approved"
+            : "";
 
 
     return `
@@ -3538,26 +3663,26 @@ function recordSummaryCard(
 
             ${
                 record.created_at
-                ?
-                `
-                <div class="record-info">
+                    ?
+                    `
+                    <div class="record-info">
 
-                    <span>
-                        تاریخ ثبت:
-                    </span>
+                        <span>
+                            تاریخ ثبت:
+                        </span>
 
-                    <strong>
-                        ${escapeHtml(
-                            getJalaliDateTime(
-                                record.created_at
-                            )
-                        )}
-                    </strong>
+                        <strong>
+                            ${escapeHtml(
+                                getJalaliDateTime(
+                                    record.created_at
+                                )
+                            )}
+                        </strong>
 
-                </div>
-                `
-                :
-                ""
+                    </div>
+                    `
+                    :
+                    ""
             }
 
         </div>
@@ -3587,10 +3712,10 @@ async function showRecordDetail(
         ${internalHeader(
             "جزئیات اطلاعات شهید",
             source === "search"
-            ?
-            "مشاهده اطلاعات شهید"
-            :
-            "بررسی و تصمیم نهایی کارشناس"
+                ?
+                "مشاهده اطلاعات شهید"
+                :
+                "بررسی و تصمیم نهایی کارشناس"
         )}
 
 
@@ -3821,49 +3946,49 @@ async function showRecordDetail(
 
                 ${
                     data.created_at
-                    ?
-                    `
-                    <div class="detail-row">
+                        ?
+                        `
+                        <div class="detail-row">
 
-                        <span>
-                            تاریخ ثبت
-                        </span>
+                            <span>
+                                تاریخ ثبت
+                            </span>
 
-                        <strong>
-                            ${escapeHtml(
-                                getJalaliDateTime(
-                                    data.created_at
-                                )
-                            )}
-                        </strong>
+                            <strong>
+                                ${escapeHtml(
+                                    getJalaliDateTime(
+                                        data.created_at
+                                    )
+                                )}
+                            </strong>
 
-                    </div>
-                    `
-                    :
-                    ""
+                        </div>
+                        `
+                        :
+                        ""
                 }
 
 
                 ${
                     data.notes
-                    ?
-                    `
-                    <div class="detail-row">
+                        ?
+                        `
+                        <div class="detail-row">
 
-                        <span>
-                            توضیحات
-                        </span>
+                            <span>
+                                توضیحات
+                            </span>
 
-                        <strong>
-                            ${escapeHtml(
-                                data.notes
-                            )}
-                        </strong>
+                            <strong>
+                                ${escapeHtml(
+                                    data.notes
+                                )}
+                            </strong>
 
-                    </div>
-                    `
-                    :
-                    ""
+                        </div>
+                        `
+                        :
+                        ""
                 }
 
 
@@ -3872,35 +3997,35 @@ async function showRecordDetail(
                     ${
                         showManagementActions &&
                         !isApproved
-                        ?
-                        `
-                        <button
-                            type="button"
-                            class="approve-button"
-                            id="approve-record"
-                        >
-                            ✓ تأیید این اطلاعات
-                        </button>
-                        `
-                        :
-                        ""
+                            ?
+                            `
+                            <button
+                                type="button"
+                                class="approve-button"
+                                id="approve-record"
+                            >
+                                ✓ تأیید این اطلاعات
+                            </button>
+                            `
+                            :
+                            ""
                     }
 
 
                     ${
                         showManagementActions
-                        ?
-                        `
-                        <button
-                            type="button"
-                            class="danger-button"
-                            id="delete-detail"
-                        >
-                            حذف این رکورد
-                        </button>
-                        `
-                        :
-                        ""
+                            ?
+                            `
+                            <button
+                                type="button"
+                                class="danger-button"
+                                id="delete-detail"
+                            >
+                                حذف این رکورد
+                            </button>
+                            `
+                            :
+                            ""
                     }
 
 
@@ -3911,10 +4036,10 @@ async function showRecordDetail(
                     >
                         ${
                             source === "search"
-                            ?
-                            "بازگشت به نتایج جستجو"
-                            :
-                            "بازگشت به فهرست"
+                                ?
+                                "بازگشت به نتایج جستجو"
+                                :
+                                "بازگشت به فهرست"
                         }
                     </button>
 
@@ -4377,8 +4502,7 @@ function showSearch(
         .getElementById("back-home")
         .addEventListener(
             "click",
-            () =>
-                window.history.back()
+            () => window.history.back()
         );
 
 
@@ -4593,16 +4717,6 @@ async function performSearch() {
 
     try {
 
-        /*
-         * ابتدا داده‌ها را می‌گیریم.
-         *
-         * علت:
-         * برای اینکه اعداد فارسی و انگلیسی،
-         * حروف فارسی و شکل‌های مختلف متن
-         * یکسان رفتار کنند، نرمال‌سازی
-         * سمت JavaScript انجام می‌شود.
-         */
-
         const {
             data,
             error
@@ -4651,12 +4765,6 @@ async function performSearch() {
         const allRecords =
             data || [];
 
-
-        /*
-         * فیلتر سمت برنامه.
-         * این بخش مشکل جستجوی رکوردهای
-         * عددی را برطرف می‌کند.
-         */
 
         const results =
             allRecords.filter(
@@ -4819,18 +4927,18 @@ function renderSearchResults(
 
         ${
             results.length > 0
-            ?
-            `
-            <button
-                type="button"
-                class="export-button"
-                id="export-search-results"
-            >
-                📊 خروجی اکسل
-            </button>
-            `
-            :
-            ""
+                ?
+                `
+                <button
+                    type="button"
+                    class="export-button"
+                    id="export-search-results"
+                >
+                    📊 خروجی اکسل
+                </button>
+                `
+                :
+                ""
         }
 
 
@@ -4838,23 +4946,23 @@ function renderSearchResults(
 
             ${
                 results.length === 0
-                ?
-                `
-                <div class="empty-message">
+                    ?
+                    `
+                    <div class="empty-message">
 
-                    رکوردی با این مشخصات پیدا نشد.
+                        رکوردی با این مشخصات پیدا نشد.
 
-                </div>
-                `
-                :
-                results
-                    .map(
-                        record =>
-                            recordSummaryCard(
-                                record
-                            )
-                    )
-                    .join("")
+                    </div>
+                    `
+                    :
+                    results
+                        .map(
+                            record =>
+                                recordSummaryCard(
+                                    record
+                                )
+                        )
+                        .join("")
             }
 
         </div>
@@ -4913,7 +5021,7 @@ function renderSearchResults(
 
 
 // ============================================================
-// خروجی اکسل نتایج جستجو
+// خروجی Excel نتایج جستجو
 // ============================================================
 
 function exportSearchResultsToExcel() {
@@ -4932,11 +5040,6 @@ function exportSearchResultsToExcel() {
     }
 
 
-    /*
-     * اگر کتابخانه SheetJS روی صفحه
-     * بارگذاری نشده باشد، پیام مناسب می‌دهیم.
-     */
-
     if (
         typeof XLSX ===
         "undefined"
@@ -4944,7 +5047,7 @@ function exportSearchResultsToExcel() {
 
         alert(
             "کتابخانه خروجی اکسل بارگذاری نشده است.\n\n" +
-            "لطفاً اتصال SheetJS را به index.html اضافه کنید."
+            "لطفاً SheetJS را در index.html بارگذاری کنید."
         );
 
         return;
@@ -4953,6 +5056,23 @@ function exportSearchResultsToExcel() {
 
 
     try {
+
+        /*
+         * =====================================================
+         * ساخت داده خروجی
+         * =====================================================
+         *
+         * نکته مهم:
+         * تاریخ اینجا دیگر تاریخ میلادی خام Supabase نیست.
+         *
+         * created_at:
+         *   2026-08-20T...
+         *
+         * تبدیل می‌شود به:
+         *   1405-05-29
+         *
+         * و مستقیماً به عنوان متن وارد Excel می‌شود.
+         */
 
         const exportData =
             lastSearchResults.map(
@@ -4988,13 +5108,19 @@ function exportSearchResultsToExcel() {
                         record.notes || "",
 
                     "تاریخ ثبت":
-                        getJalaliDateTime(
+                        formatJalaliDateForExcel(
                             record.created_at
                         )
 
                 })
             );
 
+
+        /*
+         * =====================================================
+         * ساخت Worksheet
+         * =====================================================
+         */
 
         const worksheet =
             XLSX.utils.json_to_sheet(
@@ -5003,7 +5129,9 @@ function exportSearchResultsToExcel() {
 
 
         /*
+         * =====================================================
          * عرض ستون‌ها
+         * =====================================================
          */
 
         worksheet["!cols"] = [
@@ -5017,10 +5145,51 @@ function exportSearchResultsToExcel() {
             { wch: 28 },
             { wch: 18 },
             { wch: 35 },
-            { wch: 24 }
+            { wch: 18 }
 
         ];
 
+
+        /*
+         * =====================================================
+         * اجبار ستون تاریخ به TEXT
+         * =====================================================
+         *
+         * این کار جلوی تفسیر اشتباه تاریخ توسط Excel
+         * را می‌گیرد.
+         */
+
+        for (
+            let rowIndex = 2;
+            rowIndex <= exportData.length + 1;
+            rowIndex++
+        ) {
+
+            const cellAddress =
+                `J${rowIndex}`;
+
+            if (
+                worksheet[cellAddress]
+            ) {
+
+                worksheet[cellAddress].t =
+                    "s";
+
+                worksheet[cellAddress].v =
+                    String(
+                        worksheet[cellAddress].v || ""
+                    );
+
+            }
+
+        }
+
+
+        /*
+         * =====================================================
+         * ساخت Workbook
+         * =====================================================
+         */
 
         const workbook =
             XLSX.utils.book_new();
@@ -5034,28 +5203,49 @@ function exportSearchResultsToExcel() {
 
 
         /*
-         * تاریخ شمسی برای نام فایل
+         * =====================================================
+         * تاریخ شمسی نام فایل
+         * =====================================================
+         *
+         * خروجی:
+         *
+         * GolzarStone_نتایج_جستجو_1405-05-29.xlsx
+         *
+         * اعداد انگلیسی هستند تا Windows / Excel
+         * در نام فایل مشکل ایجاد نکند.
          */
 
-        const now =
-            new Date();
-
-
         const jalaliFileDate =
-            formatJalaliDate(
-                now
-            )
-            .replace(
-                /\//g,
-                "-"
-            );
+            getTodayJalaliForFileName();
 
 
         const fileName =
-            "GolzarStone_نتایج_جستجو_" +
-            jalaliFileDate +
+            "GolzarStone_نتایج_جستجو_"
+            +
+            jalaliFileDate
+            +
             ".xlsx";
 
+
+        console.log(
+            "Excel filename:",
+            fileName
+        );
+
+
+        console.log(
+            "Excel date sample:",
+            exportData.length > 0
+                ? exportData[0]["تاریخ ثبت"]
+                : ""
+        );
+
+
+        /*
+         * =====================================================
+         * دانلود فایل
+         * =====================================================
+         */
 
         XLSX.writeFile(
             workbook,
@@ -5064,10 +5254,18 @@ function exportSearchResultsToExcel() {
 
 
         alert(
-            "خروجی اکسل با موفقیت ایجاد شد.\n\n" +
-            "تعداد رکورد: " +
+            "خروجی اکسل با موفقیت ایجاد شد."
+            +
+            "\n\nتعداد رکورد: "
+            +
             toPersianDigits(
                 exportData.length
+            )
+            +
+            "\n\nتاریخ فایل: "
+            +
+            toPersianDigits(
+                jalaliFileDate
             )
         );
 
