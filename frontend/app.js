@@ -1,7 +1,7 @@
 // ============================================================
 // Shohada-app / GolzarStone
 // نسخه موبایل
-// Supabase + UI کامل
+// Supabase + UI کامل + خروجی Excel
 // ============================================================
 
 "use strict";
@@ -40,7 +40,7 @@ const PIECES = [
 
 
 // ============================================================
-// وضعیت صفحه جستجو
+// وضعیت جستجو
 // ============================================================
 
 let lastSearchResults = [];
@@ -48,7 +48,7 @@ let lastSearchFilters = null;
 
 
 // ============================================================
-// کنترل History و Back گوشی
+// وضعیت History
 // ============================================================
 
 let currentAppPage = "home";
@@ -81,7 +81,7 @@ const STAGES = {
 
 
 // ============================================================
-// ابزارهای عمومی
+// ابزار تبدیل اعداد
 // ============================================================
 
 function toPersianDigits(value) {
@@ -128,7 +128,11 @@ function toEnglishDigits(value) {
 }
 
 
-function normalizeSearchValue(value) {
+// ============================================================
+// نرمال‌سازی جستجو
+// ============================================================
+
+function normalizeSearchText(value) {
 
     if (
         value === null ||
@@ -140,13 +144,19 @@ function normalizeSearchValue(value) {
     return toEnglishDigits(
         String(value)
             .trim()
-            .replace(/ي/g, "ی")
-            .replace(/ى/g, "ی")
-            .replace(/ك/g, "ک")
             .replace(/\u200c/g, " ")
-    );
+            .replace(/\s+/g, " ")
+    )
+        .replace(/ي/g, "ی")
+        .replace(/ى/g, "ی")
+        .replace(/ك/g, "ک")
+        .toLowerCase();
 }
 
+
+// ============================================================
+// Escape HTML
+// ============================================================
 
 function escapeHtml(value) {
 
@@ -167,7 +177,7 @@ function escapeHtml(value) {
 
 
 // ============================================================
-// تبدیل تاریخ میلادی Supabase به شمسی
+// تاریخ شمسی
 // ============================================================
 
 function gregorianToJalali(
@@ -176,7 +186,7 @@ function gregorianToJalali(
     gd
 ) {
 
-    const gdm = [
+    const g_d_m = [
         0,
         31,
         59,
@@ -216,19 +226,25 @@ function gregorianToJalali(
         gy;
 
     let days =
-        365 * gy +
+        365 * gy
+        +
         Math.floor(
             (gy2 + 3) / 4
-        ) -
+        )
+        -
         Math.floor(
             (gy2 + 99) / 100
-        ) +
+        )
+        +
         Math.floor(
             (gy2 + 399) / 400
-        ) -
-        80 +
-        gd +
-        gdm[gm - 1];
+        )
+        -
+        80
+        +
+        gd
+        +
+        g_d_m[gm - 1];
 
     jy +=
         33 *
@@ -254,60 +270,54 @@ function gregorianToJalali(
             );
 
         days =
-            (days - 1) %
-            365;
+            (days - 1) % 365;
 
     }
 
-    let jm;
-    let jd;
+    const jm =
+        days < 186
+        ?
+        1 +
+        Math.floor(
+            days / 31
+        )
+        :
+        7 +
+        Math.floor(
+            (days - 186) / 30
+        );
 
-    if (days < 186) {
+    const jd =
+        1 +
+        (
+            days < 186
+            ?
+            days % 31
+            :
+            (days - 186) % 30
+        );
 
-        jm =
-            1 +
-            Math.floor(
-                days / 31
-            );
-
-        jd =
-            1 +
-            (days % 31);
-
-    }
-    else {
-
-        jm =
-            7 +
-            Math.floor(
-                (days - 186) / 30
-            );
-
-        jd =
-            1 +
-            ((days - 186) % 30);
-
-    }
-
-    return {
+    return [
         jy,
         jm,
         jd
-    };
+    ];
 
 }
 
 
-function formatCreatedAt(
-    value
+function formatJalaliDate(
+    dateValue
 ) {
 
-    if (!value) {
+    if (
+        !dateValue
+    ) {
         return "";
     }
 
     const date =
-        new Date(value);
+        new Date(dateValue);
 
     if (
         Number.isNaN(
@@ -317,376 +327,106 @@ function formatCreatedAt(
         return "";
     }
 
-    const jalali =
+    const result =
         gregorianToJalali(
             date.getFullYear(),
             date.getMonth() + 1,
             date.getDate()
         );
 
+    return (
+        toPersianDigits(
+            String(result[0]).padStart(4, "0")
+        )
+        +
+        "/"
+        +
+        toPersianDigits(
+            String(result[1]).padStart(2, "0")
+        )
+        +
+        "/"
+        +
+        toPersianDigits(
+            String(result[2]).padStart(2, "0")
+        )
+    );
+
+}
+
+
+function getJalaliDateTime(
+    dateValue
+) {
+
+    if (
+        !dateValue
+    ) {
+        return "";
+    }
+
+    const date =
+        new Date(dateValue);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "";
+    }
+
+    const datePart =
+        formatJalaliDate(
+            dateValue
+        );
+
     const hours =
         String(
             date.getHours()
-        ).padStart(
-            2,
-            "0"
-        );
+        ).padStart(2, "0");
 
     const minutes =
         String(
             date.getMinutes()
-        ).padStart(
-            2,
-            "0"
-        );
+        ).padStart(2, "0");
 
     return (
-        toPersianDigits(
-            `${jalali.jy}/${String(jalali.jm).padStart(2, "0")}/${String(jalali.jd).padStart(2, "0")}`
-        ) +
+        datePart +
         " - " +
-        toPersianDigits(
-            `${hours}:${minutes}`
-        )
+        toPersianDigits(hours) +
+        ":" +
+        toPersianDigits(minutes)
     );
 
 }
 
 
 // ============================================================
-// تاریخ برای Excel
+// اعتبار مرحله
 // ============================================================
 
-function formatCreatedAtForExcel(
-    value
+function isValidStageForStoneType(
+    stoneType,
+    stage
 ) {
 
-    if (!value) {
-        return "";
+    if (!stoneType || !stage) {
+        return false;
     }
 
-    const date =
-        new Date(value);
-
     if (
-        Number.isNaN(
-            date.getTime()
+        !Object.prototype.hasOwnProperty.call(
+            STAGES,
+            stoneType
         )
     ) {
-        return "";
+        return false;
     }
 
-    const jalali =
-        gregorianToJalali(
-            date.getFullYear(),
-            date.getMonth() + 1,
-            date.getDate()
-        );
-
-    const hours =
-        String(
-            date.getHours()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const minutes =
-        String(
-            date.getMinutes()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    return (
-        `${jalali.jy}/` +
-        `${String(jalali.jm).padStart(2, "0")}/` +
-        `${String(jalali.jd).padStart(2, "0")}` +
-        ` ${hours}:${minutes}`
+    return STAGES[stoneType].includes(
+        stage
     );
-
-}
-
-
-// ============================================================
-// بارگذاری کتابخانه Excel
-// ============================================================
-
-let xlsxLoadPromise = null;
-
-
-function loadXLSXLibrary() {
-
-    if (
-        window.XLSX
-    ) {
-        return Promise.resolve(
-            window.XLSX
-        );
-    }
-
-    if (
-        xlsxLoadPromise
-    ) {
-        return xlsxLoadPromise;
-    }
-
-    xlsxLoadPromise =
-        new Promise(
-            (
-                resolve,
-                reject
-            ) => {
-
-                const script =
-                    document.createElement(
-                        "script"
-                    );
-
-                script.src =
-                    "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-
-                script.async = true;
-
-                script.onload =
-                    () => {
-
-                        if (
-                            window.XLSX
-                        ) {
-
-                            resolve(
-                                window.XLSX
-                            );
-
-                        }
-                        else {
-
-                            reject(
-                                new Error(
-                                    "کتابخانه Excel بارگذاری نشد."
-                                )
-                            );
-
-                        }
-
-                    };
-
-                script.onerror =
-                    () => {
-
-                        reject(
-                            new Error(
-                                "اتصال به کتابخانه Excel برقرار نشد."
-                            )
-                        );
-
-                    };
-
-                document.head.appendChild(
-                    script
-                );
-
-            }
-        );
-
-    return xlsxLoadPromise;
-
-}
-
-
-// ============================================================
-// ساخت خروجی Excel
-// ============================================================
-
-async function exportSearchResults() {
-
-    if (
-        !lastSearchResults ||
-        lastSearchResults.length === 0
-    ) {
-
-        alert(
-            "نتیجه‌ای برای خروجی گرفتن وجود ندارد."
-        );
-
-        return;
-
-    }
-
-    const button =
-        document.getElementById(
-            "export-excel"
-        );
-
-    if (button) {
-
-        button.disabled = true;
-
-        button.textContent =
-            "در حال آماده‌سازی Excel...";
-
-    }
-
-    try {
-
-        const XLSX =
-            await loadXLSXLibrary();
-
-        const rows =
-            lastSearchResults.map(
-                record => ({
-
-                    "نام":
-                        record.name || "",
-
-                    "نام خانوادگی":
-                        record.lastname || "",
-
-                    "قطعه":
-                        record.piece || "",
-
-                    "ردیف":
-                        record.grave_row || "",
-
-                    "شماره":
-                        record.grave_number || "",
-
-                    "نوع عملیات":
-                        record.stone_type || "",
-
-                    "مرحله":
-                        record.stage || "",
-
-                    "وضعیت ثبت":
-                        record.status || "",
-
-                    "توضیحات":
-                        record.notes || "",
-
-                    "تاریخ ثبت":
-                        formatCreatedAtForExcel(
-                            record.created_at
-                        )
-
-                })
-            );
-
-
-        const worksheet =
-            XLSX.utils.json_to_sheet(
-                rows
-            );
-
-
-        worksheet["!cols"] = [
-
-            {
-                wch: 18
-            },
-
-            {
-                wch: 24
-            },
-
-            {
-                wch: 10
-            },
-
-            {
-                wch: 18
-            },
-
-            {
-                wch: 18
-            },
-
-            {
-                wch: 15
-            },
-
-            {
-                wch: 25
-            },
-
-            {
-                wch: 18
-            },
-
-            {
-                wch: 45
-            },
-
-            {
-                wch: 22
-            }
-
-        ];
-
-
-        const workbook =
-            XLSX.utils.book_new();
-
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            worksheet,
-            "نتایج جستجو"
-        );
-
-
-        const now =
-            new Date();
-
-        const jalali =
-            gregorianToJalali(
-                now.getFullYear(),
-                now.getMonth() + 1,
-                now.getDate()
-            );
-
-
-        const fileName =
-            `خروجی-جستجوی-شهدا-${jalali.jy}-${String(jalali.jm).padStart(2, "0")}-${String(jalali.jd).padStart(2, "0")}.xlsx`;
-
-
-        XLSX.writeFile(
-            workbook,
-            fileName
-        );
-
-
-        alert(
-            "خروجی Excel با موفقیت آماده شد."
-        );
-
-    }
-    catch (error) {
-
-        console.error(
-            "Excel export error:",
-            error
-        );
-
-        alert(
-            "خروجی Excel انجام نشد.\n\n" +
-            error.message
-        );
-
-    }
-    finally {
-
-        if (button) {
-
-            button.disabled = false;
-
-            button.textContent =
-                "📊 خروجی Excel";
-
-        }
-
-    }
 
 }
 
@@ -697,9 +437,7 @@ async function exportSearchResults() {
 
 function initializeHistory() {
 
-    if (
-        !window.history.state
-    ) {
+    if (!window.history.state) {
 
         window.history.replaceState(
             {
@@ -712,22 +450,16 @@ function initializeHistory() {
 
     }
 
-    currentAppPage =
-        "home";
+    currentAppPage = "home";
 
 }
 
 
-function pushAppHistory(
-    page
-) {
+function pushAppHistory(page) {
 
-    if (
-        isHandlingHistory
-    ) {
+    if (isHandlingHistory) {
 
-        currentAppPage =
-            page;
+        currentAppPage = page;
 
         return;
 
@@ -742,8 +474,7 @@ function pushAppHistory(
         window.location.href
     );
 
-    currentAppPage =
-        page;
+    currentAppPage = page;
 
 }
 
@@ -753,10 +484,8 @@ function handleBackNavigation() {
     const now =
         Date.now();
 
-
     if (
-        currentAppPage ===
-        "home"
+        currentAppPage === "home"
     ) {
 
         if (
@@ -766,22 +495,17 @@ function handleBackNavigation() {
             DOUBLE_BACK_INTERVAL
         ) {
 
-            firstBackPressTime =
-                0;
+            firstBackPressTime = 0;
 
             return true;
 
         }
 
-
-        firstBackPressTime =
-            now;
-
+        firstBackPressTime = now;
 
         alert(
             "برای خروج از برنامه، یک بار دیگر دکمه بازگشت را بزنید."
         );
-
 
         window.history.pushState(
             {
@@ -791,7 +515,6 @@ function handleBackNavigation() {
             "",
             window.location.href
         );
-
 
         return false;
 
@@ -809,15 +532,13 @@ window.addEventListener(
         const state =
             event.state;
 
-
         if (
             !state ||
             state.golzarApp !== true
         ) {
 
             if (
-                currentAppPage ===
-                "home"
+                currentAppPage === "home"
             ) {
 
                 const allowed =
@@ -833,15 +554,10 @@ window.addEventListener(
 
         }
 
-
         const page =
-            state.page ||
-            "home";
+            state.page || "home";
 
-
-        isHandlingHistory =
-            true;
-
+        isHandlingHistory = true;
 
         try {
 
@@ -874,47 +590,12 @@ window.addEventListener(
         }
         finally {
 
-            isHandlingHistory =
-                false;
+            isHandlingHistory = false;
 
         }
 
     }
 );
-
-
-// ============================================================
-// کنترل اعتبار مرحله
-// ============================================================
-
-function isValidStageForStoneType(
-    stoneType,
-    stage
-) {
-
-    if (
-        !stoneType ||
-        !stage
-    ) {
-        return false;
-    }
-
-    if (
-        !Object.prototype.hasOwnProperty.call(
-            STAGES,
-            stoneType
-        )
-    ) {
-        return false;
-    }
-
-    return STAGES[
-        stoneType
-    ].includes(
-        stage
-    );
-
-}
 
 
 // ============================================================
@@ -927,6 +608,8 @@ document.addEventListener(
 
         initializeHistory();
 
+        applyAppStyles();
+
         showHome();
 
     }
@@ -934,7 +617,7 @@ document.addEventListener(
 
 
 // ============================================================
-// CSS داخلی
+// CSS
 // ============================================================
 
 function applyAppStyles() {
@@ -947,817 +630,1459 @@ function applyAppStyles() {
         return;
     }
 
-
     const style =
-        document.createElement(
-            "style"
-        );
-
+        document.createElement("style");
 
     style.id =
         "golzar-app-styles";
 
-
     style.textContent = `
 
         :root {
+
             --green-dark: #17633d;
             --green: #238b57;
             --green-light: #e8f5ed;
+
             --orange: #d9822b;
             --orange-light: #fff1df;
+
             --blue: #2878b8;
             --blue-light: #e8f3fb;
+
             --red: #c84b4b;
+
             --text: #26352d;
             --muted: #708078;
+
             --bg: #f4f7f5;
             --white: #ffffff;
+
             --border: #dce6df;
-            --shadow: 0 5px 18px rgba(23, 99, 61, 0.08);
+
+            --shadow:
+                0 5px 18px
+                rgba(23, 99, 61, 0.08);
+
         }
 
 
         .app {
+
             direction: rtl;
+
             font-family:
                 "B Nazanin",
                 "B Yekan",
                 Tahoma,
                 Arial,
                 sans-serif;
-            color: var(--text);
-            background: var(--bg);
-            min-height: 100vh;
+
+            color:
+                var(--text);
+
+            background:
+                var(--bg);
+
+            min-height:
+                100vh;
+
         }
 
 
         .header {
+
             background:
                 linear-gradient(
                     145deg,
                     var(--green-dark),
                     var(--green)
                 );
+
             color: white;
+
             text-align: center;
-            padding: 30px 20px 28px;
-            border-radius: 0 0 28px 28px;
-            box-shadow: var(--shadow);
+
+            padding:
+                30px 20px 28px;
+
+            border-radius:
+                0 0 28px 28px;
+
+            box-shadow:
+                var(--shadow);
+
         }
 
 
         .header-badge {
-            display: inline-block;
-            background: rgba(255,255,255,.14);
-            border: 1px solid rgba(255,255,255,.22);
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-size: 13px;
-            margin-bottom: 12px;
+
+            display:
+                inline-block;
+
+            background:
+                rgba(255,255,255,.14);
+
+            border:
+                1px solid
+                rgba(255,255,255,.22);
+
+            padding:
+                6px 14px;
+
+            border-radius:
+                30px;
+
+            font-size:
+                13px;
+
+            margin-bottom:
+                12px;
+
         }
 
 
         .header h1 {
-            margin: 0;
-            font-size: 27px;
-            font-weight: 700;
+
+            margin:
+                0;
+
+            font-size:
+                27px;
+
+            font-weight:
+                700;
+
         }
 
 
         .header p {
-            margin: 9px 0 0;
-            font-size: 15px;
-            opacity: .9;
+
+            margin:
+                9px 0 0;
+
+            font-size:
+                15px;
+
+            opacity:
+                .9;
+
         }
 
 
         .menu {
-            padding: 22px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
+
+            padding:
+                22px 16px;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                14px;
+
         }
 
 
         .menu-button {
-            border: none;
-            border-radius: 20px;
-            min-height: 92px;
-            padding: 15px 18px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            text-align: right;
-            cursor: pointer;
-            background: white;
-            box-shadow: var(--shadow);
-            color: var(--text);
-            transition: .15s ease;
+
+            border:
+                none;
+
+            border-radius:
+                20px;
+
+            min-height:
+                92px;
+
+            padding:
+                15px 18px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            gap:
+                14px;
+
+            text-align:
+                right;
+
+            cursor:
+                pointer;
+
+            background:
+                white;
+
+            box-shadow:
+                var(--shadow);
+
+            color:
+                var(--text);
+
+            transition:
+                .15s ease;
+
         }
 
 
         .menu-button:active {
-            transform: scale(.985);
+
+            transform:
+                scale(.985);
+
         }
 
 
         .menu-button .icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 25px;
-            flex-shrink: 0;
+
+            width:
+                52px;
+
+            height:
+                52px;
+
+            border-radius:
+                16px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            font-size:
+                25px;
+
+            flex-shrink:
+                0;
+
         }
 
 
         .menu-search .icon {
-            background: var(--blue-light);
+
+            background:
+                var(--blue-light);
+
         }
 
 
         .menu-new .icon {
-            background: var(--green-light);
+
+            background:
+                var(--green-light);
+
         }
 
 
         .menu-pending .icon {
-            background: var(--orange-light);
+
+            background:
+                var(--orange-light);
+
         }
 
 
         .menu-test .icon {
-            background: #edf0f0;
+
+            background:
+                #edf0f0;
+
         }
 
 
         .button-text {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+
+            flex:
+                1;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                5px;
+
         }
 
 
         .button-text strong {
-            font-size: 18px;
+
+            font-size:
+                18px;
+
         }
 
 
         .button-text small {
-            font-size: 13px;
-            color: var(--muted);
+
+            font-size:
+                13px;
+
+            color:
+                var(--muted);
+
         }
 
 
         .button-arrow {
-            font-size: 29px;
-            color: #9aa8a1;
+
+            font-size:
+                29px;
+
+            color:
+                #9aa8a1;
+
         }
 
 
         .footer {
-            text-align: center;
-            color: var(--muted);
-            font-size: 12px;
-            padding: 10px 20px 30px;
-            line-height: 2;
+
+            text-align:
+                center;
+
+            color:
+                var(--muted);
+
+            font-size:
+                12px;
+
+            padding:
+                10px 20px 30px;
+
+            line-height:
+                2;
+
         }
 
 
         .footer a {
-            color: var(--green-dark);
-            text-decoration: none;
-            font-weight: bold;
+
+            color:
+                var(--green-dark);
+
+            text-decoration:
+                none;
+
+            font-weight:
+                bold;
+
         }
 
 
         .internal-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: white;
-            padding: 15px;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            gap:
+                8px;
+
+            background:
+                white;
+
+            padding:
+                15px;
+
+            border-bottom:
+                1px solid
+                var(--border);
+
+            position:
+                sticky;
+
+            top:
+                0;
+
+            z-index:
+                10;
+
         }
 
 
         .back-button {
-            border: none;
-            background: var(--green-light);
-            color: var(--green-dark);
-            border-radius: 13px;
-            padding: 10px 13px;
-            font-family: inherit;
-            font-size: 14px;
-            cursor: pointer;
-            white-space: nowrap;
+
+            border:
+                none;
+
+            background:
+                var(--green-light);
+
+            color:
+                var(--green-dark);
+
+            border-radius:
+                13px;
+
+            padding:
+                10px 13px;
+
+            font-family:
+                inherit;
+
+            font-size:
+                14px;
+
+            cursor:
+                pointer;
+
+            white-space:
+                nowrap;
+
         }
 
 
         .refresh-button {
-            border: none;
-            background: var(--blue-light);
-            color: var(--blue);
-            border-radius: 13px;
-            padding: 10px 12px;
-            font-family: inherit;
-            font-size: 14px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
 
+            border:
+                none;
 
-        .refresh-button:active,
-        .back-button:active {
-            transform: scale(.97);
+            background:
+                var(--blue-light);
+
+            color:
+                var(--blue);
+
+            border-radius:
+                13px;
+
+            padding:
+                10px 12px;
+
+            font-family:
+                inherit;
+
+            font-size:
+                14px;
+
+            cursor:
+                pointer;
+
+            white-space:
+                nowrap;
+
         }
 
 
         .internal-title {
-            flex: 1;
+
+            flex:
+                1;
+
         }
 
 
         .internal-title h2 {
-            margin: 0;
-            font-size: 20px;
+
+            margin:
+                0;
+
+            font-size:
+                20px;
+
         }
 
 
         .internal-title p {
-            margin: 4px 0 0;
-            color: var(--muted);
-            font-size: 12px;
+
+            margin:
+                4px 0 0;
+
+            color:
+                var(--muted);
+
+            font-size:
+                12px;
+
         }
 
 
         .content {
-            padding: 16px;
+
+            padding:
+                16px;
+
         }
 
 
         .card {
-            background: white;
-            border-radius: 20px;
-            padding: 18px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
+
+            background:
+                white;
+
+            border-radius:
+                20px;
+
+            padding:
+                18px;
+
+            box-shadow:
+                var(--shadow);
+
+            border:
+                1px solid
+                var(--border);
+
         }
 
 
         .card-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: var(--green-dark);
+
+            font-size:
+                18px;
+
+            font-weight:
+                bold;
+
+            margin-bottom:
+                20px;
+
+            color:
+                var(--green-dark);
+
         }
 
 
         .section-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: var(--green-dark);
-            border-right: 4px solid var(--green);
-            padding-right: 9px;
-            margin: 22px 0 13px;
+
+            font-size:
+                16px;
+
+            font-weight:
+                bold;
+
+            color:
+                var(--green-dark);
+
+            border-right:
+                4px solid
+                var(--green);
+
+            padding-right:
+                9px;
+
+            margin:
+                22px 0 13px;
+
         }
 
 
         .form-group {
-            margin-bottom: 15px;
+
+            margin-bottom:
+                15px;
+
         }
 
 
         .form-group label {
-            display: block;
-            margin-bottom: 7px;
-            font-size: 14px;
-            font-weight: bold;
+
+            display:
+                block;
+
+            margin-bottom:
+                7px;
+
+            font-size:
+                14px;
+
+            font-weight:
+                bold;
+
         }
 
 
         input,
         select,
         textarea {
-            width: 100%;
-            box-sizing: border-box;
-            border: 1px solid var(--border);
-            border-radius: 13px;
-            padding: 12px 13px;
-            font-family: inherit;
-            font-size: 15px;
-            background: #fbfdfc;
-            color: var(--text);
-            outline: none;
+
+            width:
+                100%;
+
+            box-sizing:
+                border-box;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                13px;
+
+            padding:
+                12px 13px;
+
+            font-family:
+                inherit;
+
+            font-size:
+                15px;
+
+            background:
+                #fbfdfc;
+
+            color:
+                var(--text);
+
+            outline:
+                none;
+
         }
 
 
         input:focus,
         select:focus,
         textarea:focus {
-            border-color: var(--green);
+
+            border-color:
+                var(--green);
+
             box-shadow:
                 0 0 0 3px
                 rgba(35,139,87,.10);
+
         }
 
 
         textarea {
-            resize: vertical;
+
+            resize:
+                vertical;
+
         }
 
 
         .form-row {
-            display: grid;
+
+            display:
+                grid;
+
             grid-template-columns:
                 1fr 1fr 1fr;
-            gap: 10px;
+
+            gap:
+                10px;
+
         }
 
 
         .choice-grid {
-            display: grid;
+
+            display:
+                grid;
+
             grid-template-columns:
                 1fr 1fr;
-            gap: 12px;
+
+            gap:
+                12px;
+
         }
 
 
         .choice-card {
-            position: relative;
-            min-height: 82px;
-            border: 2px solid var(--border);
-            border-radius: 18px;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-            transition: .15s ease;
+
+            position:
+                relative;
+
+            min-height:
+                82px;
+
+            border:
+                2px solid
+                var(--border);
+
+            border-radius:
+                18px;
+
+            background:
+                white;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            cursor:
+                pointer;
+
+            font-size:
+                18px;
+
+            font-weight:
+                bold;
+
         }
 
 
         .choice-card input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
+
+            position:
+                absolute;
+
+            opacity:
+                0;
+
+            pointer-events:
+                none;
+
         }
 
 
         .choice-card:has(input:checked) {
-            border-color: var(--green);
-            background: var(--green-light);
-            color: var(--green-dark);
+
+            border-color:
+                var(--green);
+
+            background:
+                var(--green-light);
+
+            color:
+                var(--green-dark);
+
         }
 
 
         .choice-card span::before {
-            content: "";
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 3px solid #b8c6be;
-            border-radius: 50%;
-            vertical-align: -3px;
-            margin-left: 9px;
-            box-sizing: border-box;
-        }
 
+            content:
+                "";
 
-        .choice-card:has(input:checked)
-        span::before {
-            border-color: var(--green);
-            background:
-                radial-gradient(
-                    circle,
-                    var(--green) 0 55%,
-                    transparent 58%
-                );
+            display:
+                inline-block;
+
+            width:
+                18px;
+
+            height:
+                18px;
+
+            border:
+                3px solid
+                #b8c6be;
+
+            border-radius:
+                50%;
+
+            vertical-align:
+                -3px;
+
+            margin-left:
+                9px;
+
+            box-sizing:
+                border-box;
+
         }
 
 
         .stage-list {
-            display: grid;
+
+            display:
+                grid;
+
             grid-template-columns:
                 1fr 1fr;
-            gap: 10px;
+
+            gap:
+                10px;
+
         }
 
 
         .stage-option {
-            position: relative;
-            min-height: 70px;
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 12px 14px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            background: white;
-            font-size: 14px;
-            transition: .15s ease;
+
+            position:
+                relative;
+
+            min-height:
+                70px;
+
+            border:
+                2px solid
+                var(--border);
+
+            border-radius:
+                16px;
+
+            padding:
+                12px 14px;
+
+            box-sizing:
+                border-box;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            cursor:
+                pointer;
+
+            background:
+                white;
+
+            font-size:
+                14px;
+
         }
 
 
         .stage-option.disabled {
-            opacity: .35;
-            cursor: not-allowed;
-            background: #f1f3f2;
+
+            opacity:
+                .35;
+
+            cursor:
+                not-allowed;
+
+            background:
+                #f1f3f2;
+
         }
 
 
         .stage-option input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
 
+            position:
+                absolute;
 
-        .stage-option span::before {
-            content: "";
-            display: inline-block;
-            width: 17px;
-            height: 17px;
-            border: 3px solid #bdc8c2;
-            border-radius: 50%;
-            vertical-align: -4px;
-            margin-left: 8px;
-            box-sizing: border-box;
+            opacity:
+                0;
+
+            pointer-events:
+                none;
+
         }
 
 
         .stage-option:has(input:checked) {
-            border-color: var(--orange);
-            background: var(--orange-light);
-            color: #8a4f13;
-            font-weight: bold;
-        }
 
+            border-color:
+                var(--orange);
 
-        .stage-option:has(input:checked)
-        span::before {
-            border-color: var(--orange);
             background:
-                radial-gradient(
-                    circle,
-                    var(--orange) 0 55%,
-                    transparent 58%
-                );
+                var(--orange-light);
+
+            color:
+                #8a4f13;
+
+            font-weight:
+                bold;
+
         }
 
 
         .primary-button {
-            width: 100%;
-            border: none;
-            border-radius: 15px;
-            padding: 14px;
-            background: var(--green);
-            color: white;
-            font-family: inherit;
-            font-size: 17px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
 
+            width:
+                100%;
 
-        .primary-button:disabled {
-            opacity: .65;
-            cursor: wait;
+            border:
+                none;
+
+            border-radius:
+                15px;
+
+            padding:
+                14px;
+
+            background:
+                var(--green);
+
+            color:
+                white;
+
+            font-family:
+                inherit;
+
+            font-size:
+                17px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+
+            margin-top:
+                10px;
+
         }
 
 
         .export-button {
-            width: 100%;
-            border: none;
-            border-radius: 15px;
-            padding: 13px;
-            background: var(--blue);
-            color: white;
-            font-family: inherit;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
+
+            width:
+                100%;
+
+            border:
+                none;
+
+            border-radius:
+                15px;
+
+            padding:
+                14px;
+
+            background:
+                var(--blue);
+
+            color:
+                white;
+
+            font-family:
+                inherit;
+
+            font-size:
+                17px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+
+            margin-top:
+                10px;
+
+            box-shadow:
+                0 4px 12px
+                rgba(40,120,184,.18);
+
         }
 
 
-        .export-button:disabled {
-            opacity: .65;
-            cursor: wait;
+        .export-button:active {
+
+            transform:
+                scale(.985);
+
         }
 
 
         .records-summary {
-            display: grid;
+
+            display:
+                grid;
+
             grid-template-columns:
                 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 15px;
+
+            gap:
+                8px;
+
+            margin-bottom:
+                15px;
+
         }
 
 
         .summary-box {
-            border-radius: 14px;
-            padding: 11px 7px;
-            text-align: center;
-            background: var(--green-light);
+
+            border-radius:
+                14px;
+
+            padding:
+                11px 7px;
+
+            text-align:
+                center;
+
+            background:
+                var(--green-light);
+
         }
 
 
         .summary-box.warning {
-            background: var(--orange-light);
-        }
 
+            background:
+                var(--orange-light);
 
-        .summary-box.approved {
-            background: var(--blue-light);
         }
 
 
         .summary-box strong {
-            display: block;
-            font-size: 21px;
+
+            display:
+                block;
+
+            font-size:
+                21px;
+
         }
 
 
         .summary-box small {
-            font-size: 11px;
-            color: var(--muted);
+
+            font-size:
+                11px;
+
+            color:
+                var(--muted);
+
         }
 
 
         .records-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                12px;
+
         }
 
 
         .record-card {
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 15px;
-            background: white;
-        }
 
+            border:
+                1px solid
+                var(--border);
 
-        .record-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
+            border-radius:
+                18px;
 
+            padding:
+                15px;
 
-        .record-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--green-dark);
-        }
+            background:
+                white;
 
-
-        .status-badge {
-            background: var(--orange-light);
-            color: #8a4f13;
-            padding: 5px 9px;
-            border-radius: 20px;
-            font-size: 11px;
-            white-space: nowrap;
-        }
-
-
-        .status-badge.approved {
-            background: var(--green-light);
-            color: var(--green-dark);
-        }
-
-
-        .location-box {
-            display: grid;
-            grid-template-columns:
-                1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-
-        .location-box > div {
-            background: var(--bg);
-            border-radius: 12px;
-            padding: 8px;
-            text-align: center;
-        }
-
-
-        .location-box small {
-            display: block;
-            color: var(--muted);
-            font-size: 11px;
-        }
-
-
-        .location-box strong {
-            display: block;
-            margin-top: 3px;
-            font-size: 16px;
-        }
-
-
-        .record-info {
-            display: flex;
-            gap: 7px;
-            margin-top: 8px;
-            font-size: 14px;
-        }
-
-
-        .record-info span {
-            color: var(--muted);
-        }
-
-
-        .record-date {
-            display: flex;
-            gap: 7px;
-            margin-top: 9px;
-            padding-top: 9px;
-            border-top: 1px solid var(--border);
-            font-size: 13px;
-        }
-
-
-        .record-date span {
-            color: var(--muted);
-        }
-
-
-        .record-notes {
-            margin-top: 11px;
-            padding: 10px;
-            background: #faf9f5;
-            border-radius: 11px;
-            font-size: 13px;
-            line-height: 1.8;
-        }
-
-
-        .record-notes span {
-            font-weight: bold;
-        }
-
-
-        .danger-button {
-            width: 100%;
-            border: none;
-            border-radius: 12px;
-            padding: 11px;
-            background: #fff0f0;
-            color: var(--red);
-            font-family: inherit;
-            margin-top: 13px;
-            cursor: pointer;
         }
 
 
         .record-card.clickable {
-            cursor: pointer;
+
+            cursor:
+                pointer;
+
         }
 
 
-        .record-card.clickable:active {
-            transform: scale(.99);
+        .record-card-header {
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                flex-start;
+
+            gap:
+                8px;
+
+            margin-bottom:
+                12px;
+
+        }
+
+
+        .record-name {
+
+            font-size:
+                18px;
+
+            font-weight:
+                bold;
+
+            color:
+                var(--green-dark);
+
+        }
+
+
+        .status-badge {
+
+            background:
+                var(--orange-light);
+
+            color:
+                #8a4f13;
+
+            padding:
+                5px 9px;
+
+            border-radius:
+                20px;
+
+            font-size:
+                11px;
+
+            white-space:
+                nowrap;
+
+        }
+
+
+        .status-badge.approved {
+
+            background:
+                var(--green-light);
+
+            color:
+                var(--green-dark);
+
+        }
+
+
+        .location-box {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                1fr 1fr 1fr;
+
+            gap:
+                8px;
+
+            margin-bottom:
+                12px;
+
+        }
+
+
+        .location-box > div {
+
+            background:
+                var(--bg);
+
+            border-radius:
+                12px;
+
+            padding:
+                8px;
+
+            text-align:
+                center;
+
+        }
+
+
+        .location-box small {
+
+            display:
+                block;
+
+            color:
+                var(--muted);
+
+            font-size:
+                11px;
+
+        }
+
+
+        .location-box strong {
+
+            display:
+                block;
+
+            margin-top:
+                3px;
+
+            font-size:
+                16px;
+
+        }
+
+
+        .record-info {
+
+            display:
+                flex;
+
+            gap:
+                7px;
+
+            margin-top:
+                8px;
+
+            font-size:
+                14px;
+
+        }
+
+
+        .record-info span {
+
+            color:
+                var(--muted);
+
         }
 
 
         .search-count {
-            background: var(--blue-light);
-            color: var(--blue);
-            border-radius: 13px;
-            padding: 10px 12px;
-            margin-bottom: 12px;
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-        }
 
+            background:
+                var(--blue-light);
 
-        .filter-title {
-            margin-top: 18px;
-            margin-bottom: 10px;
-            color: var(--green-dark);
-            font-weight: bold;
+            color:
+                var(--blue);
+
+            border-radius:
+                13px;
+
+            padding:
+                10px 12px;
+
+            margin-bottom:
+                12px;
+
+            text-align:
+                center;
+
+            font-size:
+                14px;
+
+            font-weight:
+                bold;
+
         }
 
 
         .loading-message,
         .empty-message,
         .error-message {
-            text-align: center;
-            padding: 30px 15px;
-            color: var(--muted);
-            line-height: 2;
+
+            text-align:
+                center;
+
+            padding:
+                30px 15px;
+
+            color:
+                var(--muted);
+
+            line-height:
+                2;
+
         }
 
 
         .error-message {
-            color: var(--red);
-            background: #fff4f4;
-            border-radius: 14px;
+
+            color:
+                var(--red);
+
+            background:
+                #fff4f4;
+
+            border-radius:
+                14px;
+
         }
 
 
         .detail-card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
+
+            background:
+                white;
+
+            border-radius:
+                20px;
+
+            padding:
+                20px;
+
+            border:
+                1px solid
+                var(--border);
+
+            box-shadow:
+                var(--shadow);
+
         }
 
 
         .detail-title {
-            font-size: 22px;
-            font-weight: bold;
-            color: var(--green-dark);
-            margin-bottom: 18px;
+
+            font-size:
+                22px;
+
+            font-weight:
+                bold;
+
+            color:
+                var(--green-dark);
+
+            margin-bottom:
+                18px;
+
         }
 
 
         .detail-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            gap:
+                12px;
+
+            padding:
+                12px 0;
+
+            border-bottom:
+                1px solid
+                var(--border);
+
+            font-size:
+                14px;
+
         }
 
 
         .detail-row span {
-            color: var(--muted);
+
+            color:
+                var(--muted);
+
         }
 
 
         .detail-row strong {
-            text-align: left;
+
+            text-align:
+                left;
+
         }
 
 
         .detail-actions {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 9px;
+
+            margin-top:
+                20px;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                9px;
+
         }
 
 
         .approve-button {
-            border: none;
-            border-radius: 13px;
-            padding: 13px;
-            background: var(--green);
-            color: white;
-            font-family: inherit;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
+
+            border:
+                none;
+
+            border-radius:
+                13px;
+
+            padding:
+                13px;
+
+            background:
+                var(--green);
+
+            color:
+                white;
+
+            font-family:
+                inherit;
+
+            font-size:
+                15px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+
+        }
+
+
+        .danger-button {
+
+            width:
+                100%;
+
+            border:
+                none;
+
+            border-radius:
+                12px;
+
+            padding:
+                11px;
+
+            background:
+                #fff0f0;
+
+            color:
+                var(--red);
+
+            font-family:
+                inherit;
+
+            margin-top:
+                13px;
+
+            cursor:
+                pointer;
+
         }
 
 
         .back-secondary {
-            border: 1px solid var(--border);
-            border-radius: 13px;
-            padding: 12px;
-            background: white;
-            color: var(--text);
-            font-family: inherit;
-            cursor: pointer;
-        }
 
+            border:
+                1px solid
+                var(--border);
 
-        @media (max-width: 600px) {
+            border-radius:
+                13px;
 
-            .form-row {
-                grid-template-columns:
-                    1fr 1fr 1fr;
-            }
+            padding:
+                12px;
 
-            .stage-list {
-                grid-template-columns:
-                    1fr 1fr;
-            }
+            background:
+                white;
+
+            color:
+                var(--text);
+
+            font-family:
+                inherit;
+
+            cursor:
+                pointer;
 
         }
 
@@ -1765,26 +2090,31 @@ function applyAppStyles() {
         @media (max-width: 390px) {
 
             .stage-list {
+
                 grid-template-columns:
                     1fr;
+
             }
 
             .form-row {
-                gap: 7px;
+
+                gap:
+                    7px;
+
             }
 
             .card {
-                padding: 14px;
+
+                padding:
+                    14px;
+
             }
 
         }
 
     `;
 
-
-    document.head.appendChild(
-        style
-    );
+    document.head.appendChild(style);
 
 }
 
@@ -1820,9 +2150,11 @@ function internalHeader(
                 ${
                     subtitle
                     ?
-                    `<p>
+                    `
+                    <p>
                         ${escapeHtml(subtitle)}
-                    </p>`
+                    </p>
+                    `
                     :
                     ""
                 }
@@ -1863,17 +2195,14 @@ function showHome() {
     currentAppPage =
         "home";
 
-
     const app =
         document.querySelector(
             ".app"
         );
 
-
     if (!app) {
         return;
     }
-
 
     app.innerHTML = `
 
@@ -2040,9 +2369,7 @@ function showHome() {
 
 
     document
-        .getElementById(
-            "btn-search"
-        )
+        .getElementById("btn-search")
         .addEventListener(
             "click",
             showSearch
@@ -2050,9 +2377,7 @@ function showHome() {
 
 
     document
-        .getElementById(
-            "btn-new"
-        )
+        .getElementById("btn-new")
         .addEventListener(
             "click",
             showNewRecord
@@ -2060,9 +2385,7 @@ function showHome() {
 
 
     document
-        .getElementById(
-            "btn-pending"
-        )
+        .getElementById("btn-pending")
         .addEventListener(
             "click",
             showPendingRecords
@@ -2070,9 +2393,7 @@ function showHome() {
 
 
     document
-        .getElementById(
-            "btn-test"
-        )
+        .getElementById("btn-test")
         .addEventListener(
             "click",
             testSupabaseConnection
@@ -2092,11 +2413,11 @@ async function testSupabaseConnection() {
         const {
             data,
             error
-        } = await supabaseClient
-            .from("martyrs")
-            .select("id")
-            .limit(1);
-
+        } =
+            await supabaseClient
+                .from("martyrs")
+                .select("id")
+                .limit(1);
 
         if (error) {
 
@@ -2114,7 +2435,6 @@ async function testSupabaseConnection() {
 
         }
 
-
         alert(
             "اتصال به Supabase با موفقیت برقرار شد."
         );
@@ -2122,9 +2442,7 @@ async function testSupabaseConnection() {
     }
     catch (error) {
 
-        console.error(
-            error
-        );
+        console.error(error);
 
         alert(
             "خطای غیرمنتظره در اتصال به Supabase."
@@ -2136,14 +2454,12 @@ async function testSupabaseConnection() {
 
 
 // ============================================================
-// صفحه ثبت اطلاعات شهید جدید
+// صفحه ثبت اطلاعات جدید
 // ============================================================
 
 function showNewRecord() {
 
-    if (
-        !isHandlingHistory
-    ) {
+    if (!isHandlingHistory) {
 
         pushAppHistory(
             "new"
@@ -2151,12 +2467,10 @@ function showNewRecord() {
 
     }
 
-
     const app =
         document.querySelector(
             ".app"
         );
-
 
     app.innerHTML = `
 
@@ -2360,34 +2674,19 @@ function showNewRecord() {
 
 
     document
-        .getElementById(
-            "back-home"
-        )
+        .getElementById("back-home")
         .addEventListener(
             "click",
             () => {
 
-                if (
-                    window.history.length > 1
-                ) {
-
-                    window.history.back();
-
-                }
-                else {
-
-                    showHome();
-
-                }
+                window.history.back();
 
             }
         );
 
 
     document
-        .getElementById(
-            "save-new"
-        )
+        .getElementById("save-new")
         .addEventListener(
             "click",
             saveNewRecord
@@ -2411,16 +2710,14 @@ function showNewRecord() {
 
 
     document
-        .getElementById(
-            "new-name"
-        )
+        .getElementById("new-name")
         .focus();
 
 }
 
 
 // ============================================================
-// ساخت شش گزینه مرحله
+// ساخت مراحل
 // ============================================================
 
 function renderStageOptions(
@@ -2439,32 +2736,34 @@ function renderStageOptions(
     return allStages
         .map(
             stage =>
-                `
-                <label
-                    class="stage-option disabled"
-                    data-stage="${escapeHtml(stage)}"
+            `
+
+            <label
+                class="stage-option disabled"
+                data-stage="${escapeHtml(stage)}"
+            >
+
+                <input
+                    type="radio"
+                    name="stage"
+                    value="${escapeHtml(stage)}"
+                    disabled
+                    ${
+                        stage === selectedStage
+                        ?
+                        "checked"
+                        :
+                        ""
+                    }
                 >
 
-                    <input
-                        type="radio"
-                        name="stage"
-                        value="${escapeHtml(stage)}"
-                        disabled
-                        ${
-                            stage === selectedStage
-                            ?
-                            "checked"
-                            :
-                            ""
-                        }
-                    >
+                <span>
+                    ${escapeHtml(stage)}
+                </span>
 
-                    <span>
-                        ${escapeHtml(stage)}
-                    </span>
+            </label>
 
-                </label>
-                `
+            `
         )
         .join("");
 
@@ -2482,7 +2781,6 @@ function updateStageOptions() {
             'input[name="stone-type"]:checked'
         );
 
-
     const stageOptions =
         document.querySelectorAll(
             ".stage-option"
@@ -2495,12 +2793,10 @@ function updateStageOptions() {
             const stage =
                 option.dataset.stage;
 
-
             const input =
                 option.querySelector(
                     'input[name="stage"]'
                 );
-
 
             const allowed =
                 selectedType &&
@@ -2541,51 +2837,41 @@ function updateStageOptions() {
 
 
 // ============================================================
-// ذخیره اطلاعات جدید
+// ذخیره رکورد جدید
 // ============================================================
 
 async function saveNewRecord() {
 
     const name =
         document
-            .getElementById(
-                "new-name"
-            )
+            .getElementById("new-name")
             .value
             .trim();
 
 
     const lastname =
         document
-            .getElementById(
-                "new-lastname"
-            )
+            .getElementById("new-lastname")
             .value
             .trim();
 
 
     const piece =
         document
-            .getElementById(
-                "new-piece"
-            )
+            .getElementById("new-piece")
             .value;
 
 
     const row =
         document
-            .getElementById(
-                "new-row"
-            )
+            .getElementById("new-row")
             .value
             .trim();
 
 
     const number =
         document
-            .getElementById(
-                "new-number"
-            )
+            .getElementById("new-number")
             .value
             .trim();
 
@@ -2604,9 +2890,7 @@ async function saveNewRecord() {
 
     const notes =
         document
-            .getElementById(
-                "new-notes"
-            )
+            .getElementById("new-notes")
             .value
             .trim();
 
@@ -2723,41 +3007,42 @@ async function saveNewRecord() {
         const {
             data,
             error
-        } = await supabaseClient
-            .from("martyrs")
-            .insert({
+        } =
+            await supabaseClient
+                .from("martyrs")
+                .insert({
 
-                name:
-                    name,
+                    name:
+                        name,
 
-                lastname:
-                    lastname,
+                    lastname:
+                        lastname,
 
-                piece:
-                    piece,
+                    piece:
+                        piece,
 
-                grave_row:
-                    row,
+                    grave_row:
+                        row,
 
-                grave_number:
-                    number,
+                    grave_number:
+                        number,
 
-                stone_type:
-                    stoneType.value,
+                    stone_type:
+                        stoneType.value,
 
-                stage:
-                    stage.value,
+                    stage:
+                        stage.value,
 
-                notes:
-                    notes ||
-                    null,
+                    notes:
+                        notes ||
+                        null,
 
-                status:
-                    "در انتظار تأیید"
+                    status:
+                        "در انتظار تأیید"
 
-            })
-            .select()
-            .single();
+                })
+                .select()
+                .single();
 
 
         if (error) {
@@ -2785,7 +3070,7 @@ async function saveNewRecord() {
 
         alert(
             "اطلاعات شهید با موفقیت ثبت شد.\n\n" +
-            "وضعیت: در انتظار تأیید"
+            "تاریخ ثبت خودکار توسط سامانه ذخیره شد."
         );
 
 
@@ -2794,9 +3079,7 @@ async function saveNewRecord() {
     }
     catch (error) {
 
-        console.error(
-            error
-        );
+        console.error(error);
 
         alert(
             "خطای غیرمنتظره هنگام ذخیره اطلاعات."
@@ -2881,9 +3164,7 @@ async function showPendingRecords(
 
 
     document
-        .getElementById(
-            "back-home"
-        )
+        .getElementById("back-home")
         .addEventListener(
             "click",
             () => {
@@ -2895,16 +3176,10 @@ async function showPendingRecords(
 
 
     document
-        .getElementById(
-            "refresh-page"
-        )
+        .getElementById("refresh-page")
         .addEventListener(
             "click",
-            () => {
-
-                refreshPendingRecords();
-
-            }
+            refreshPendingRecords
         );
 
 
@@ -2914,7 +3189,7 @@ async function showPendingRecords(
 
 
 // ============================================================
-// دریافت اطلاعات ثبت‌شده
+// دریافت رکوردها
 // ============================================================
 
 async function loadPendingRecords() {
@@ -2953,20 +3228,20 @@ async function loadPendingRecords() {
         const {
             data,
             error
-        } = await supabaseClient
-            .from("martyrs")
-            .select("*")
-            .eq(
-                "status",
-                "در انتظار تأیید"
-            )
-            .order(
-                "created_at",
-                {
-                    ascending:
-                        false
-                }
-            );
+        } =
+            await supabaseClient
+                .from("martyrs")
+                .select("*")
+                .eq(
+                    "status",
+                    "در انتظار تأیید"
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
 
 
         if (error) {
@@ -3076,9 +3351,7 @@ async function loadPendingRecords() {
     }
     catch (error) {
 
-        console.error(
-            error
-        );
+        console.error(error);
 
         showRecordsError(
             "خطای غیرمنتظره هنگام دریافت اطلاعات."
@@ -3129,7 +3402,7 @@ async function refreshPendingRecords() {
 
 
 // ============================================================
-// کارت خلاصه رکورد
+// کارت رکورد
 // ============================================================
 
 function recordSummaryCard(
@@ -3142,8 +3415,7 @@ function recordSummaryCard(
 
 
     const statusClass =
-        status ===
-        "تأیید شده"
+        status === "تأیید شده"
         ?
         "approved"
         :
@@ -3268,7 +3540,7 @@ function recordSummaryCard(
                 record.created_at
                 ?
                 `
-                <div class="record-date">
+                <div class="record-info">
 
                     <span>
                         تاریخ ثبت:
@@ -3276,7 +3548,7 @@ function recordSummaryCard(
 
                     <strong>
                         ${escapeHtml(
-                            formatCreatedAt(
+                            getJalaliDateTime(
                                 record.created_at
                             )
                         )}
@@ -3341,16 +3613,13 @@ async function showRecordDetail(
 
 
     document
-        .getElementById(
-            "back-home"
-        )
+        .getElementById("back-home")
         .addEventListener(
             "click",
             () => {
 
                 if (
-                    source ===
-                    "search"
+                    source === "search"
                 ) {
 
                     restoreSearchPage();
@@ -3373,14 +3642,15 @@ async function showRecordDetail(
         const {
             data,
             error
-        } = await supabaseClient
-            .from("martyrs")
-            .select("*")
-            .eq(
-                "id",
-                id
-            )
-            .single();
+        } =
+            await supabaseClient
+                .from("martyrs")
+                .select("*")
+                .eq(
+                    "id",
+                    id
+                )
+                .single();
 
 
         if (error) {
@@ -3440,6 +3710,21 @@ async function showRecordDetail(
                     ${escapeHtml(
                         data.lastname
                     )}
+
+                </div>
+
+
+                <div class="detail-row">
+
+                    <span>
+                        شناسه
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(
+                            data.id
+                        )}
+                    </strong>
 
                 </div>
 
@@ -3546,7 +3831,7 @@ async function showRecordDetail(
 
                         <strong>
                             ${escapeHtml(
-                                formatCreatedAt(
+                                getJalaliDateTime(
                                     data.created_at
                                 )
                             )}
@@ -3582,36 +3867,30 @@ async function showRecordDetail(
                 }
 
 
-                ${
-                    showManagementActions
-                    ?
-                    `
+                <div class="detail-actions">
 
-                    <div class="detail-actions">
-
-                        ${
-                            !isApproved
-                            ?
-                            `
-                            <button
-                                type="button"
-                                class="approve-button"
-                                id="approve-record"
-                            >
-                                ✓ تأیید این اطلاعات
-                            </button>
-                            `
-                            :
-                            `
-                            <div
-                                class="search-count"
-                            >
-                                این رکورد قبلاً تأیید شده است.
-                            </div>
-                            `
-                        }
+                    ${
+                        showManagementActions &&
+                        !isApproved
+                        ?
+                        `
+                        <button
+                            type="button"
+                            class="approve-button"
+                            id="approve-record"
+                        >
+                            ✓ تأیید این اطلاعات
+                        </button>
+                        `
+                        :
+                        ""
+                    }
 
 
+                    ${
+                        showManagementActions
+                        ?
+                        `
                         <button
                             type="button"
                             class="danger-button"
@@ -3619,36 +3898,27 @@ async function showRecordDetail(
                         >
                             حذف این رکورد
                         </button>
+                        `
+                        :
+                        ""
+                    }
 
 
-                        <button
-                            type="button"
-                            class="back-secondary"
-                            id="back-records"
-                        >
-                            بازگشت به فهرست
-                        </button>
+                    <button
+                        type="button"
+                        class="back-secondary"
+                        id="back-records"
+                    >
+                        ${
+                            source === "search"
+                            ?
+                            "بازگشت به نتایج جستجو"
+                            :
+                            "بازگشت به فهرست"
+                        }
+                    </button>
 
-                    </div>
-
-                    `
-                    :
-                    `
-
-                    <div class="detail-actions">
-
-                        <button
-                            type="button"
-                            class="back-secondary"
-                            id="back-records"
-                        >
-                            بازگشت به نتایج جستجو
-                        </button>
-
-                    </div>
-
-                    `
-                }
+                </div>
 
             `;
 
@@ -3701,8 +3971,7 @@ async function showRecordDetail(
                 () => {
 
                     if (
-                        source ===
-                        "search"
+                        source === "search"
                     ) {
 
                         restoreSearchPage();
@@ -3722,10 +3991,7 @@ async function showRecordDetail(
     }
     catch (error) {
 
-        console.error(
-            error
-        );
-
+        console.error(error);
 
         document
             .getElementById(
@@ -3770,28 +4036,24 @@ async function approveRecord(
         const {
             data,
             error
-        } = await supabaseClient
-            .from("martyrs")
-            .update({
+        } =
+            await supabaseClient
+                .from("martyrs")
+                .update({
 
-                status:
-                    "تأیید شده"
+                    status:
+                        "تأیید شده"
 
-            })
-            .eq(
-                "id",
-                id
-            )
-            .select()
-            .single();
+                })
+                .eq(
+                    "id",
+                    id
+                )
+                .select()
+                .single();
 
 
         if (error) {
-
-            console.error(
-                "Approve error:",
-                error
-            );
 
             alert(
                 "تأیید اطلاعات انجام نشد.\n\n" +
@@ -3814,20 +4076,6 @@ async function approveRecord(
         }
 
 
-        if (
-            data.status !==
-            "تأیید شده"
-        ) {
-
-            alert(
-                "وضعیت رکورد تغییر نکرد."
-            );
-
-            return;
-
-        }
-
-
         alert(
             "اطلاعات این شهید با موفقیت تأیید شد."
         );
@@ -3838,9 +4086,7 @@ async function approveRecord(
     }
     catch (error) {
 
-        console.error(
-            error
-        );
+        console.error(error);
 
         alert(
             "خطای غیرمنتظره هنگام تأیید."
@@ -3875,22 +4121,18 @@ async function deleteRecord(
         const {
             data,
             error
-        } = await supabaseClient
-            .from("martyrs")
-            .delete()
-            .eq(
-                "id",
-                id
-            )
-            .select();
+        } =
+            await supabaseClient
+                .from("martyrs")
+                .delete()
+                .eq(
+                    "id",
+                    id
+                )
+                .select();
 
 
         if (error) {
-
-            console.error(
-                "Delete error:",
-                error
-            );
 
             alert(
                 "حذف انجام نشد.\n\n" +
@@ -3908,8 +4150,7 @@ async function deleteRecord(
         ) {
 
             alert(
-                "رکورد حذف نشد.\n\n" +
-                "احتمالاً اجازه حذف از طریق برنامه وجود ندارد یا رکورد پیدا نشد."
+                "رکورد حذف نشد یا اجازه حذف وجود ندارد."
             );
 
             return;
@@ -3927,9 +4168,7 @@ async function deleteRecord(
     }
     catch (error) {
 
-        console.error(
-            error
-        );
+        console.error(error);
 
         alert(
             "خطای غیرمنتظره هنگام حذف."
@@ -3948,9 +4187,7 @@ function showSearch(
     restore = false
 ) {
 
-    if (
-        !isHandlingHistory
-    ) {
+    if (!isHandlingHistory) {
 
         pushAppHistory(
             "search"
@@ -3996,7 +4233,7 @@ function showSearch(
                         type="text"
                         id="search-name"
                         autocomplete="off"
-                        placeholder="مثلاً اصغر"
+                        placeholder="مثلاً اصغر یا ۳۳۳۳۳"
                     >
 
                 </div>
@@ -4137,23 +4374,16 @@ function showSearch(
 
 
     document
-        .getElementById(
-            "back-home"
-        )
+        .getElementById("back-home")
         .addEventListener(
             "click",
-            () => {
-
-                window.history.back();
-
-            }
+            () =>
+                window.history.back()
         );
 
 
     document
-        .getElementById(
-            "search-button"
-        )
+        .getElementById("search-button")
         .addEventListener(
             "click",
             performSearch
@@ -4170,9 +4400,7 @@ function showSearch(
         id => {
 
             document
-                .getElementById(
-                    id
-                )
+                .getElementById(id)
                 .addEventListener(
                     "keydown",
                     event => {
@@ -4258,69 +4486,72 @@ function showSearch(
             lastSearchResults
         );
 
-
         return;
 
     }
 
 
     document
-        .getElementById(
-            "search-name"
-        )
+        .getElementById("search-name")
         .focus();
 
 }
 
 
 // ============================================================
-// اجرای جستجو
+// جستجو
 // ============================================================
 
 async function performSearch() {
 
-    const nameInput =
-        document
-            .getElementById(
-                "search-name"
-            )
-            .value
-            .trim();
+    const name =
+        normalizeSearchText(
+            document
+                .getElementById(
+                    "search-name"
+                )
+                .value
+        );
 
 
-    const lastnameInput =
-        document
-            .getElementById(
-                "search-lastname"
-            )
-            .value
-            .trim();
+    const lastname =
+        normalizeSearchText(
+            document
+                .getElementById(
+                    "search-lastname"
+                )
+                .value
+        );
 
 
     const piece =
-        document
-            .getElementById(
-                "search-piece"
-            )
-            .value;
+        toEnglishDigits(
+            document
+                .getElementById(
+                    "search-piece"
+                )
+                .value
+        );
 
 
-    const rowInput =
-        document
-            .getElementById(
-                "search-row"
-            )
-            .value
-            .trim();
+    const row =
+        normalizeSearchText(
+            document
+                .getElementById(
+                    "search-row"
+                )
+                .value
+        );
 
 
-    const numberInput =
-        document
-            .getElementById(
-                "search-number"
-            )
-            .value
-            .trim();
+    const number =
+        normalizeSearchText(
+            document
+                .getElementById(
+                    "search-number"
+                )
+                .value
+        );
 
 
     const status =
@@ -4331,30 +4562,6 @@ async function performSearch() {
             .value;
 
 
-    const name =
-        normalizeSearchValue(
-            nameInput
-        );
-
-
-    const lastname =
-        normalizeSearchValue(
-            lastnameInput
-        );
-
-
-    const row =
-        normalizeSearchValue(
-            rowInput
-        );
-
-
-    const number =
-        normalizeSearchValue(
-            numberInput
-        );
-
-
     const container =
         document.getElementById(
             "search-results"
@@ -4363,23 +4570,12 @@ async function performSearch() {
 
     lastSearchFilters = {
 
-        name:
-            nameInput,
-
-        lastname:
-            lastnameInput,
-
-        piece:
-            piece,
-
-        row:
-            rowInput,
-
-        number:
-            numberInput,
-
-        status:
-            status
+        name,
+        lastname,
+        piece,
+        row,
+        number,
+        status
 
     };
 
@@ -4397,89 +4593,30 @@ async function performSearch() {
 
     try {
 
-        let query =
-            supabaseClient
-                .from("martyrs")
-                .select("*");
-
-
-        if (name) {
-
-            query =
-                query.ilike(
-                    "name",
-                    `%${name}%`
-                );
-
-        }
-
-
-        if (lastname) {
-
-            query =
-                query.ilike(
-                    "lastname",
-                    `%${lastname}%`
-                );
-
-        }
-
-
-        if (piece) {
-
-            query =
-                query.eq(
-                    "piece",
-                    piece
-                );
-
-        }
-
-
-        if (row) {
-
-            query =
-                query.ilike(
-                    "grave_row",
-                    `%${row}%`
-                );
-
-        }
-
-
-        if (number) {
-
-            query =
-                query.ilike(
-                    "grave_number",
-                    `%${number}%`
-                );
-
-        }
-
-
-        if (status) {
-
-            query =
-                query.eq(
-                    "stone_type",
-                    status
-                );
-
-        }
-
+        /*
+         * ابتدا داده‌ها را می‌گیریم.
+         *
+         * علت:
+         * برای اینکه اعداد فارسی و انگلیسی،
+         * حروف فارسی و شکل‌های مختلف متن
+         * یکسان رفتار کنند، نرمال‌سازی
+         * سمت JavaScript انجام می‌شود.
+         */
 
         const {
             data,
             error
-        } = await query
-            .order(
-                "created_at",
-                {
-                    ascending:
-                        false
-                }
-            );
+        } =
+            await supabaseClient
+                .from("martyrs")
+                .select("*")
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                );
 
 
         if (error) {
@@ -4511,8 +4648,112 @@ async function performSearch() {
         }
 
 
-        const results =
+        const allRecords =
             data || [];
+
+
+        /*
+         * فیلتر سمت برنامه.
+         * این بخش مشکل جستجوی رکوردهای
+         * عددی را برطرف می‌کند.
+         */
+
+        const results =
+            allRecords.filter(
+                record => {
+
+                    const recordName =
+                        normalizeSearchText(
+                            record.name
+                        );
+
+
+                    const recordLastname =
+                        normalizeSearchText(
+                            record.lastname
+                        );
+
+
+                    const recordPiece =
+                        toEnglishDigits(
+                            record.piece
+                        );
+
+
+                    const recordRow =
+                        normalizeSearchText(
+                            record.grave_row
+                        );
+
+
+                    const recordNumber =
+                        normalizeSearchText(
+                            record.grave_number
+                        );
+
+
+                    if (
+                        name &&
+                        !recordName.includes(
+                            name
+                        )
+                    ) {
+                        return false;
+                    }
+
+
+                    if (
+                        lastname &&
+                        !recordLastname.includes(
+                            lastname
+                        )
+                    ) {
+                        return false;
+                    }
+
+
+                    if (
+                        piece &&
+                        recordPiece !==
+                        piece
+                    ) {
+                        return false;
+                    }
+
+
+                    if (
+                        row &&
+                        !recordRow.includes(
+                            row
+                        )
+                    ) {
+                        return false;
+                    }
+
+
+                    if (
+                        number &&
+                        !recordNumber.includes(
+                            number
+                        )
+                    ) {
+                        return false;
+                    }
+
+
+                    if (
+                        status &&
+                        record.stone_type !==
+                        status
+                    ) {
+                        return false;
+                    }
+
+
+                    return true;
+
+                }
+            );
 
 
         lastSearchResults =
@@ -4526,9 +4767,7 @@ async function performSearch() {
     }
     catch (error) {
 
-        console.error(
-            error
-        );
+        console.error(error);
 
 
         container.innerHTML = `
@@ -4547,7 +4786,7 @@ async function performSearch() {
 
 
 // ============================================================
-// نمایش نتایج جستجو
+// نمایش نتایج
 // ============================================================
 
 function renderSearchResults(
@@ -4565,33 +4804,6 @@ function renderSearchResults(
     }
 
 
-    if (
-        !results ||
-        results.length === 0
-    ) {
-
-        container.innerHTML = `
-
-            <div class="search-count">
-
-                ۰ رکورد پیدا شد.
-
-            </div>
-
-
-            <div class="empty-message">
-
-                رکوردی با این مشخصات پیدا نشد.
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
     container.innerHTML = `
 
         <div class="search-count">
@@ -4605,21 +4817,36 @@ function renderSearchResults(
         </div>
 
 
-        <button
-            type="button"
-            class="export-button"
-            id="export-excel"
-        >
-            📊 خروجی Excel
-        </button>
+        ${
+            results.length > 0
+            ?
+            `
+            <button
+                type="button"
+                class="export-button"
+                id="export-search-results"
+            >
+                📊 خروجی اکسل
+            </button>
+            `
+            :
+            ""
+        }
 
 
-        <div
-            class="records-container"
-            style="margin-top: 12px;"
-        >
+        <div class="records-container">
 
             ${
+                results.length === 0
+                ?
+                `
+                <div class="empty-message">
+
+                    رکوردی با این مشخصات پیدا نشد.
+
+                </div>
+                `
+                :
                 results
                     .map(
                         record =>
@@ -4635,14 +4862,26 @@ function renderSearchResults(
     `;
 
 
-    document
-        .getElementById(
-            "export-excel"
-        )
-        .addEventListener(
-            "click",
-            exportSearchResults
-        );
+    if (
+        results.length > 0
+    ) {
+
+        const exportButton =
+            document.getElementById(
+                "export-search-results"
+            );
+
+
+        if (exportButton) {
+
+            exportButton.addEventListener(
+                "click",
+                exportSearchResultsToExcel
+            );
+
+        }
+
+    }
 
 
     results.forEach(
@@ -4674,7 +4913,185 @@ function renderSearchResults(
 
 
 // ============================================================
-// بازسازی صفحه جستجو
+// خروجی اکسل نتایج جستجو
+// ============================================================
+
+function exportSearchResultsToExcel() {
+
+    if (
+        !lastSearchResults ||
+        lastSearchResults.length === 0
+    ) {
+
+        alert(
+            "رکوردی برای خروجی گرفتن وجود ندارد."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * اگر کتابخانه SheetJS روی صفحه
+     * بارگذاری نشده باشد، پیام مناسب می‌دهیم.
+     */
+
+    if (
+        typeof XLSX ===
+        "undefined"
+    ) {
+
+        alert(
+            "کتابخانه خروجی اکسل بارگذاری نشده است.\n\n" +
+            "لطفاً اتصال SheetJS را به index.html اضافه کنید."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const exportData =
+            lastSearchResults.map(
+                record => ({
+
+                    "نام":
+                        record.name || "",
+
+                    "نام خانوادگی":
+                        record.lastname || "",
+
+                    "قطعه":
+                        toPersianDigits(
+                            record.piece || ""
+                        ),
+
+                    "ردیف":
+                        record.grave_row || "",
+
+                    "شماره":
+                        record.grave_number || "",
+
+                    "نوع عملیات":
+                        record.stone_type || "",
+
+                    "مرحله":
+                        record.stage || "",
+
+                    "وضعیت ثبت":
+                        record.status || "",
+
+                    "توضیحات":
+                        record.notes || "",
+
+                    "تاریخ ثبت":
+                        getJalaliDateTime(
+                            record.created_at
+                        )
+
+                })
+            );
+
+
+        const worksheet =
+            XLSX.utils.json_to_sheet(
+                exportData
+            );
+
+
+        /*
+         * عرض ستون‌ها
+         */
+
+        worksheet["!cols"] = [
+
+            { wch: 18 },
+            { wch: 24 },
+            { wch: 10 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 16 },
+            { wch: 28 },
+            { wch: 18 },
+            { wch: 35 },
+            { wch: 24 }
+
+        ];
+
+
+        const workbook =
+            XLSX.utils.book_new();
+
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "نتایج جستجو"
+        );
+
+
+        /*
+         * تاریخ شمسی برای نام فایل
+         */
+
+        const now =
+            new Date();
+
+
+        const jalaliFileDate =
+            formatJalaliDate(
+                now
+            )
+            .replace(
+                /\//g,
+                "-"
+            );
+
+
+        const fileName =
+            "GolzarStone_نتایج_جستجو_" +
+            jalaliFileDate +
+            ".xlsx";
+
+
+        XLSX.writeFile(
+            workbook,
+            fileName
+        );
+
+
+        alert(
+            "خروجی اکسل با موفقیت ایجاد شد.\n\n" +
+            "تعداد رکورد: " +
+            toPersianDigits(
+                exportData.length
+            )
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Excel export error:",
+            error
+        );
+
+
+        alert(
+            "ایجاد خروجی اکسل انجام نشد.\n\n" +
+            error.message
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// بازسازی جستجو
 // ============================================================
 
 function restoreSearchPage() {
@@ -4687,7 +5104,7 @@ function restoreSearchPage() {
 
 
 // ============================================================
-// خطای اطلاعات ثبت‌شده
+// خطای رکوردها
 // ============================================================
 
 function showRecordsError(
