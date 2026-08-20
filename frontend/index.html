@@ -7,7 +7,7 @@
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
     <meta
@@ -16,242 +16,111 @@
     >
 
     <meta
-        name="mobile-web-app-capable"
-        content="yes"
-    >
-
-    <meta
-        name="apple-mobile-web-app-capable"
-        content="yes"
-    >
-
-    <meta
-        name="apple-mobile-web-app-status-bar-style"
-        content="default"
+        name="description"
+        content="سامانه مدیریت و پایش سنگ مزار شهدای گلزار شهدای تهران"
     >
 
     <title>
-        GolzarStone
+        گلزار شهدای تهران | سامانه مدیریت و پایش سنگ مزار
     </title>
 
-    <!-- ==================================================
-         CSS اصلی
-    ================================================== -->
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+    <!-- ===================================================== -->
+    <!-- Supabase -->
+    <!-- ===================================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+
+    <!-- ===================================================== -->
+    <!-- SheetJS - Excel -->
+    <!-- مهم: این خط باید قبل از app.js باشد -->
+    <!-- ===================================================== -->
+
+    <script
+        src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
+    ></script>
+
+
+    <!-- ===================================================== -->
+    <!-- ظاهر پایه -->
+    <!-- ===================================================== -->
+
+    <style>
+
+        html,
+        body {
+
+            margin: 0;
+
+            padding: 0;
+
+            min-height: 100%;
+
+            background: #f4f7f5;
+
+        }
+
+
+        body {
+
+            font-family:
+                Tahoma,
+                Arial,
+                sans-serif;
+
+            -webkit-tap-highlight-color:
+                transparent;
+
+        }
+
+
+        button,
+        input,
+        select,
+        textarea {
+
+            font-family:
+                inherit;
+
+        }
+
+
+        * {
+
+            box-sizing:
+                border-box;
+
+        }
+
+    </style>
 
 </head>
 
 
 <body>
 
-<div class="app">
 
-    <!-- ==================================================
-         محتوای برنامه توسط app.js ساخته می‌شود
-    ================================================== -->
+    <!-- ===================================================== -->
+    <!-- برنامه در این قسمت نمایش داده می‌شود -->
+    <!-- ===================================================== -->
 
-    <header class="header">
+    <div
+        class="app"
+        id="app"
+    ></div>
 
-        <div class="header-badge">
-            گلزار شهدای تهران
-        </div>
 
-        <h1>
-            گلزار شهدای تهران
-        </h1>
+    <!-- ===================================================== -->
+    <!-- برنامه اصلی -->
+    <!-- مهم: app.js باید آخر از همه باشد -->
+    <!-- ===================================================== -->
 
-        <p>
-            سامانه مدیریت و پایش سنگ مزار
-        </p>
-
-    </header>
-
-
-    <main class="menu">
-
-        <!-- ==================================================
-             جستجوی شهید
-        ================================================== -->
-
-        <button
-            class="menu-button menu-search"
-            type="button"
-            id="btn-search"
-        >
-
-            <span class="icon">
-                🔎
-            </span>
-
-            <span class="button-text">
-
-                <strong>
-                    جستجوی شهید
-                </strong>
-
-                <small>
-                    جستجو و مشاهده اطلاعات شهید
-                </small>
-
-            </span>
-
-            <span class="button-arrow">
-                ‹
-            </span>
-
-        </button>
-
-
-        <!-- ==================================================
-             ثبت اطلاعات شهید جدید
-        ================================================== -->
-
-        <button
-            class="menu-button menu-new"
-            type="button"
-            id="btn-new"
-        >
-
-            <span class="icon">
-                ➕
-            </span>
-
-            <span class="button-text">
-
-                <strong>
-                    ثبت اطلاعات شهید جدید
-                </strong>
-
-                <small>
-                    ثبت اطلاعات اولیه شهید برای بررسی و تأیید
-                </small>
-
-            </span>
-
-            <span class="button-arrow">
-                ‹
-            </span>
-
-        </button>
-
-
-        <!-- ==================================================
-             اطلاعات ثبت‌شده
-        ================================================== -->
-
-        <button
-            class="menu-button menu-pending"
-            type="button"
-            id="btn-pending"
-        >
-
-            <span class="icon">
-                📋
-            </span>
-
-            <span class="button-text">
-
-                <strong>
-                    اطلاعات ثبت‌شده
-                </strong>
-
-                <small>
-                    بررسی، تأیید و مدیریت اطلاعات ثبت‌شده
-                </small>
-
-            </span>
-
-            <span class="button-arrow">
-                ‹
-            </span>
-
-        </button>
-
-
-        <!-- ==================================================
-             تست اتصال
-        ================================================== -->
-
-        <button
-            class="menu-button menu-test"
-            type="button"
-            id="btn-test"
-        >
-
-            <span class="icon">
-                🔗
-            </span>
-
-            <span class="button-text">
-
-                <strong>
-                    تست اتصال
-                </strong>
-
-                <small>
-                    بررسی ارتباط با بانک اطلاعاتی
-                </small>
-
-            </span>
-
-            <span class="button-arrow">
-                ‹
-            </span>
-
-        </button>
-
-    </main>
-
-
-    <!-- ==================================================
-         Footer
-    ================================================== -->
-
-    <footer class="footer">
-
-        <strong>
-            گلزار شهدای تهران
-        </strong>
-
-        <br>
-
-        سامانه بهسازی و پایش سنگ مزار شهدا
-
-        <br>
-
-        <a
-            href="https://golzarteh.ir/"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            golzarteh.ir
-        </a>
-
-    </footer>
-
-</div>
-
-
-<!-- ==================================================
-     Supabase JavaScript Client
-     
-     این باید قبل از app.js بارگذاری شود.
-================================================== -->
-
-<script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-></script>
-
-
-<!-- ==================================================
-     برنامه اصلی GolzarStone
-================================================== -->
-
-<script src="app.js"></script>
+    <script
+        src="app.js"
+    ></script>
 
 
 </body>
