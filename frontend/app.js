@@ -1,10 +1,12 @@
 // ============================================================
 // Shohada-app / GolzarStone
 // نسخه موبایل
-// Supabase + UI کامل + خروجی Excel
+// Supabase + UI کامل
+// خروجی Excel از نتایج جستجو
 // ============================================================
 
 "use strict";
+
 
 // ============================================================
 // Supabase
@@ -40,7 +42,7 @@ const PIECES = [
 
 
 // ============================================================
-// وضعیت جستجو
+// وضعیت صفحه جستجو
 // ============================================================
 
 let lastSearchResults = [];
@@ -147,6 +149,403 @@ function escapeHtml(value) {
 
 
 // ============================================================
+// بارگذاری کتابخانه Excel
+// ============================================================
+
+let excelLibraryPromise = null;
+
+
+function loadExcelLibrary() {
+
+    if (
+        typeof XLSX !== "undefined"
+    ) {
+        return Promise.resolve();
+    }
+
+    if (excelLibraryPromise) {
+        return excelLibraryPromise;
+    }
+
+    excelLibraryPromise =
+        new Promise(
+            (resolve, reject) => {
+
+                const existingScript =
+                    document.querySelector(
+                        'script[data-golzar-xlsx="true"]'
+                    );
+
+                if (existingScript) {
+
+                    existingScript.addEventListener(
+                        "load",
+                        () => {
+
+                            if (
+                                typeof XLSX !==
+                                "undefined"
+                            ) {
+                                resolve();
+                            }
+                            else {
+                                reject(
+                                    new Error(
+                                        "کتابخانه Excel بارگذاری نشد."
+                                    )
+                                );
+                            }
+
+                        }
+                    );
+
+                    existingScript.addEventListener(
+                        "error",
+                        () => {
+
+                            reject(
+                                new Error(
+                                    "بارگذاری کتابخانه Excel ناموفق بود."
+                                )
+                            );
+
+                        }
+                    );
+
+                    return;
+                }
+
+
+                const script =
+                    document.createElement(
+                        "script"
+                    );
+
+                script.src =
+                    "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+
+                script.async = true;
+
+                script.dataset.golzarXlsx =
+                    "true";
+
+
+                script.onload =
+                    () => {
+
+                        if (
+                            typeof XLSX !==
+                            "undefined"
+                        ) {
+
+                            resolve();
+
+                        }
+                        else {
+
+                            reject(
+                                new Error(
+                                    "کتابخانه Excel در دسترس نیست."
+                                )
+                            );
+
+                        }
+
+                    };
+
+
+                script.onerror =
+                    () => {
+
+                        reject(
+                            new Error(
+                                "اتصال برای دریافت کتابخانه Excel برقرار نشد."
+                            )
+                        );
+
+                    };
+
+
+                document.head.appendChild(
+                    script
+                );
+
+            }
+        );
+
+    return excelLibraryPromise;
+}
+
+
+// ============================================================
+// ساخت نام فایل Excel
+// ============================================================
+
+function getExcelFileName() {
+
+    const now =
+        new Date();
+
+    const year =
+        now.getFullYear();
+
+    const month =
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const day =
+        String(
+            now.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const hour =
+        String(
+            now.getHours()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const minute =
+        String(
+            now.getMinutes()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const second =
+        String(
+            now.getSeconds()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    return (
+        "خروجی_جستجوی_شهدا_" +
+        year +
+        "-" +
+        month +
+        "-" +
+        day +
+        "_" +
+        hour +
+        "-" +
+        minute +
+        "-" +
+        second +
+        ".xlsx"
+    );
+}
+
+
+// ============================================================
+// خروجی Excel از نتایج فعلی جستجو
+// ============================================================
+
+async function exportSearchResultsToExcel() {
+
+    if (
+        !lastSearchResults ||
+        lastSearchResults.length === 0
+    ) {
+
+        alert(
+            "برای تهیه خروجی، ابتدا حداقل یک رکورد پیدا کنید."
+        );
+
+        return;
+    }
+
+
+    const button =
+        document.getElementById(
+            "export-search-excel"
+        );
+
+
+    if (button) {
+
+        button.disabled = true;
+
+        button.textContent =
+            "در حال ساخت Excel...";
+
+    }
+
+
+    try {
+
+        await loadExcelLibrary();
+
+
+        const rows =
+            lastSearchResults.map(
+                record => ({
+
+                    "شناسه":
+                        record.id ?? "",
+
+                    "نام":
+                        record.name ?? "",
+
+                    "نام خانوادگی":
+                        record.lastname ?? "",
+
+                    "قطعه":
+                        record.piece ?? "",
+
+                    "ردیف":
+                        record.grave_row ?? "",
+
+                    "شماره":
+                        record.grave_number ?? "",
+
+                    "نوع عملیات":
+                        record.stone_type ?? "",
+
+                    "مرحله":
+                        record.stage ?? "",
+
+                    "وضعیت ثبت":
+                        record.status ?? "",
+
+                    "توضیحات":
+                        record.notes ?? "",
+
+                    "تاریخ ثبت":
+                        record.created_at ?? ""
+
+                })
+            );
+
+
+        const worksheet =
+            XLSX.utils.json_to_sheet(
+                rows
+            );
+
+
+        worksheet["!cols"] = [
+
+            {
+                wch: 16
+            },
+
+            {
+                wch: 18
+            },
+
+            {
+                wch: 22
+            },
+
+            {
+                wch: 10
+            },
+
+            {
+                wch: 15
+            },
+
+            {
+                wch: 15
+            },
+
+            {
+                wch: 16
+            },
+
+            {
+                wch: 24
+            },
+
+            {
+                wch: 20
+            },
+
+            {
+                wch: 35
+            },
+
+            {
+                wch: 24
+            }
+
+        ];
+
+
+        const workbook =
+            XLSX.utils.book_new();
+
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "نتایج جستجو"
+        );
+
+
+        const fileName =
+            getExcelFileName();
+
+
+        XLSX.writeFile(
+            workbook,
+            fileName
+        );
+
+
+        alert(
+            "خروجی Excel با موفقیت تهیه شد.\n\n" +
+            "تعداد رکوردها: " +
+            toPersianDigits(
+                lastSearchResults.length
+            )
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Excel export error:",
+            error
+        );
+
+        alert(
+            "تهیه خروجی Excel انجام نشد.\n\n" +
+            (
+                error.message ||
+                "خطای غیرمنتظره"
+            )
+        );
+
+    }
+    finally {
+
+        if (button) {
+
+            button.disabled = false;
+
+            button.textContent =
+                "📊 خروجی Excel";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
 // History
 // ============================================================
 
@@ -166,14 +565,18 @@ function initializeHistory() {
     }
 
     currentAppPage = "home";
+
 }
 
 
 function pushAppHistory(page) {
 
     if (isHandlingHistory) {
+
         currentAppPage = page;
+
         return;
+
     }
 
     window.history.pushState(
@@ -186,12 +589,15 @@ function pushAppHistory(page) {
     );
 
     currentAppPage = page;
+
 }
 
 
 function handleBackNavigation() {
 
-    const now = Date.now();
+    const now =
+        Date.now();
+
 
     if (
         currentAppPage === "home"
@@ -205,13 +611,18 @@ function handleBackNavigation() {
             firstBackPressTime = 0;
 
             return true;
+
         }
 
-        firstBackPressTime = now;
+
+        firstBackPressTime =
+            now;
+
 
         alert(
             "برای خروج از برنامه، یک بار دیگر دکمه بازگشت را بزنید."
         );
+
 
         window.history.pushState(
             {
@@ -222,10 +633,14 @@ function handleBackNavigation() {
             window.location.href
         );
 
+
         return false;
+
     }
 
+
     return false;
+
 }
 
 
@@ -235,6 +650,7 @@ window.addEventListener(
 
         const state =
             event.state;
+
 
         if (
             !state ||
@@ -251,17 +667,21 @@ window.addEventListener(
                 if (!allowed) {
                     return;
                 }
+
             }
 
             return;
+
         }
 
 
         const page =
-            state.page || "home";
+            state.page ||
+            "home";
 
 
         isHandlingHistory = true;
+
 
         try {
 
@@ -288,13 +708,15 @@ window.addEventListener(
 
             }
 
+
             currentAppPage =
                 page;
 
         }
         finally {
 
-            isHandlingHistory = false;
+            isHandlingHistory =
+                false;
 
         }
 
@@ -311,9 +733,15 @@ function isValidStageForStoneType(
     stage
 ) {
 
-    if (!stoneType || !stage) {
+    if (
+        !stoneType ||
+        !stage
+    ) {
+
         return false;
+
     }
+
 
     if (
         !Object.prototype.hasOwnProperty.call(
@@ -321,10 +749,18 @@ function isValidStageForStoneType(
             stoneType
         )
     ) {
+
         return false;
+
     }
 
-    return STAGES[stoneType].includes(stage);
+
+    return STAGES[
+        stoneType
+    ].includes(
+        stage
+    );
+
 }
 
 
@@ -355,14 +791,21 @@ function applyAppStyles() {
             "golzar-app-styles"
         )
     ) {
+
         return;
+
     }
 
+
     const style =
-        document.createElement("style");
+        document.createElement(
+            "style"
+        );
+
 
     style.id =
         "golzar-app-styles";
+
 
     style.textContent = `
 
@@ -383,6 +826,7 @@ function applyAppStyles() {
             --shadow: 0 5px 18px rgba(23, 99, 61, 0.08);
         }
 
+
         .app {
             direction: rtl;
             font-family:
@@ -395,6 +839,7 @@ function applyAppStyles() {
             background: var(--bg);
             min-height: 100vh;
         }
+
 
         .header {
             background:
@@ -410,6 +855,7 @@ function applyAppStyles() {
             box-shadow: var(--shadow);
         }
 
+
         .header-badge {
             display: inline-block;
             background: rgba(255,255,255,.14);
@@ -420,11 +866,13 @@ function applyAppStyles() {
             margin-bottom: 12px;
         }
 
+
         .header h1 {
             margin: 0;
             font-size: 27px;
             font-weight: 700;
         }
+
 
         .header p {
             margin: 9px 0 0;
@@ -432,12 +880,14 @@ function applyAppStyles() {
             opacity: .9;
         }
 
+
         .menu {
             padding: 22px 16px;
             display: flex;
             flex-direction: column;
             gap: 14px;
         }
+
 
         .menu-button {
             border: none;
@@ -455,9 +905,11 @@ function applyAppStyles() {
             transition: .15s ease;
         }
 
+
         .menu-button:active {
             transform: scale(.985);
         }
+
 
         .menu-button .icon {
             width: 52px;
@@ -470,21 +922,26 @@ function applyAppStyles() {
             flex-shrink: 0;
         }
 
+
         .menu-search .icon {
             background: var(--blue-light);
         }
+
 
         .menu-new .icon {
             background: var(--green-light);
         }
 
+
         .menu-pending .icon {
             background: var(--orange-light);
         }
 
+
         .menu-test .icon {
             background: #edf0f0;
         }
+
 
         .button-text {
             flex: 1;
@@ -493,19 +950,23 @@ function applyAppStyles() {
             gap: 5px;
         }
 
+
         .button-text strong {
             font-size: 18px;
         }
+
 
         .button-text small {
             font-size: 13px;
             color: var(--muted);
         }
 
+
         .button-arrow {
             font-size: 29px;
             color: #9aa8a1;
         }
+
 
         .footer {
             text-align: center;
@@ -515,11 +976,13 @@ function applyAppStyles() {
             line-height: 2;
         }
 
+
         .footer a {
             color: var(--green-dark);
             text-decoration: none;
             font-weight: bold;
         }
+
 
         .internal-header {
             display: flex;
@@ -533,6 +996,7 @@ function applyAppStyles() {
             z-index: 10;
         }
 
+
         .back-button {
             border: none;
             background: var(--green-light);
@@ -544,6 +1008,7 @@ function applyAppStyles() {
             cursor: pointer;
             white-space: nowrap;
         }
+
 
         .refresh-button {
             border: none;
@@ -557,19 +1022,45 @@ function applyAppStyles() {
             white-space: nowrap;
         }
 
+
+        .export-button {
+            border: none;
+            background: var(--green-light);
+            color: var(--green-dark);
+            border-radius: 13px;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            margin-top: 10px;
+        }
+
+
+        .export-button:active,
         .refresh-button:active,
         .back-button:active {
             transform: scale(.97);
         }
 
+
+        .export-button:disabled,
+        .refresh-button:disabled {
+            opacity: .65;
+            cursor: wait;
+        }
+
+
         .internal-title {
             flex: 1;
         }
+
 
         .internal-title h2 {
             margin: 0;
             font-size: 20px;
         }
+
 
         .internal-title p {
             margin: 4px 0 0;
@@ -577,9 +1068,11 @@ function applyAppStyles() {
             font-size: 12px;
         }
 
+
         .content {
             padding: 16px;
         }
+
 
         .card {
             background: white;
@@ -589,12 +1082,14 @@ function applyAppStyles() {
             border: 1px solid var(--border);
         }
 
+
         .card-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 20px;
             color: var(--green-dark);
         }
+
 
         .section-title {
             font-size: 16px;
@@ -605,9 +1100,11 @@ function applyAppStyles() {
             margin: 22px 0 13px;
         }
 
+
         .form-group {
             margin-bottom: 15px;
         }
+
 
         .form-group label {
             display: block;
@@ -615,6 +1112,7 @@ function applyAppStyles() {
             font-size: 14px;
             font-weight: bold;
         }
+
 
         input,
         select,
@@ -631,6 +1129,7 @@ function applyAppStyles() {
             outline: none;
         }
 
+
         input:focus,
         select:focus,
         textarea:focus {
@@ -640,9 +1139,11 @@ function applyAppStyles() {
                 rgba(35,139,87,.10);
         }
 
+
         textarea {
             resize: vertical;
         }
+
 
         .form-row {
             display: grid;
@@ -651,11 +1152,13 @@ function applyAppStyles() {
             gap: 10px;
         }
 
+
         .choice-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
+
 
         .choice-card {
             position: relative;
@@ -672,17 +1175,20 @@ function applyAppStyles() {
             transition: .15s ease;
         }
 
+
         .choice-card input {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
 
+
         .choice-card:has(input:checked) {
             border-color: var(--green);
             background: var(--green-light);
             color: var(--green-dark);
         }
+
 
         .choice-card span::before {
             content: "";
@@ -696,6 +1202,7 @@ function applyAppStyles() {
             box-sizing: border-box;
         }
 
+
         .choice-card:has(input:checked)
         span::before {
             border-color: var(--green);
@@ -707,11 +1214,13 @@ function applyAppStyles() {
                 );
         }
 
+
         .stage-list {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
+
 
         .stage-option {
             position: relative;
@@ -728,17 +1237,20 @@ function applyAppStyles() {
             transition: .15s ease;
         }
 
+
         .stage-option.disabled {
             opacity: .35;
             cursor: not-allowed;
             background: #f1f3f2;
         }
 
+
         .stage-option input {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
+
 
         .stage-option span::before {
             content: "";
@@ -752,12 +1264,14 @@ function applyAppStyles() {
             box-sizing: border-box;
         }
 
+
         .stage-option:has(input:checked) {
             border-color: var(--orange);
             background: var(--orange-light);
             color: #8a4f13;
             font-weight: bold;
         }
+
 
         .stage-option:has(input:checked)
         span::before {
@@ -769,6 +1283,7 @@ function applyAppStyles() {
                     transparent 58%
                 );
         }
+
 
         .primary-button {
             width: 100%;
@@ -784,33 +1299,12 @@ function applyAppStyles() {
             margin-top: 10px;
         }
 
+
         .primary-button:disabled {
             opacity: .65;
             cursor: wait;
         }
 
-        .export-button {
-            width: 100%;
-            border: none;
-            border-radius: 15px;
-            padding: 13px;
-            background: #eaf4ed;
-            color: var(--green-dark);
-            font-family: inherit;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 9px;
-        }
-
-        .export-button:active {
-            transform: scale(.985);
-        }
-
-        .export-button:disabled {
-            opacity: .6;
-            cursor: wait;
-        }
 
         .records-summary {
             display: grid;
@@ -820,6 +1314,7 @@ function applyAppStyles() {
             margin-bottom: 15px;
         }
 
+
         .summary-box {
             border-radius: 14px;
             padding: 11px 7px;
@@ -827,23 +1322,28 @@ function applyAppStyles() {
             background: var(--green-light);
         }
 
+
         .summary-box.warning {
             background: var(--orange-light);
         }
 
+
         .summary-box.approved {
             background: var(--blue-light);
         }
+
 
         .summary-box strong {
             display: block;
             font-size: 21px;
         }
 
+
         .summary-box small {
             font-size: 11px;
             color: var(--muted);
         }
+
 
         .records-container {
             display: flex;
@@ -851,12 +1351,14 @@ function applyAppStyles() {
             gap: 12px;
         }
 
+
         .record-card {
             border: 1px solid var(--border);
             border-radius: 18px;
             padding: 15px;
             background: white;
         }
+
 
         .record-card-header {
             display: flex;
@@ -866,11 +1368,13 @@ function applyAppStyles() {
             margin-bottom: 12px;
         }
 
+
         .record-name {
             font-size: 18px;
             font-weight: bold;
             color: var(--green-dark);
         }
+
 
         .status-badge {
             background: var(--orange-light);
@@ -881,10 +1385,12 @@ function applyAppStyles() {
             white-space: nowrap;
         }
 
+
         .status-badge.approved {
             background: var(--green-light);
             color: var(--green-dark);
         }
+
 
         .location-box {
             display: grid;
@@ -894,6 +1400,7 @@ function applyAppStyles() {
             margin-bottom: 12px;
         }
 
+
         .location-box > div {
             background: var(--bg);
             border-radius: 12px;
@@ -901,17 +1408,20 @@ function applyAppStyles() {
             text-align: center;
         }
 
+
         .location-box small {
             display: block;
             color: var(--muted);
             font-size: 11px;
         }
 
+
         .location-box strong {
             display: block;
             margin-top: 3px;
             font-size: 16px;
         }
+
 
         .record-info {
             display: flex;
@@ -920,9 +1430,11 @@ function applyAppStyles() {
             font-size: 14px;
         }
 
+
         .record-info span {
             color: var(--muted);
         }
+
 
         .record-notes {
             margin-top: 11px;
@@ -933,9 +1445,11 @@ function applyAppStyles() {
             line-height: 1.8;
         }
 
+
         .record-notes span {
             font-weight: bold;
         }
+
 
         .danger-button {
             width: 100%;
@@ -949,13 +1463,16 @@ function applyAppStyles() {
             cursor: pointer;
         }
 
+
         .record-card.clickable {
             cursor: pointer;
         }
 
+
         .record-card.clickable:active {
             transform: scale(.99);
         }
+
 
         .search-count {
             background: var(--blue-light);
@@ -968,12 +1485,14 @@ function applyAppStyles() {
             font-weight: bold;
         }
 
+
         .filter-title {
             margin-top: 18px;
             margin-bottom: 10px;
             color: var(--green-dark);
             font-weight: bold;
         }
+
 
         .loading-message,
         .empty-message,
@@ -984,11 +1503,13 @@ function applyAppStyles() {
             line-height: 2;
         }
 
+
         .error-message {
             color: var(--red);
             background: #fff4f4;
             border-radius: 14px;
         }
+
 
         .detail-card {
             background: white;
@@ -998,12 +1519,14 @@ function applyAppStyles() {
             box-shadow: var(--shadow);
         }
 
+
         .detail-title {
             font-size: 22px;
             font-weight: bold;
             color: var(--green-dark);
             margin-bottom: 18px;
         }
+
 
         .detail-row {
             display: flex;
@@ -1014,13 +1537,16 @@ function applyAppStyles() {
             font-size: 14px;
         }
 
+
         .detail-row span {
             color: var(--muted);
         }
 
+
         .detail-row strong {
             text-align: left;
         }
+
 
         .detail-actions {
             margin-top: 20px;
@@ -1028,6 +1554,7 @@ function applyAppStyles() {
             flex-direction: column;
             gap: 9px;
         }
+
 
         .approve-button {
             border: none;
@@ -1041,6 +1568,7 @@ function applyAppStyles() {
             cursor: pointer;
         }
 
+
         .back-secondary {
             border: 1px solid var(--border);
             border-radius: 13px;
@@ -1050,6 +1578,7 @@ function applyAppStyles() {
             font-family: inherit;
             cursor: pointer;
         }
+
 
         @media (max-width: 600px) {
 
@@ -1064,6 +1593,7 @@ function applyAppStyles() {
             }
 
         }
+
 
         @media (max-width: 390px) {
 
@@ -1084,7 +1614,11 @@ function applyAppStyles() {
 
     `;
 
-    document.head.appendChild(style);
+
+    document.head.appendChild(
+        style
+    );
+
 }
 
 
@@ -1147,6 +1681,7 @@ function internalHeader(
         </header>
 
     `;
+
 }
 
 
@@ -1158,14 +1693,20 @@ function showHome() {
 
     applyAppStyles();
 
-    currentAppPage = "home";
+    currentAppPage =
+        "home";
+
 
     const app =
-        document.querySelector(".app");
+        document.querySelector(
+            ".app"
+        );
+
 
     if (!app) {
         return;
     }
+
 
     app.innerHTML = `
 
@@ -1184,6 +1725,7 @@ function showHome() {
             </p>
 
         </header>
+
 
         <main class="menu">
 
@@ -1304,6 +1846,7 @@ function showHome() {
 
         </main>
 
+
         <footer class="footer">
 
             <strong>
@@ -1328,33 +1871,46 @@ function showHome() {
 
     `;
 
+
     document
-        .getElementById("btn-search")
+        .getElementById(
+            "btn-search"
+        )
         .addEventListener(
             "click",
             showSearch
         );
 
+
     document
-        .getElementById("btn-new")
+        .getElementById(
+            "btn-new"
+        )
         .addEventListener(
             "click",
             showNewRecord
         );
 
+
     document
-        .getElementById("btn-pending")
+        .getElementById(
+            "btn-pending"
+        )
         .addEventListener(
             "click",
             showPendingRecords
         );
 
+
     document
-        .getElementById("btn-test")
+        .getElementById(
+            "btn-test"
+        )
         .addEventListener(
             "click",
             testSupabaseConnection
         );
+
 }
 
 
@@ -1374,6 +1930,7 @@ async function testSupabaseConnection() {
             .select("id")
             .limit(1);
 
+
         if (error) {
 
             console.error(
@@ -1381,13 +1938,17 @@ async function testSupabaseConnection() {
                 error
             );
 
+
             alert(
                 "اتصال به Supabase برقرار نشد.\n\n" +
                 error.message
             );
 
+
             return;
+
         }
+
 
         alert(
             "اتصال به Supabase با موفقیت برقرار شد."
@@ -1397,6 +1958,7 @@ async function testSupabaseConnection() {
     catch (error) {
 
         console.error(error);
+
 
         alert(
             "خطای غیرمنتظره در اتصال به Supabase."
@@ -1414,11 +1976,19 @@ async function testSupabaseConnection() {
 function showNewRecord() {
 
     if (!isHandlingHistory) {
-        pushAppHistory("new");
+
+        pushAppHistory(
+            "new"
+        );
+
     }
 
+
     const app =
-        document.querySelector(".app");
+        document.querySelector(
+            ".app"
+        );
+
 
     app.innerHTML = `
 
@@ -1427,6 +1997,7 @@ function showNewRecord() {
             "ثبت اطلاعات اولیه برای بررسی و تأیید"
         )}
 
+
         <main class="content">
 
             <div class="card">
@@ -1434,6 +2005,7 @@ function showNewRecord() {
                 <div class="card-title">
                     اطلاعات شهید
                 </div>
+
 
                 <div class="form-group">
 
@@ -1450,6 +2022,7 @@ function showNewRecord() {
 
                 </div>
 
+
                 <div class="form-group">
 
                     <label for="new-lastname">
@@ -1465,9 +2038,11 @@ function showNewRecord() {
 
                 </div>
 
+
                 <div class="section-title">
                     نوع عملیات سنگ
                 </div>
+
 
                 <div class="choice-grid">
 
@@ -1485,6 +2060,7 @@ function showNewRecord() {
 
                     </label>
 
+
                     <label class="choice-card">
 
                         <input
@@ -1501,9 +2077,11 @@ function showNewRecord() {
 
                 </div>
 
+
                 <div class="section-title">
                     محل مزار
                 </div>
+
 
                 <div class="form-row">
 
@@ -1532,6 +2110,7 @@ function showNewRecord() {
 
                     </div>
 
+
                     <div class="form-group">
 
                         <label for="new-row">
@@ -1546,6 +2125,7 @@ function showNewRecord() {
                         >
 
                     </div>
+
 
                     <div class="form-group">
 
@@ -1564,9 +2144,11 @@ function showNewRecord() {
 
                 </div>
 
+
                 <div class="section-title">
                     مرحله فعلی کار
                 </div>
+
 
                 <div
                     class="stage-list"
@@ -1577,9 +2159,11 @@ function showNewRecord() {
 
                 </div>
 
+
                 <div class="section-title">
                     توضیحات
                 </div>
+
 
                 <div class="form-group">
 
@@ -1590,6 +2174,7 @@ function showNewRecord() {
                     ></textarea>
 
                 </div>
+
 
                 <button
                     type="button"
@@ -1605,8 +2190,11 @@ function showNewRecord() {
 
     `;
 
+
     document
-        .getElementById("back-home")
+        .getElementById(
+            "back-home"
+        )
         .addEventListener(
             "click",
             () => {
@@ -1627,29 +2215,39 @@ function showNewRecord() {
             }
         );
 
+
     document
-        .getElementById("save-new")
+        .getElementById(
+            "save-new"
+        )
         .addEventListener(
             "click",
             saveNewRecord
         );
 
+
     document
         .querySelectorAll(
             'input[name="stone-type"]'
         )
-        .forEach(input => {
+        .forEach(
+            input => {
 
-            input.addEventListener(
-                "change",
-                updateStageOptions
-            );
+                input.addEventListener(
+                    "change",
+                    updateStageOptions
+                );
 
-        });
+            }
+        );
+
 
     document
-        .getElementById("new-name")
+        .getElementById(
+            "new-name"
+        )
         .focus();
+
 }
 
 
@@ -1662,9 +2260,17 @@ function renderStageOptions(
 ) {
 
     const allStages = [
-        ...STAGES["ترمیمی"],
-        ...STAGES["تعویضی"]
+
+        ...STAGES[
+            "ترمیمی"
+        ],
+
+        ...STAGES[
+            "تعویضی"
+        ]
+
     ];
+
 
     return allStages
         .map(
@@ -1681,9 +2287,12 @@ function renderStageOptions(
                         value="${escapeHtml(stage)}"
                         disabled
                         ${
-                            stage === selectedStage
-                            ? "checked"
-                            : ""
+                            stage ===
+                            selectedStage
+                            ?
+                            "checked"
+                            :
+                            ""
                         }
                     >
 
@@ -1695,11 +2304,12 @@ function renderStageOptions(
                 `
         )
         .join("");
+
 }
 
 
 // ============================================================
-// فعال‌سازی مراحل
+// فعال‌سازی مراحل مربوط به نوع انتخاب‌شده
 // ============================================================
 
 function updateStageOptions() {
@@ -1709,49 +2319,60 @@ function updateStageOptions() {
             'input[name="stone-type"]:checked'
         );
 
+
     const stageOptions =
         document.querySelectorAll(
             ".stage-option"
         );
 
-    stageOptions.forEach(option => {
 
-        const stage =
-            option.dataset.stage;
+    stageOptions.forEach(
+        option => {
 
-        const input =
-            option.querySelector(
-                'input[name="stage"]'
-            );
+            const stage =
+                option.dataset.stage;
 
-        const allowed =
-            selectedType &&
-            isValidStageForStoneType(
-                selectedType.value,
-                stage
-            );
 
-        if (allowed) {
+            const input =
+                option.querySelector(
+                    'input[name="stage"]'
+                );
 
-            option.classList.remove(
-                "disabled"
-            );
 
-            input.disabled = false;
+            const allowed =
+                selectedType &&
+                isValidStageForStoneType(
+                    selectedType.value,
+                    stage
+                );
+
+
+            if (allowed) {
+
+                option.classList.remove(
+                    "disabled"
+                );
+
+                input.disabled =
+                    false;
+
+            }
+            else {
+
+                option.classList.add(
+                    "disabled"
+                );
+
+                input.disabled =
+                    true;
+
+                input.checked =
+                    false;
+
+            }
 
         }
-        else {
-
-            option.classList.add(
-                "disabled"
-            );
-
-            input.disabled = true;
-            input.checked = false;
-
-        }
-
-    });
+    );
 
 }
 
@@ -1764,95 +2385,145 @@ async function saveNewRecord() {
 
     const name =
         document
-            .getElementById("new-name")
+            .getElementById(
+                "new-name"
+            )
             .value
             .trim();
+
 
     const lastname =
         document
-            .getElementById("new-lastname")
+            .getElementById(
+                "new-lastname"
+            )
             .value
             .trim();
+
 
     const piece =
         document
-            .getElementById("new-piece")
+            .getElementById(
+                "new-piece"
+            )
             .value;
+
 
     const row =
         document
-            .getElementById("new-row")
+            .getElementById(
+                "new-row"
+            )
             .value
             .trim();
 
+
     const number =
         document
-            .getElementById("new-number")
+            .getElementById(
+                "new-number"
+            )
             .value
             .trim();
+
 
     const stoneType =
         document.querySelector(
             'input[name="stone-type"]:checked'
         );
 
+
     const stage =
         document.querySelector(
             'input[name="stage"]:checked'
         );
 
+
     const notes =
         document
-            .getElementById("new-notes")
+            .getElementById(
+                "new-notes"
+            )
             .value
             .trim();
 
+
     if (!name) {
-        alert("نام شهید را وارد کنید.");
+
+        alert(
+            "نام شهید را وارد کنید."
+        );
+
         return;
+
     }
 
+
     if (!lastname) {
+
         alert(
             "نام خانوادگی شهید را وارد کنید."
         );
+
         return;
+
     }
 
+
     if (!stoneType) {
+
         alert(
             "نوع عملیات سنگ را مشخص کنید."
         );
+
         return;
+
     }
 
+
     if (!piece) {
+
         alert(
             "قطعه را انتخاب کنید."
         );
+
         return;
+
     }
 
+
     if (!row) {
+
         alert(
             "ردیف مزار را وارد کنید."
         );
+
         return;
+
     }
 
+
     if (!number) {
+
         alert(
             "شماره مزار را وارد کنید."
         );
+
         return;
+
     }
 
+
     if (!stage) {
+
         alert(
             "مرحله فعلی کار را مشخص کنید."
         );
+
         return;
+
     }
+
 
     if (
         !isValidStageForStoneType(
@@ -1866,17 +2537,23 @@ async function saveNewRecord() {
         );
 
         return;
+
     }
+
 
     const button =
         document.getElementById(
             "save-new"
         );
 
-    button.disabled = true;
+
+    button.disabled =
+        true;
+
 
     button.textContent =
         "در حال ثبت اطلاعات...";
+
 
     try {
 
@@ -1887,15 +2564,20 @@ async function saveNewRecord() {
             .from("martyrs")
             .insert({
 
-                name: name,
+                name:
+                    name,
 
-                lastname: lastname,
+                lastname:
+                    lastname,
 
-                piece: piece,
+                piece:
+                    piece,
 
-                grave_row: row,
+                grave_row:
+                    row,
 
-                grave_number: number,
+                grave_number:
+                    number,
 
                 stone_type:
                     stoneType.value,
@@ -1904,7 +2586,8 @@ async function saveNewRecord() {
                     stage.value,
 
                 notes:
-                    notes || null,
+                    notes ||
+                    null,
 
                 status:
                     "در انتظار تأیید"
@@ -1913,6 +2596,7 @@ async function saveNewRecord() {
             .select()
             .single();
 
+
         if (error) {
 
             console.error(
@@ -1920,36 +2604,50 @@ async function saveNewRecord() {
                 error
             );
 
+
             alert(
                 "ذخیره اطلاعات انجام نشد.\n\n" +
                 error.message
             );
 
-            button.disabled = false;
+
+            button.disabled =
+                false;
+
 
             button.textContent =
                 "ذخیره اطلاعات";
 
+
             return;
+
         }
+
 
         alert(
             "اطلاعات شهید با موفقیت ثبت شد.\n\n" +
             "وضعیت: در انتظار تأیید"
         );
 
+
         showNewRecord();
 
     }
     catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         alert(
             "خطای غیرمنتظره هنگام ذخیره اطلاعات."
         );
 
-        button.disabled = false;
+
+        button.disabled =
+            false;
+
 
         button.textContent =
             "ذخیره اطلاعات";
@@ -1971,13 +2669,23 @@ async function showPendingRecords(
         !isHandlingHistory &&
         !preserveHistory
     ) {
-        pushAppHistory("pending");
+
+        pushAppHistory(
+            "pending"
+        );
+
     }
 
-    currentAppPage = "pending";
+
+    currentAppPage =
+        "pending";
+
 
     const app =
-        document.querySelector(".app");
+        document.querySelector(
+            ".app"
+        );
+
 
     app.innerHTML = `
 
@@ -1987,6 +2695,7 @@ async function showPendingRecords(
             true
         )}
 
+
         <main class="content">
 
             <div class="card">
@@ -1995,6 +2704,7 @@ async function showPendingRecords(
                     id="records-summary"
                     class="records-summary"
                 ></div>
+
 
                 <div
                     id="pending-container"
@@ -2013,8 +2723,11 @@ async function showPendingRecords(
 
     `;
 
+
     document
-        .getElementById("back-home")
+        .getElementById(
+            "back-home"
+        )
         .addEventListener(
             "click",
             () => {
@@ -2026,7 +2739,9 @@ async function showPendingRecords(
 
 
     document
-        .getElementById("refresh-page")
+        .getElementById(
+            "refresh-page"
+        )
         .addEventListener(
             "click",
             () => {
@@ -2053,14 +2768,22 @@ async function loadPendingRecords() {
             "pending-container"
         );
 
+
     const summary =
         document.getElementById(
             "records-summary"
         );
 
-    if (!container || !summary) {
+
+    if (
+        !container ||
+        !summary
+    ) {
+
         return;
+
     }
+
 
     container.innerHTML = `
 
@@ -2069,6 +2792,7 @@ async function loadPendingRecords() {
         </div>
 
     `;
+
 
     try {
 
@@ -2089,6 +2813,7 @@ async function loadPendingRecords() {
                 }
             );
 
+
         if (error) {
 
             showRecordsError(
@@ -2096,10 +2821,13 @@ async function loadPendingRecords() {
             );
 
             return;
+
         }
 
+
         const records =
-            data || [];
+            data ||
+            [];
 
 
         summary.innerHTML = `
@@ -2118,6 +2846,7 @@ async function loadPendingRecords() {
 
             </div>
 
+
             <div class="summary-box">
 
                 <strong>
@@ -2135,7 +2864,9 @@ async function loadPendingRecords() {
         `;
 
 
-        if (records.length === 0) {
+        if (
+            records.length === 0
+        ) {
 
             container.innerHTML = `
 
@@ -2148,6 +2879,7 @@ async function loadPendingRecords() {
             `;
 
             return;
+
         }
 
 
@@ -2162,32 +2894,38 @@ async function loadPendingRecords() {
                 .join("");
 
 
-        records.forEach(record => {
+        records.forEach(
+            record => {
 
-            const card =
-                document.getElementById(
-                    `record-summary-${record.id}`
-                );
+                const card =
+                    document.getElementById(
+                        `record-summary-${record.id}`
+                    );
 
-            if (card) {
 
-                card.addEventListener(
-                    "click",
-                    () =>
-                        showRecordDetail(
-                            record.id,
-                            "records"
-                        )
-                );
+                if (card) {
+
+                    card.addEventListener(
+                        "click",
+                        () =>
+                            showRecordDetail(
+                                record.id,
+                                "records"
+                            )
+                    );
+
+                }
 
             }
-
-        });
+        );
 
     }
     catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         showRecordsError(
             "خطای غیرمنتظره هنگام دریافت اطلاعات."
@@ -2199,7 +2937,7 @@ async function loadPendingRecords() {
 
 
 // ============================================================
-// تازه‌سازی اطلاعات ثبت‌شده
+// تازه‌سازی
 // ============================================================
 
 async function refreshPendingRecords() {
@@ -2209,20 +2947,25 @@ async function refreshPendingRecords() {
             "refresh-page"
         );
 
+
     if (refreshButton) {
 
-        refreshButton.disabled = true;
+        refreshButton.disabled =
+            true;
 
         refreshButton.textContent =
             "↻ در حال تازه‌سازی...";
 
     }
 
+
     await loadPendingRecords();
+
 
     if (refreshButton) {
 
-        refreshButton.disabled = false;
+        refreshButton.disabled =
+            false;
 
         refreshButton.textContent =
             "↻ تازه‌سازی";
@@ -2236,11 +2979,14 @@ async function refreshPendingRecords() {
 // کارت خلاصه رکورد
 // ============================================================
 
-function recordSummaryCard(record) {
+function recordSummaryCard(
+    record
+) {
 
     const status =
         record.status ||
         "در انتظار تأیید";
+
 
     const statusClass =
         status === "تأیید شده"
@@ -2248,6 +2994,7 @@ function recordSummaryCard(record) {
         "approved"
         :
         "";
+
 
     return `
 
@@ -2270,15 +3017,19 @@ function recordSummaryCard(record) {
 
                 </div>
 
+
                 <span
                     class="status-badge ${statusClass}"
                 >
 
-                    ${escapeHtml(status)}
+                    ${escapeHtml(
+                        status
+                    )}
 
                 </span>
 
             </div>
+
 
             <div class="location-box">
 
@@ -2296,6 +3047,7 @@ function recordSummaryCard(record) {
 
                 </div>
 
+
                 <div>
 
                     <small>
@@ -2309,6 +3061,7 @@ function recordSummaryCard(record) {
                     </strong>
 
                 </div>
+
 
                 <div>
 
@@ -2326,6 +3079,7 @@ function recordSummaryCard(record) {
 
             </div>
 
+
             <div class="record-info">
 
                 <span>
@@ -2339,6 +3093,7 @@ function recordSummaryCard(record) {
                 </strong>
 
             </div>
+
 
             <div class="record-info">
 
@@ -2371,7 +3126,10 @@ async function showRecordDetail(
 ) {
 
     const app =
-        document.querySelector(".app");
+        document.querySelector(
+            ".app"
+        );
+
 
     app.innerHTML = `
 
@@ -2383,6 +3141,7 @@ async function showRecordDetail(
             :
             "بررسی و تصمیم نهایی کارشناس"
         )}
+
 
         <main class="content">
 
@@ -2401,8 +3160,11 @@ async function showRecordDetail(
 
     `;
 
+
     document
-        .getElementById("back-home")
+        .getElementById(
+            "back-home"
+        )
         .addEventListener(
             "click",
             () => {
@@ -2425,6 +3187,7 @@ async function showRecordDetail(
             }
         );
 
+
     try {
 
         const {
@@ -2438,6 +3201,7 @@ async function showRecordDetail(
                 id
             )
             .single();
+
 
         if (error) {
 
@@ -2462,17 +3226,23 @@ async function showRecordDetail(
                 `;
 
             return;
+
         }
+
 
         const status =
             data.status ||
             "در انتظار تأیید";
 
+
         const isApproved =
-            status === "تأیید شده";
+            status ===
+            "تأیید شده";
+
 
         const showManagementActions =
-            source === "records";
+            source ===
+            "records";
 
 
         document
@@ -2493,6 +3263,7 @@ async function showRecordDetail(
 
                 </div>
 
+
                 <div class="detail-row">
 
                     <span>
@@ -2500,10 +3271,13 @@ async function showRecordDetail(
                     </span>
 
                     <strong>
-                        ${escapeHtml(status)}
+                        ${escapeHtml(
+                            status
+                        )}
                     </strong>
 
                 </div>
+
 
                 <div class="detail-row">
 
@@ -2519,6 +3293,7 @@ async function showRecordDetail(
 
                 </div>
 
+
                 <div class="detail-row">
 
                     <span>
@@ -2532,6 +3307,7 @@ async function showRecordDetail(
                     </strong>
 
                 </div>
+
 
                 <div class="detail-row">
 
@@ -2547,6 +3323,7 @@ async function showRecordDetail(
 
                 </div>
 
+
                 <div class="detail-row">
 
                     <span>
@@ -2561,6 +3338,7 @@ async function showRecordDetail(
 
                 </div>
 
+
                 <div class="detail-row">
 
                     <span>
@@ -2574,6 +3352,7 @@ async function showRecordDetail(
                     </strong>
 
                 </div>
+
 
                 ${
                     data.notes
@@ -2596,6 +3375,7 @@ async function showRecordDetail(
                     :
                     ""
                 }
+
 
                 ${
                     showManagementActions
@@ -2626,6 +3406,7 @@ async function showRecordDetail(
                             `
                         }
 
+
                         <button
                             type="button"
                             class="danger-button"
@@ -2633,6 +3414,7 @@ async function showRecordDetail(
                         >
                             حذف این رکورد
                         </button>
+
 
                         <button
                             type="button"
@@ -2734,7 +3516,10 @@ async function showRecordDetail(
     }
     catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         document
             .getElementById(
@@ -2759,16 +3544,20 @@ async function showRecordDetail(
 // تأیید
 // ============================================================
 
-async function approveRecord(id) {
+async function approveRecord(
+    id
+) {
 
     const answer =
         confirm(
             "آیا اطلاعات این شهید را تأیید می‌کنید؟"
         );
 
+
     if (!answer) {
         return;
     }
+
 
     try {
 
@@ -2790,6 +3579,7 @@ async function approveRecord(id) {
             .select()
             .single();
 
+
         if (error) {
 
             console.error(
@@ -2797,13 +3587,17 @@ async function approveRecord(id) {
                 error
             );
 
+
             alert(
                 "تأیید اطلاعات انجام نشد.\n\n" +
                 error.message
             );
 
+
             return;
+
         }
+
 
         if (!data) {
 
@@ -2811,8 +3605,11 @@ async function approveRecord(id) {
                 "رکورد پیدا نشد یا اجازه تغییر آن وجود ندارد."
             );
 
+
             return;
+
         }
+
 
         if (
             data.status !==
@@ -2823,19 +3620,26 @@ async function approveRecord(id) {
                 "وضعیت رکورد تغییر نکرد."
             );
 
+
             return;
+
         }
+
 
         alert(
             "اطلاعات این شهید با موفقیت تأیید شد."
         );
+
 
         showPendingRecords();
 
     }
     catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         alert(
             "خطای غیرمنتظره هنگام تأیید."
@@ -2850,16 +3654,20 @@ async function approveRecord(id) {
 // حذف
 // ============================================================
 
-async function deleteRecord(id) {
+async function deleteRecord(
+    id
+) {
 
     const answer =
         confirm(
             "آیا از حذف این اطلاعات مطمئن هستید؟"
         );
 
+
     if (!answer) {
         return;
     }
+
 
     try {
 
@@ -2875,6 +3683,7 @@ async function deleteRecord(id) {
             )
             .select();
 
+
         if (error) {
 
             console.error(
@@ -2882,13 +3691,17 @@ async function deleteRecord(id) {
                 error
             );
 
+
             alert(
                 "حذف انجام نشد.\n\n" +
                 error.message
             );
 
+
             return;
+
         }
+
 
         if (
             !data ||
@@ -2900,19 +3713,26 @@ async function deleteRecord(id) {
                 "احتمالاً اجازه حذف از طریق برنامه وجود ندارد یا رکورد پیدا نشد."
             );
 
+
             return;
+
         }
+
 
         alert(
             "رکورد با موفقیت حذف شد."
         );
+
 
         showPendingRecords();
 
     }
     catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         alert(
             "خطای غیرمنتظره هنگام حذف."
@@ -2932,13 +3752,23 @@ function showSearch(
 ) {
 
     if (!isHandlingHistory) {
-        pushAppHistory("search");
+
+        pushAppHistory(
+            "search"
+        );
+
     }
 
-    currentAppPage = "search";
+
+    currentAppPage =
+        "search";
+
 
     const app =
-        document.querySelector(".app");
+        document.querySelector(
+            ".app"
+        );
+
 
     app.innerHTML = `
 
@@ -2947,6 +3777,7 @@ function showSearch(
             "جستجو در اطلاعات ثبت‌شده"
         )}
 
+
         <main class="content">
 
             <div class="card">
@@ -2954,6 +3785,7 @@ function showSearch(
                 <div class="card-title">
                     معیارهای جستجو
                 </div>
+
 
                 <div class="form-group">
 
@@ -2970,6 +3802,7 @@ function showSearch(
 
                 </div>
 
+
                 <div class="form-group">
 
                     <label for="search-lastname">
@@ -2985,9 +3818,11 @@ function showSearch(
 
                 </div>
 
+
                 <div class="section-title">
                     محل مزار
                 </div>
+
 
                 <div class="form-row">
 
@@ -3016,6 +3851,7 @@ function showSearch(
 
                     </div>
 
+
                     <div class="form-group">
 
                         <label for="search-row">
@@ -3030,6 +3866,7 @@ function showSearch(
                         >
 
                     </div>
+
 
                     <div class="form-group">
 
@@ -3048,9 +3885,11 @@ function showSearch(
 
                 </div>
 
+
                 <div class="section-title">
                     وضعیت سنگ
                 </div>
+
 
                 <div class="form-group">
 
@@ -3076,6 +3915,7 @@ function showSearch(
 
                 </div>
 
+
                 <button
                     type="button"
                     class="primary-button"
@@ -3083,6 +3923,7 @@ function showSearch(
                 >
                     جستجو
                 </button>
+
 
                 <div
                     id="search-results"
@@ -3095,8 +3936,11 @@ function showSearch(
 
     `;
 
+
     document
-        .getElementById("back-home")
+        .getElementById(
+            "back-home"
+        )
         .addEventListener(
             "click",
             () => {
@@ -3106,12 +3950,16 @@ function showSearch(
             }
         );
 
+
     document
-        .getElementById("search-button")
+        .getElementById(
+            "search-button"
+        )
         .addEventListener(
             "click",
             performSearch
         );
+
 
     [
         "search-name",
@@ -3119,29 +3967,34 @@ function showSearch(
         "search-row",
         "search-number"
     ]
-    .forEach(id => {
+    .forEach(
+        id => {
 
-        document
-            .getElementById(id)
-            .addEventListener(
-                "keydown",
-                event => {
+            document
+                .getElementById(
+                    id
+                )
+                .addEventListener(
+                    "keydown",
+                    event => {
 
-                    if (
-                        event.key ===
-                        "Enter"
-                    ) {
+                        if (
+                            event.key ===
+                            "Enter"
+                        ) {
 
-                        event.preventDefault();
+                            event.preventDefault();
 
-                        performSearch();
+                            performSearch();
+
+                        }
 
                     }
+                );
 
-                }
-            );
+        }
+    );
 
-    });
 
     if (
         restore &&
@@ -3153,52 +4006,69 @@ function showSearch(
                 "search-name"
             )
             .value =
-            lastSearchFilters.name || "";
+            lastSearchFilters.name ||
+            "";
+
 
         document
             .getElementById(
                 "search-lastname"
             )
             .value =
-            lastSearchFilters.lastname || "";
+            lastSearchFilters.lastname ||
+            "";
+
 
         document
             .getElementById(
                 "search-piece"
             )
             .value =
-            lastSearchFilters.piece || "";
+            lastSearchFilters.piece ||
+            "";
+
 
         document
             .getElementById(
                 "search-row"
             )
             .value =
-            lastSearchFilters.row || "";
+            lastSearchFilters.row ||
+            "";
+
 
         document
             .getElementById(
                 "search-number"
             )
             .value =
-            lastSearchFilters.number || "";
+            lastSearchFilters.number ||
+            "";
+
 
         document
             .getElementById(
                 "search-status"
             )
             .value =
-            lastSearchFilters.status || "";
+            lastSearchFilters.status ||
+            "";
+
 
         renderSearchResults(
             lastSearchResults
         );
 
+
         return;
+
     }
 
+
     document
-        .getElementById("search-name")
+        .getElementById(
+            "search-name"
+        )
         .focus();
 
 }
@@ -3212,51 +4082,73 @@ async function performSearch() {
 
     const name =
         document
-            .getElementById("search-name")
+            .getElementById(
+                "search-name"
+            )
             .value
             .trim();
+
 
     const lastname =
         document
-            .getElementById("search-lastname")
+            .getElementById(
+                "search-lastname"
+            )
             .value
             .trim();
+
 
     const piece =
         document
-            .getElementById("search-piece")
+            .getElementById(
+                "search-piece"
+            )
             .value;
+
 
     const row =
         document
-            .getElementById("search-row")
+            .getElementById(
+                "search-row"
+            )
             .value
             .trim();
+
 
     const number =
         document
-            .getElementById("search-number")
+            .getElementById(
+                "search-number"
+            )
             .value
             .trim();
 
+
     const status =
         document
-            .getElementById("search-status")
+            .getElementById(
+                "search-status"
+            )
             .value;
+
 
     const container =
         document.getElementById(
             "search-results"
         );
 
+
     lastSearchFilters = {
+
         name,
         lastname,
         piece,
         row,
         number,
         status
+
     };
+
 
     container.innerHTML = `
 
@@ -3268,12 +4160,14 @@ async function performSearch() {
 
     `;
 
+
     try {
 
         let query =
             supabaseClient
                 .from("martyrs")
                 .select("*");
+
 
         if (name) {
 
@@ -3285,6 +4179,7 @@ async function performSearch() {
 
         }
 
+
         if (lastname) {
 
             query =
@@ -3294,6 +4189,7 @@ async function performSearch() {
                 );
 
         }
+
 
         if (piece) {
 
@@ -3305,6 +4201,7 @@ async function performSearch() {
 
         }
 
+
         if (row) {
 
             query =
@@ -3314,6 +4211,7 @@ async function performSearch() {
                 );
 
         }
+
 
         if (number) {
 
@@ -3325,6 +4223,7 @@ async function performSearch() {
 
         }
 
+
         if (status) {
 
             query =
@@ -3334,6 +4233,7 @@ async function performSearch() {
                 );
 
         }
+
 
         const {
             data,
@@ -3346,12 +4246,14 @@ async function performSearch() {
                 }
             );
 
+
         if (error) {
 
             console.error(
                 "Search error:",
                 error
             );
+
 
             container.innerHTML = `
 
@@ -3369,14 +4271,20 @@ async function performSearch() {
 
             `;
 
+
             return;
+
         }
 
+
         const results =
-            data || [];
+            data ||
+            [];
+
 
         lastSearchResults =
             results;
+
 
         renderSearchResults(
             results
@@ -3385,7 +4293,10 @@ async function performSearch() {
     }
     catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         container.innerHTML = `
 
@@ -3415,9 +4326,15 @@ function renderSearchResults(
             "search-results"
         );
 
+
     if (!container) {
         return;
     }
+
+
+    const hasResults =
+        results &&
+        results.length > 0;
 
 
     container.innerHTML = `
@@ -3432,21 +4349,23 @@ function renderSearchResults(
 
         </div>
 
+
         ${
-            results.length > 0
+            hasResults
             ?
             `
             <button
                 type="button"
                 class="export-button"
-                id="export-excel-button"
+                id="export-search-excel"
             >
-                📊 خروجی اکسل
+                📊 خروجی Excel
             </button>
             `
             :
             ""
         }
+
 
         <div class="records-container">
 
@@ -3476,21 +4395,19 @@ function renderSearchResults(
     `;
 
 
-    if (results.length > 0) {
+    if (hasResults) {
 
         const exportButton =
             document.getElementById(
-                "export-excel-button"
+                "export-search-excel"
             );
+
 
         if (exportButton) {
 
             exportButton.addEventListener(
                 "click",
-                () =>
-                    exportSearchResultsToExcel(
-                        results
-                    )
+                exportSearchResultsToExcel
             );
 
         }
@@ -3498,387 +4415,29 @@ function renderSearchResults(
     }
 
 
-    results.forEach(record => {
+    results.forEach(
+        record => {
 
-        const card =
-            document.getElementById(
-                `record-summary-${record.id}`
-            );
-
-        if (card) {
-
-            card.addEventListener(
-                "click",
-                () =>
-                    showRecordDetail(
-                        record.id,
-                        "search"
-                    )
-            );
-
-        }
-
-    });
-
-}
+            const card =
+                document.getElementById(
+                    `record-summary-${record.id}`
+                );
 
 
-// ============================================================
-// خروجی Excel از نتایج جستجوی فعلی
-// ============================================================
+            if (card) {
 
-function exportSearchResultsToExcel(
-    results
-) {
-
-    if (
-        !results ||
-        results.length === 0
-    ) {
-
-        alert(
-            "نتیجه‌ای برای خروجی گرفتن وجود ندارد."
-        );
-
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    // بررسی وجود کتابخانه SheetJS
-    // --------------------------------------------------------
-
-    if (
-        typeof XLSX === "undefined"
-    ) {
-
-        alert(
-            "کتابخانه خروجی Excel بارگذاری نشده است.\n\n" +
-            "لطفاً اتصال اینترنت را بررسی کنید و صفحه را دوباره باز کنید."
-        );
-
-        console.error(
-            "SheetJS / XLSX library not found."
-        );
-
-        return;
-    }
-
-
-    const exportButton =
-        document.getElementById(
-            "export-excel-button"
-        );
-
-    if (exportButton) {
-
-        exportButton.disabled = true;
-
-        exportButton.textContent =
-            "در حال ساخت فایل Excel...";
-
-    }
-
-
-    try {
-
-        // ----------------------------------------------------
-        // ساخت داده خروجی
-        //
-        // عمداً id فنی Supabase در خروجی نمی‌آید.
-        // ----------------------------------------------------
-
-        const rows =
-            results.map(
-                (record, index) => ({
-
-                    "ردیف خروجی":
-                        toPersianDigits(
-                            index + 1
-                        ),
-
-                    "نام":
-                        record.name || "",
-
-                    "نام خانوادگی":
-                        record.lastname || "",
-
-                    "قطعه":
-                        record.piece || "",
-
-                    "ردیف":
-                        record.grave_row || "",
-
-                    "شماره":
-                        record.grave_number || "",
-
-                    "نوع عملیات":
-                        record.stone_type || "",
-
-                    "مرحله فعلی کار":
-                        record.stage || "",
-
-                    "وضعیت ثبت":
-                        record.status || "",
-
-                    "توضیحات":
-                        record.notes || "",
-
-                    "تاریخ ثبت":
-                        formatDateForExcel(
-                            record.created_at
+                card.addEventListener(
+                    "click",
+                    () =>
+                        showRecordDetail(
+                            record.id,
+                            "search"
                         )
+                );
 
-                })
-            );
-
-
-        // ----------------------------------------------------
-        // ساخت Worksheet
-        // ----------------------------------------------------
-
-        const worksheet =
-            XLSX.utils.json_to_sheet(
-                rows
-            );
-
-
-        // ----------------------------------------------------
-        // تنظیم عرض ستون‌ها
-        // ----------------------------------------------------
-
-        worksheet["!cols"] = [
-
-            {
-                wch: 12
-            },
-
-            {
-                wch: 18
-            },
-
-            {
-                wch: 24
-            },
-
-            {
-                wch: 10
-            },
-
-            {
-                wch: 16
-            },
-
-            {
-                wch: 14
-            },
-
-            {
-                wch: 14
-            },
-
-            {
-                wch: 25
-            },
-
-            {
-                wch: 18
-            },
-
-            {
-                wch: 40
-            },
-
-            {
-                wch: 22
             }
 
-        ];
-
-
-        // ----------------------------------------------------
-        // ساخت Workbook
-        // ----------------------------------------------------
-
-        const workbook =
-            XLSX.utils.book_new();
-
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            worksheet,
-            "نتایج جستجو"
-        );
-
-
-        // ----------------------------------------------------
-        // نام فایل
-        // ----------------------------------------------------
-
-        const date =
-            new Date();
-
-        const fileDate =
-            createFileDate(
-                date
-            );
-
-        const fileName =
-            `خروجی_جستجو_${fileDate}.xlsx`;
-
-
-        // ----------------------------------------------------
-        // دانلود فایل
-        // ----------------------------------------------------
-
-        XLSX.writeFile(
-            workbook,
-            fileName
-        );
-
-
-        alert(
-            "فایل Excel با موفقیت ساخته شد."
-        );
-
-    }
-    catch (error) {
-
-        console.error(
-            "Excel export error:",
-            error
-        );
-
-        alert(
-            "ساخت فایل Excel انجام نشد.\n\n" +
-            error.message
-        );
-
-    }
-    finally {
-
-        if (exportButton) {
-
-            exportButton.disabled = false;
-
-            exportButton.textContent =
-                "📊 خروجی اکسل";
-
         }
-
-    }
-
-}
-
-
-// ============================================================
-// تبدیل تاریخ برای خروجی Excel
-// ============================================================
-
-function formatDateForExcel(
-    value
-) {
-
-    if (
-        !value
-    ) {
-        return "";
-    }
-
-    try {
-
-        const date =
-            new Date(value);
-
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
-
-            return String(value);
-
-        }
-
-        const year =
-            date.getFullYear();
-
-        const month =
-            String(
-                date.getMonth() + 1
-            ).padStart(
-                2,
-                "0"
-            );
-
-        const day =
-            String(
-                date.getDate()
-            ).padStart(
-                2,
-                "0"
-            );
-
-        const hour =
-            String(
-                date.getHours()
-            ).padStart(
-                2,
-                "0"
-            );
-
-        const minute =
-            String(
-                date.getMinutes()
-            ).padStart(
-                2,
-                "0"
-            );
-
-        return (
-            `${year}/${month}/${day} ` +
-            `${hour}:${minute}`
-        );
-
-    }
-    catch (error) {
-
-        return String(value);
-
-    }
-
-}
-
-
-// ============================================================
-// ساخت تاریخ نام فایل
-// ============================================================
-
-function createFileDate(
-    date
-) {
-
-    const year =
-        date.getFullYear();
-
-    const month =
-        String(
-            date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const day =
-        String(
-            date.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    return (
-        `${year}-${month}-${day}`
     );
 
 }
@@ -3890,7 +4449,9 @@ function createFileDate(
 
 function restoreSearchPage() {
 
-    showSearch(true);
+    showSearch(
+        true
+    );
 
 }
 
@@ -3908,9 +4469,11 @@ function showRecordsError(
             "pending-container"
         );
 
+
     if (!container) {
         return;
     }
+
 
     container.innerHTML = `
 
@@ -3920,7 +4483,9 @@ function showRecordsError(
 
             <br><br>
 
-            ${escapeHtml(message)}
+            ${escapeHtml(
+                message
+            )}
 
         </div>
 
