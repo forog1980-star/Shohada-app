@@ -22,6 +22,7 @@ const supabaseClient =
         SUPABASE_PUBLISHABLE_KEY
     );
 
+
 // ============================================================
 // تنظیمات
 // ============================================================
@@ -37,12 +38,14 @@ const PIECES = [
     "53"
 ];
 
+
 // ============================================================
 // وضعیت صفحه جستجو
 // ============================================================
 
 let lastSearchResults = [];
 let lastSearchFilters = null;
+
 
 // ============================================================
 // کنترل History و Back گوشی
@@ -208,8 +211,6 @@ function handleBackNavigation() {
             <= DOUBLE_BACK_INTERVAL
         ) {
 
-            // اجازه می‌دهیم Back دوم
-            // به صفحه قبلی مرورگر برگردد.
             firstBackPressTime = 0;
 
             return true;
@@ -222,7 +223,6 @@ function handleBackNavigation() {
             "برای خروج از برنامه، یک بار دیگر دکمه بازگشت را بزنید."
         );
 
-        // جلوگیری از خروج با Back اول
         window.history.pushState(
             {
                 golzarApp: true,
@@ -804,6 +804,33 @@ function applyAppStyles() {
         .primary-button:disabled {
             opacity: .65;
             cursor: wait;
+        }
+
+        /* =====================================================
+           دکمه خروجی اکسل
+           ===================================================== */
+
+        .export-button {
+            width: 100%;
+            border: none;
+            border-radius: 15px;
+            padding: 14px;
+            background: var(--blue);
+            color: white;
+            font-family: inherit;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .export-button:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .export-button:not(:disabled):active {
+            transform: scale(.985);
         }
 
         .records-summary {
@@ -1917,7 +1944,7 @@ async function saveNewRecord() {
         );
 
         // ----------------------------------------------------
-        // بعد از ثبت موفق، کاربر مستقیماً به فرم جدید برود.
+        // بعد از ثبت موفق، فرم جدید باز می‌شود.
         // ----------------------------------------------------
 
         showNewRecord();
@@ -3063,7 +3090,16 @@ function showSearch(
                     class="primary-button"
                     id="search-button"
                 >
-                    جستجو
+                    🔎 جستجو
+                </button>
+
+                <button
+                    type="button"
+                    class="export-button"
+                    id="export-excel-button"
+                    disabled
+                >
+                    📊 خروجی اکسل
                 </button>
 
                 <div
@@ -3093,6 +3129,13 @@ function showSearch(
         .addEventListener(
             "click",
             performSearch
+        );
+
+    document
+        .getElementById("export-excel-button")
+        .addEventListener(
+            "click",
+            exportSearchResultsToExcel
         );
 
     [
@@ -3231,6 +3274,11 @@ async function performSearch() {
             "search-results"
         );
 
+    const exportButton =
+        document.getElementById(
+            "export-excel-button"
+        );
+
     lastSearchFilters = {
         name,
         lastname,
@@ -3239,6 +3287,16 @@ async function performSearch() {
         number,
         status
     };
+
+    // --------------------------------------------------------
+    // قبل از شروع جستجو، خروجی غیرفعال شود.
+    // --------------------------------------------------------
+
+    if (exportButton) {
+
+        exportButton.disabled = true;
+
+    }
 
     container.innerHTML = `
 
@@ -3401,6 +3459,24 @@ function renderSearchResults(
         return;
     }
 
+    // --------------------------------------------------------
+    // فعال/غیرفعال کردن خروجی اکسل
+    // --------------------------------------------------------
+
+    const exportButton =
+        document.getElementById(
+            "export-excel-button"
+        );
+
+    if (exportButton) {
+
+        exportButton.disabled =
+            !results ||
+            results.length === 0;
+
+    }
+
+
     container.innerHTML = `
 
         <div class="search-count">
@@ -3461,6 +3537,348 @@ function renderSearchResults(
         }
 
     });
+
+}
+
+
+// ============================================================
+// خروجی اکسل از نتایج آخرین جستجو
+// ============================================================
+
+async function exportSearchResultsToExcel() {
+
+    if (
+        !lastSearchResults ||
+        lastSearchResults.length === 0
+    ) {
+
+        alert(
+            "ابتدا یک جستجو انجام دهید و حداقل یک رکورد پیدا کنید."
+        );
+
+        return;
+    }
+
+    const button =
+        document.getElementById(
+            "export-excel-button"
+        );
+
+    if (button) {
+
+        button.disabled = true;
+
+        button.textContent =
+            "📊 در حال آماده‌سازی خروجی...";
+
+    }
+
+    try {
+
+        // ----------------------------------------------------
+        // بارگذاری SheetJS در صورت نیاز
+        // ----------------------------------------------------
+
+        if (
+            typeof XLSX === "undefined"
+        ) {
+
+            await loadSheetJS();
+
+        }
+
+
+        // ----------------------------------------------------
+        // تبدیل نتایج جستجو به اطلاعات Excel
+        // ----------------------------------------------------
+
+        const exportData =
+            lastSearchResults.map(
+                (record, index) => ({
+
+                    "ردیف":
+                        index + 1,
+
+                    "نام":
+                        record.name || "",
+
+                    "نام خانوادگی":
+                        record.lastname || "",
+
+                    "قطعه":
+                        record.piece || "",
+
+                    "ردیف مزار":
+                        record.grave_row || "",
+
+                    "شماره مزار":
+                        record.grave_number || "",
+
+                    "نوع عملیات":
+                        record.stone_type || "",
+
+                    "مرحله فعلی کار":
+                        record.stage || "",
+
+                    "وضعیت ثبت":
+                        record.status || "",
+
+                    "توضیحات":
+                        record.notes || "",
+
+                    "شناسه":
+                        record.id || ""
+
+                })
+            );
+
+
+        // ----------------------------------------------------
+        // ساخت Worksheet
+        // ----------------------------------------------------
+
+        const worksheet =
+            XLSX.utils.json_to_sheet(
+                exportData
+            );
+
+
+        // ----------------------------------------------------
+        // تنظیم عرض ستون‌ها
+        // ----------------------------------------------------
+
+        worksheet["!cols"] = [
+
+            { wch: 8 },
+            { wch: 18 },
+            { wch: 25 },
+            { wch: 10 },
+            { wch: 18 },
+            { wch: 18 },
+            { wch: 18 },
+            { wch: 28 },
+            { wch: 20 },
+            { wch: 40 },
+            { wch: 38 }
+
+        ];
+
+
+        // ----------------------------------------------------
+        // ساخت Workbook
+        // ----------------------------------------------------
+
+        const workbook =
+            XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "نتایج جستجو"
+        );
+
+
+        // ----------------------------------------------------
+        // ساخت نام فایل
+        // ----------------------------------------------------
+
+        const now =
+            new Date();
+
+        const datePart =
+            now
+                .toISOString()
+                .slice(0, 10);
+
+        const timePart =
+            now
+                .toTimeString()
+                .slice(0, 8)
+                .replace(/:/g, "-");
+
+        const fileName =
+            `خروجی-جستجوی-شهدا-${datePart}-${timePart}.xlsx`;
+
+
+        // ----------------------------------------------------
+        // ایجاد فایل Excel
+        // ----------------------------------------------------
+
+        XLSX.writeFile(
+            workbook,
+            fileName
+        );
+
+
+        alert(
+            "خروجی اکسل با موفقیت ایجاد شد.\n\n" +
+            "تعداد رکوردها: " +
+            toPersianDigits(
+                lastSearchResults.length
+            )
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Excel export error:",
+            error
+        );
+
+        alert(
+            "ایجاد خروجی اکسل انجام نشد.\n\n" +
+            (
+                error.message ||
+                "خطای نامشخص"
+            )
+        );
+
+    }
+    finally {
+
+        if (button) {
+
+            button.disabled =
+                !(
+                    lastSearchResults &&
+                    lastSearchResults.length > 0
+                );
+
+            button.textContent =
+                "📊 خروجی اکسل";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// بارگذاری کتابخانه SheetJS
+// ============================================================
+
+function loadSheetJS() {
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            // ------------------------------------------------
+            // اگر قبلاً بارگذاری شده
+            // ------------------------------------------------
+
+            if (
+                typeof XLSX !== "undefined"
+            ) {
+
+                resolve();
+
+                return;
+            }
+
+
+            // ------------------------------------------------
+            // اگر قبلاً در حال بارگذاری است
+            // ------------------------------------------------
+
+            const existingScript =
+                document.querySelector(
+                    'script[data-sheetjs="true"]'
+                );
+
+            if (existingScript) {
+
+                existingScript.addEventListener(
+                    "load",
+                    () => resolve()
+                );
+
+                existingScript.addEventListener(
+                    "error",
+                    () =>
+                        reject(
+                            new Error(
+                                "کتابخانه Excel بارگذاری نشد."
+                            )
+                        )
+                );
+
+                return;
+            }
+
+
+            // ------------------------------------------------
+            // ساخت Script
+            // ------------------------------------------------
+
+            const script =
+                document.createElement(
+                    "script"
+                );
+
+            script.src =
+                "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+
+            script.async = true;
+
+            script.dataset.sheetjs =
+                "true";
+
+
+            // ------------------------------------------------
+            // موفقیت
+            // ------------------------------------------------
+
+            script.onload =
+                () => {
+
+                    if (
+                        typeof XLSX !==
+                        "undefined"
+                    ) {
+
+                        resolve();
+
+                    }
+                    else {
+
+                        reject(
+                            new Error(
+                                "کتابخانه Excel در دسترس نیست."
+                            )
+                        );
+
+                    }
+
+                };
+
+
+            // ------------------------------------------------
+            // خطا
+            // ------------------------------------------------
+
+            script.onerror =
+                () => {
+
+                    reject(
+                        new Error(
+                            "اتصال برای دریافت ابزار Excel برقرار نشد."
+                        )
+                    );
+
+                };
+
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
 
 }
 
