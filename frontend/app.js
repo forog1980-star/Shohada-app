@@ -45,28 +45,39 @@ let lastSearchResults = [];
 let lastSearchFilters = null;
 
 // ============================================================
+// کنترل History و Back گوشی
+// ============================================================
+
+let currentAppPage = "home";
+let isHandlingHistory = false;
+
+let firstBackPressTime = 0;
+
+const DOUBLE_BACK_INTERVAL = 2000;
+
+
+// ============================================================
 // مراحل مرجع
 // ============================================================
-// نکته مهم:
-// نوع عملیات فقط «ترمیمی» و «تعویضی» است.
-// هر نوع عملیات فقط سه مرحله مربوط به خودش را دارد.
+// متن این شش مرحله دقیقاً طبق قرارداد است.
 // ============================================================
 
 const STAGES = {
 
     "ترمیمی": [
-        "طرح سنگ به واحد مرمت ارسال شد",
-        "سنگ مرمتی آماده است",
-        "نصب سنگ مرمت شده"
+        "ارسال به واحد مرمت",
+        "سنگ مرمتی آماده",
+        "نصب مرمتی شده"
     ],
 
     "تعویضی": [
-        "طرح سنگ به واحد تعویض ارسال شد",
-        "سنگ تعویضی آماده است",
-        "سنگ تعویضی نصب شد"
+        "ارسال به واحد تعویض",
+        "سنگ تعویضی آماده",
+        "تعویضی نصب شده"
     ]
 
 };
+
 
 // ============================================================
 // ابزارها
@@ -135,6 +146,182 @@ function escapeHtml(value) {
 
 
 // ============================================================
+// History
+// ============================================================
+
+function initializeHistory() {
+
+    if (!window.history.state) {
+
+        window.history.replaceState(
+            {
+                golzarApp: true,
+                page: "home"
+            },
+            "",
+            window.location.href
+        );
+
+    }
+
+    currentAppPage = "home";
+
+}
+
+
+function pushAppHistory(page) {
+
+    if (isHandlingHistory) {
+        currentAppPage = page;
+        return;
+    }
+
+    window.history.pushState(
+        {
+            golzarApp: true,
+            page: page
+        },
+        "",
+        window.location.href
+    );
+
+    currentAppPage = page;
+}
+
+
+function handleBackNavigation() {
+
+    const now = Date.now();
+
+    // --------------------------------------------------------
+    // اگر در صفحه اصلی هستیم:
+    // یک Back فقط هشدار می‌دهد و برنامه خارج نمی‌شود.
+    // Back دوم در فاصله کوتاه اجازه خروج می‌دهد.
+    // --------------------------------------------------------
+
+    if (
+        currentAppPage === "home"
+    ) {
+
+        if (
+            now - firstBackPressTime
+            <= DOUBLE_BACK_INTERVAL
+        ) {
+
+            // اجازه می‌دهیم Back دوم
+            // به صفحه قبلی مرورگر برگردد.
+            firstBackPressTime = 0;
+
+            return true;
+
+        }
+
+        firstBackPressTime = now;
+
+        alert(
+            "برای خروج از برنامه، یک بار دیگر دکمه بازگشت را بزنید."
+        );
+
+        // جلوگیری از خروج با Back اول
+        window.history.pushState(
+            {
+                golzarApp: true,
+                page: "home"
+            },
+            "",
+            window.location.href
+        );
+
+        return false;
+    }
+
+    return false;
+}
+
+
+window.addEventListener(
+    "popstate",
+    event => {
+
+        const state =
+            event.state;
+
+        // ----------------------------------------------------
+        // صفحه اصلی
+        // ----------------------------------------------------
+
+        if (
+            !state ||
+            state.golzarApp !== true
+        ) {
+
+            if (
+                currentAppPage === "home"
+            ) {
+
+                const allowed =
+                    handleBackNavigation();
+
+                if (!allowed) {
+                    return;
+                }
+
+            }
+
+            return;
+        }
+
+
+        const page =
+            state.page || "home";
+
+
+        // ----------------------------------------------------
+        // Back از صفحات داخلی
+        // ----------------------------------------------------
+
+        isHandlingHistory = true;
+
+        try {
+
+            switch (page) {
+
+                case "home":
+                    showHome();
+                    break;
+
+                case "search":
+                    showSearch(true);
+                    break;
+
+                case "new":
+                    showNewRecord();
+                    break;
+
+                case "pending":
+                    showPendingRecords();
+                    break;
+
+                default:
+                    showHome();
+
+            }
+
+            currentAppPage =
+                page;
+
+        }
+        finally {
+
+            isHandlingHistory = false;
+
+        }
+
+    }
+);
+
+
+// ============================================================
 // کنترل اعتبار نوع عملیات و مرحله
 // ============================================================
 
@@ -165,6 +352,8 @@ function isValidStageForStoneType(
 document.addEventListener(
     "DOMContentLoaded",
     () => {
+
+        initializeHistory();
 
         showHome();
 
@@ -352,7 +541,7 @@ function applyAppStyles() {
         .internal-header {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             background: white;
             padding: 15px;
             border-bottom: 1px solid var(--border);
@@ -371,6 +560,23 @@ function applyAppStyles() {
             font-size: 14px;
             cursor: pointer;
             white-space: nowrap;
+        }
+
+        .refresh-button {
+            border: none;
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 13px;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .refresh-button:active,
+        .back-button:active {
+            transform: scale(.97);
         }
 
         .internal-title {
@@ -882,7 +1088,8 @@ function applyAppStyles() {
 
 function internalHeader(
     title,
-    subtitle = ""
+    subtitle = "",
+    showRefresh = false
 ) {
 
     return `
@@ -915,6 +1122,22 @@ function internalHeader(
 
             </div>
 
+            ${
+                showRefresh
+                ?
+                `
+                <button
+                    type="button"
+                    class="refresh-button"
+                    id="refresh-page"
+                >
+                    ↻ تازه‌سازی
+                </button>
+                `
+                :
+                ""
+            }
+
         </header>
 
     `;
@@ -928,6 +1151,8 @@ function internalHeader(
 function showHome() {
 
     applyAppStyles();
+
+    currentAppPage = "home";
 
     const app =
         document.querySelector(".app");
@@ -1166,6 +1391,10 @@ async function testSupabaseConnection() {
 
 function showNewRecord() {
 
+    if (!isHandlingHistory) {
+        pushAppHistory("new");
+    }
+
     const app =
         document.querySelector(".app");
 
@@ -1358,7 +1587,22 @@ function showNewRecord() {
         .getElementById("back-home")
         .addEventListener(
             "click",
-            showHome
+            () => {
+
+                if (
+                    window.history.length > 1
+                ) {
+
+                    window.history.back();
+
+                }
+                else {
+
+                    showHome();
+
+                }
+
+            }
         );
 
     document
@@ -1672,7 +1916,11 @@ async function saveNewRecord() {
             "وضعیت: در انتظار تأیید"
         );
 
-        showPendingRecords();
+        // ----------------------------------------------------
+        // بعد از ثبت موفق، کاربر مستقیماً به فرم جدید برود.
+        // ----------------------------------------------------
+
+        showNewRecord();
 
     }
     catch (error) {
@@ -1696,13 +1944,19 @@ async function saveNewRecord() {
 // ============================================================
 // اطلاعات ثبت‌شده
 // ============================================================
-// بسیار مهم:
-// این صفحه فقط «در انتظار تأیید» را نمایش می‌دهد.
-// رکورد تأییدشده از این صفحه خارج می‌شود.
-// اما در جستجوی اصلی همچنان قابل مشاهده است.
-// ============================================================
 
-async function showPendingRecords() {
+async function showPendingRecords(
+    preserveHistory = false
+) {
+
+    if (
+        !isHandlingHistory &&
+        !preserveHistory
+    ) {
+        pushAppHistory("pending");
+    }
+
+    currentAppPage = "pending";
 
     const app =
         document.querySelector(".app");
@@ -1711,7 +1965,8 @@ async function showPendingRecords() {
 
         ${internalHeader(
             "اطلاعات ثبت‌شده",
-            "رکوردهای در انتظار تأیید"
+            "رکوردهای در انتظار تأیید",
+            true
         )}
 
         <main class="content">
@@ -1744,8 +1999,58 @@ async function showPendingRecords() {
         .getElementById("back-home")
         .addEventListener(
             "click",
-            showHome
+            () => {
+
+                window.history.back();
+
+            }
         );
+
+
+    document
+        .getElementById("refresh-page")
+        .addEventListener(
+            "click",
+            () => {
+
+                refreshPendingRecords();
+
+            }
+        );
+
+
+    await loadPendingRecords();
+
+}
+
+
+// ============================================================
+// دریافت اطلاعات ثبت‌شده
+// ============================================================
+
+async function loadPendingRecords() {
+
+    const container =
+        document.getElementById(
+            "pending-container"
+        );
+
+    const summary =
+        document.getElementById(
+            "records-summary"
+        );
+
+    if (!container || !summary) {
+        return;
+    }
+
+    container.innerHTML = `
+
+        <div class="loading-message">
+            در حال دریافت اطلاعات تازه...
+        </div>
+
+    `;
 
     try {
 
@@ -1778,10 +2083,6 @@ async function showPendingRecords() {
         const records =
             data || [];
 
-        const summary =
-            document.getElementById(
-                "records-summary"
-            );
 
         summary.innerHTML = `
 
@@ -1815,10 +2116,6 @@ async function showPendingRecords() {
 
         `;
 
-        const container =
-            document.getElementById(
-                "pending-container"
-            );
 
         if (records.length === 0) {
 
@@ -1835,6 +2132,7 @@ async function showPendingRecords() {
             return;
         }
 
+
         container.innerHTML =
             records
                 .map(
@@ -1844,6 +2142,7 @@ async function showPendingRecords() {
                         )
                 )
                 .join("");
+
 
         records.forEach(record => {
 
@@ -1875,6 +2174,40 @@ async function showPendingRecords() {
         showRecordsError(
             "خطای غیرمنتظره هنگام دریافت اطلاعات."
         );
+
+    }
+
+}
+
+
+// ============================================================
+// تازه‌سازی صفحه اطلاعات ثبت‌شده
+// ============================================================
+
+async function refreshPendingRecords() {
+
+    const refreshButton =
+        document.getElementById(
+            "refresh-page"
+        );
+
+    if (refreshButton) {
+
+        refreshButton.disabled = true;
+
+        refreshButton.textContent =
+            "↻ در حال تازه‌سازی...";
+
+    }
+
+    await loadPendingRecords();
+
+    if (refreshButton) {
+
+        refreshButton.disabled = false;
+
+        refreshButton.textContent =
+            "↻ تازه‌سازی";
 
     }
 
@@ -2065,7 +2398,9 @@ async function showRecordDetail(
                 }
                 else {
 
-                    showPendingRecords();
+                    showPendingRecords(
+                        true
+                    );
 
                 }
 
@@ -2118,13 +2453,9 @@ async function showRecordDetail(
         const isApproved =
             status === "تأیید شده";
 
-        // ----------------------------------------------------
-        // فقط در صفحه اطلاعات ثبت‌شده مدیریت مجاز است.
-        // در جستجو هیچ تأیید یا حذف وجود ندارد.
-        // ----------------------------------------------------
-
         const showManagementActions =
             source === "records";
+
 
         document
             .getElementById(
@@ -2316,6 +2647,7 @@ async function showRecordDetail(
 
             `;
 
+
         if (
             showManagementActions &&
             !isApproved
@@ -2335,6 +2667,7 @@ async function showRecordDetail(
 
         }
 
+
         if (
             showManagementActions
         ) {
@@ -2353,6 +2686,7 @@ async function showRecordDetail(
 
         }
 
+
         document
             .getElementById(
                 "back-records"
@@ -2370,7 +2704,9 @@ async function showRecordDetail(
                     }
                     else {
 
-                        showPendingRecords();
+                        showPendingRecords(
+                            true
+                        );
 
                     }
 
@@ -2476,11 +2812,6 @@ async function approveRecord(id) {
             "اطلاعات این شهید با موفقیت تأیید شد."
         );
 
-        // ----------------------------------------------------
-        // رکورد تأییدشده دیگر در «اطلاعات ثبت‌شده» نمایش داده
-        // نمی‌شود.
-        // ----------------------------------------------------
-
         showPendingRecords();
 
     }
@@ -2581,6 +2912,12 @@ async function deleteRecord(id) {
 function showSearch(
     restore = false
 ) {
+
+    if (!isHandlingHistory) {
+        pushAppHistory("search");
+    }
+
+    currentAppPage = "search";
 
     const app =
         document.querySelector(".app");
@@ -2744,7 +3081,11 @@ function showSearch(
         .getElementById("back-home")
         .addEventListener(
             "click",
-            showHome
+            () => {
+
+                window.history.back();
+
+            }
         );
 
     document
@@ -2890,7 +3231,6 @@ async function performSearch() {
             "search-results"
         );
 
-    // حفظ آخرین فیلترها
     lastSearchFilters = {
         name,
         lastname,
