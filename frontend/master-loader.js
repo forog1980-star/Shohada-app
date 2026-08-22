@@ -10,7 +10,7 @@ const MASTER_SUPABASE_URL =
     "https://bafrksgdcmglahyrppfy.supabase.co";
 
 const MASTER_SUPABASE_KEY =
-    "sb_publishable_O5CkSuivysXJ-8hu1IUCA_izu8hWiX";
+    "sb_publishable_O5CkSuivysXjF-8hu1IUCA_izu8hWiX";
 
 const MASTER_TABLE = "martyrs";
 const MASTER_EXCEL_URL = "../ExcelData/martyrs_master.xlsx";
@@ -180,7 +180,6 @@ async function masterReadExcel() {
     }
 
     const { rows, header } = bestSheet;
-    const recordsById = new Map();
     const records = [];
 
     for (let i = header.rowIndex + 1; i < rows.length; i++) {
@@ -194,9 +193,6 @@ async function masterReadExcel() {
         const piece = masterNormalizeLocation(row[header.map.piece]);
         const grave_row = masterNormalizeLocation(row[header.map.grave_row]);
         const grave_number = masterNormalizeLocation(row[header.map.grave_number]);
-        const excelId = header.map.id !== undefined
-            ? masterNormalizeId(row[header.map.id])
-            : null;
 
         if (!name && !lastname && !piece && !grave_row && !grave_number) continue;
 
@@ -204,10 +200,9 @@ async function masterReadExcel() {
             continue;
         }
 
-        // مهم: id در جدول Supabase از نوع int8 و Identity است.
-        // بنابراین شناسه Excel را به ستون id ارسال نمی‌کنیم و اجازه می‌دهیم
-        // PostgreSQL برای هر رکورد id را خودکار تولید کند.
-        const record = {
+        // id در جدول Supabase از نوع int8 و Identity است.
+        // شناسه Excel عمداً به ستون id ارسال نمی‌شود؛ PostgreSQL آن را خودکار می‌سازد.
+        records.push({
             name,
             lastname,
             father_name: father_name || null,
@@ -221,13 +216,7 @@ async function masterReadExcel() {
             created_at: new Date().toISOString(),
             edited_at: null,
             edit_notes: null
-        };
-
-        if (excelId !== null) {
-            record._excel_source_id = excelId;
-        }
-
-        records.push(record);
+        });
     }
 
     if (!records.length) {
@@ -240,22 +229,11 @@ async function masterReadExcel() {
     };
 }
 
-function masterPrepareBatch(batch) {
-    return batch.map(record => {
-        const payload = { ...record };
-        // این فیلد فقط برای ردیابی داخلی است و در جدول martyrs ذخیره نمی‌شود.
-        delete payload._excel_source_id;
-        return payload;
-    });
-}
-
 async function masterImportToSupabase(client, records) {
     let imported = 0;
 
     for (let start = 0; start < records.length; start += MASTER_BATCH_SIZE) {
-        const batch = masterPrepareBatch(
-            records.slice(start, start + MASTER_BATCH_SIZE)
-        );
+        const batch = records.slice(start, start + MASTER_BATCH_SIZE);
 
         const { error } = await client
             .from(MASTER_TABLE)
