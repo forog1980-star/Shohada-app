@@ -1,7 +1,7 @@
 import csv
 import json
 import os
-import sys
+import time
 import urllib.request
 import urllib.error
 from collections import defaultdict
@@ -17,7 +17,7 @@ SUPABASE_PUBLISHABLE_KEY = "sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX"
 TABLE = "martyrs"
 EXCEL_FILE = os.path.join(os.path.dirname(__file__), "martyrs_master_v2.xlsx")
 BATCH_SIZE = 100
-EXPECTED_ROWS = 2975
+EXPECTED_ROWS = 20975
 
 
 def clean(value):
@@ -49,19 +49,57 @@ def find_col(headers, *names):
     return None
 
 
-def request_json(method, url, payload=None):
+def request_json(method, url, payload=None, retries=4):
     data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(url, data=data, method=method)
-    req.add_header("apikey", SUPABASE_PUBLISHABLE_KEY)
-    req.add_header("Authorization", f"Bearer {SUPABASE_PUBLISHABLE_KEY}")
-    req.add_header("Content-Type", "application/json")
-    req.add_header("Prefer", "return=minimal")
-    try:
-        with urllib.request.urlopen(req, timeout=60) as response:
-            return response.status, response.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
-        return e.code, body
+    last_error = None
+    for attempt in range(1, retries + 1):
+        req = urllib.request.Request(url, data=data, method=method)
+        req.add_header("apikey", SUPABASE_PUBLISHABLE_KEY)
+        req.add_header("Authorization", f"Bearer {SUPABASE_PUBLISHABLE_KEY}")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("Prefer", "return=minimal")
+        try:
+            with urllib.request.urlopen(req, timeout=90) as response:
+                return response.status, response.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", errors="replace")
+            return e.code, body
+        except (ConnectionResetError, TimeoutError, urllib.error.URLError) as e:
+            last_error = e
+            if attempt < retries:
+                print(f"اتصال قطع شد؛ تلاش مجدد {attempt}/{retries - 1} ...")
+                time.sleep(2 * attempt)
+    return 0, str(last_error)
+
+
+def get_existing_locations():
+    """موقعیت‌های موجود را می‌خواند تا اجرای دوباره، رکوردهای قبلی را تکراری نکند."""
+    existing = set()
+    page = 1000
+    start = 0
+    while True:
+        url = (
+            f"{SUPABASE_URL}/rest/v1/{TABLE}"
+            f"?select=piece,grave_row,grave_number&order=id.asc&offset={start}&limit={page}"
+        )
+        status, body = request_json("GET", url)
+        if status < 200 or status >= 300:
+            print(f"ERROR هنگام خواندن رکوردهای موجود: HTTP {status}")
+            print(body)
+            return None
+        try:
+            rows = json.loads(body or "[]")
+        except json.JSONDecodeError:
+            print("ERROR: پاسخ Supabase قابل خواندن نیست.")
+            return None
+        for row in rows:
+            key = (digits(row.get("piece")), digits(row.get("grave_row")), digits(row.get("grave_number")))
+            if all(key):
+                existing.add(key)
+        if len(rows) < page:
+            break
+        start += page
+    return existing
 
 
 def main():
@@ -86,7 +124,6 @@ def main():
     lastname_col = find_col(headers, "نام خانوادگی", "نام‌خانوادگی")
     piece_col = find_col(headers, "قطعه")
     row_col = find_col(headers, "ردیف")
-    # چون دو ستون با عنوان «ردیف» داریم، ستون محل مزار در فایل جدید ستون پنجم است.
     if headers.count("ردیف") >= 2:
         row_col = [i for i, h in enumerate(headers) if h == "ردیف"][1]
     number_col = find_col(headers, "شماره", "شماره مزار")
@@ -135,7 +172,6 @@ def main():
         elif repair_col is not None and value_is_checked(values[repair_col]):
             stone_type = "ترمیمی"
 
-        # اگر چند مرحله علامت خورده باشد، آخرین مرحله ثبت‌شده را به عنوان مرحله فعلی نگه می‌داریم.
         stage = ""
         for candidate_type, candidate_stage, col in stage_cols:
             if col is not None and value_is_checked(values[col]):
@@ -178,19 +214,39 @@ def main():
                 writer.writerow([*key, excel_row, name, lastname])
     print("گزارش تکراری‌ها:", report_path)
 
-    # نکته: پاک‌سازی بانک از طریق SQL مدیریتی انجام می‌شود؛ این اسکریپت فقط INSERT می‌کند.
-    for start in range(0, len(records), BATCH_SIZE):
-        batch = records[start:start + BATCH_SIZE]
+    existing = get_existing_locations()
+    if existing is None:
+        return 1
+    print(f"موقعیت‌های موجود در Supabase: {len(existing):,}")
+
+    pending = []
+    skipped = 0
+    for record in records:
+        key = (record["piece"] or "", record["grave_row"] or "", record["grave_number"] or "")
+        if all(key) and key in existing:
+            skipped += 1
+            continue
+        pending.append(record)
+        if all(key):
+            existing.add(key)
+
+    print(f"رکوردهای قابل انتقال پس از حذف موارد موجود: {len(pending):,}")
+    print(f"رکوردهای قبلاً موجود و ردشده: {skipped:,}")
+
+    for start in range(0, len(pending), BATCH_SIZE):
+        batch = pending[start:start + BATCH_SIZE]
         status, body = request_json("POST", f"{SUPABASE_URL}/rest/v1/{TABLE}", batch)
         if status < 200 or status >= 300:
             print(f"ERROR در batch {start + 1}-{start + len(batch)}: HTTP {status}")
             print(body)
             return 1
-        print(f"ثبت شد: {start + len(batch):,}/{len(records):,}")
+        print(f"ثبت شد: {start + len(batch):,}/{len(pending):,}")
 
     print("=" * 70)
     print("انتقال کامل شد.")
-    print("تعداد ثبت‌شده:", f"{len(records):,}")
+    print("کل Excel:", f"{len(records):,}")
+    print("رکورد جدید ثبت‌شده:", f"{len(pending):,}")
+    print("رکوردهای از قبل موجود:", f"{skipped:,}")
     print("=" * 70)
     return 0
 
