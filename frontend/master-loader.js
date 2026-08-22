@@ -9,9 +9,12 @@ const MASTER_SUPABASE_URL = "https://bafrksgdcmglahyrppfy.supabase.co";
 const MASTER_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZnJrc2dkY21nbGFoeXJwcGZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMTY4MjQsImV4cCI6MjEwMjY5MjgyNH0.DiWX7vECRUyio5vquCSLMlwhYPaYsummPk0908TYJw8";
 const MASTER_TABLE = "martyrs";
 const MASTER_EXCEL_URL = "https://raw.githubusercontent.com/forog1980-star/Shohada-app/main/ExcelData/martyrs_master.xlsx";
-const MASTER_BATCH_SIZE = 500;
+
+// 100 رکورد در هر درخواست عمداً انتخاب شده تا درخواست‌های مرورگر پایدارتر باشند.
+const MASTER_BATCH_SIZE = 100;
+const MASTER_MAX_RETRIES = 4;
 const MASTER_STATUS_APPROVED = "تأیید شده";
-const MASTER_VERSION = "20260822-11";
+const MASTER_VERSION = "20260822-12";
 
 function masterToEnglishDigits(value) {
     if (value === null || value === undefined) return "";
@@ -42,7 +45,7 @@ function masterNormalizeLocation(value) {
 function masterKey(record) {
     return [record.name, record.lastname, record.piece, record.grave_row, record.grave_number]
         .map(masterCleanText)
-        .join("|" );
+        .join("|");
 }
 
 function masterShowMessage(title, detail = "") {
@@ -229,6 +232,49 @@ async function masterReadExcel() {
     return records;
 }
 
+function masterDelay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function masterInsertBatchWithRetry(client, batch, batchNo, start, end, totalBatches) {
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= MASTER_MAX_RETRIES; attempt++) {
+        masterUpdateMessage(
+            `در حال اتصال بانک Excel به Supabase...\n\nBatch ${batchNo} از ${totalBatches}\nرکوردهای ${start + 1} تا ${end}\n\nتلاش ${attempt} از ${MASTER_MAX_RETRIES}\nرکوردهای موجود تغییر نمی‌کنند.`
+        );
+
+        try {
+            const result = await client.from(MASTER_TABLE).insert(batch);
+            if (!result.error) return;
+
+            lastError = result.error;
+            const message = result.error.message || result.error.details || result.error.code || "خطای نامشخص";
+
+            // خطاهای واقعی دیتابیس معمولاً با پاسخ مشخص برمی‌گردند و retry بی‌فایده است.
+            // Failed to fetch یک خطای شبکه/مرورگر است و ارزش retry دارد.
+            if (!/failed to fetch|network|timeout|timed out|abort/i.test(String(message))) {
+                throw new Error(`خطا هنگام ثبت Batch ${batchNo}:\n${message}`);
+            }
+        } catch (error) {
+            lastError = error;
+            const message = error?.message || String(error);
+            if (!/failed to fetch|network|timeout|timed out|abort/i.test(message)) {
+                throw new Error(`خطا هنگام ثبت Batch ${batchNo}:\n${message}`);
+            }
+        }
+
+        if (attempt < MASTER_MAX_RETRIES) {
+            await masterDelay(1000 * attempt);
+        }
+    }
+
+    throw new Error(
+        `خطا هنگام ثبت Batch ${batchNo} پس از ${MASTER_MAX_RETRIES} تلاش.\n` +
+        `${lastError?.message || String(lastError)}`
+    );
+}
+
 async function masterImportMissing(client, records) {
     const existingKeys = await masterGetExistingKeys(client);
     const missing = records.filter(record => !existingKeys.has(masterKey(record)));
@@ -244,17 +290,11 @@ async function masterImportMissing(client, records) {
         const end = Math.min(start + MASTER_BATCH_SIZE, missing.length);
         const batch = missing.slice(start, end);
 
-        masterUpdateMessage(
-            `در حال اتصال بانک Excel به Supabase...\n\nBatch ${batchNo} از ${totalBatches}\nرکوردهای ${start + 1} تا ${end} از ${missing.length}\n\nرکوردهای موجود تغییر نمی‌کنند.`
-        );
-
-        const { error } = await client.from(MASTER_TABLE).insert(batch);
-        if (error) {
-            throw new Error(`خطا هنگام ثبت Batch ${batchNo}:\n${error.message || error.details || error.code || JSON.stringify(error)}`);
-        }
-
+        await masterInsertBatchWithRetry(client, batch, batchNo, start, end, totalBatches);
         imported += batch.length;
-        await new Promise(resolve => setTimeout(resolve, 0));
+
+        // مکث بسیار کوتاه برای پایدار ماندن اتصال مرورگر و API.
+        await masterDelay(150);
     }
 
     return { imported, existing: records.length - missing.length };
