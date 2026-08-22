@@ -20,18 +20,18 @@
         }
     </style>
 
-    <!-- Supabase باید قبل از app.js بارگذاری شود -->
+    <!-- Supabase باید قبل از Loader و app.js بارگذاری شود -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- SheetJS / XLSX باید قبل از app.js بارگذاری شود -->
+    <!-- SheetJS / XLSX برای خواندن بانک اصلی Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
     <div class="app"></div>
 
-    <!-- برنامه بعد از Supabase و SheetJS اجرا می‌شود -->
-    <script src="app.js?v=20260822-2"></script>
+    <!-- Loader ابتدا بانک اصلی Excel را فقط در صورت خالی بودن martyrs بررسی/انتقال می‌کند. -->
+    <script src="master-loader.js?v=20260822-1"></script>
 
 </body>
 </html>
