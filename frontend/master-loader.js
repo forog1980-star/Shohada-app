@@ -6,24 +6,15 @@
 
 "use strict";
 
-const MASTER_SUPABASE_URL =
-    "https://bafrksgdcmglahyrppfy.supabase.co";
-
-const MASTER_SUPABASE_KEY =
-    "sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX";
-
+const MASTER_SUPABASE_URL = "https://bafrksgdcmglahyrppfy.supabase.co";
+const MASTER_SUPABASE_KEY = "sb_publishable_O5CkSuivysXjF-8hu1IUCA_izu8hWiX";
 const MASTER_TABLE = "martyrs";
-
-// مسیر مطمئن فایل Excel روی GitHub؛ وابسته به مسیر استقرار GitHub Pages نیست.
-const MASTER_EXCEL_URL =
-    "https://raw.githubusercontent.com/forog1980-star/Shohada-app/main/ExcelData/martyrs_master.xlsx";
-
+const MASTER_EXCEL_URL = "https://raw.githubusercontent.com/forog1980-star/Shohada-app/main/ExcelData/martyrs_master.xlsx";
 const MASTER_BATCH_SIZE = 500;
 const MASTER_STATUS_APPROVED = "تأیید شده";
 
 function masterToEnglishDigits(value) {
     if (value === null || value === undefined) return "";
-
     return String(value)
         .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
         .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
@@ -31,11 +22,7 @@ function masterToEnglishDigits(value) {
 
 function masterCleanText(value) {
     if (value === null || value === undefined) return "";
-
-    return String(value)
-        .replace(/\u200c/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+    return String(value).replace(/\u200c/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function masterNormalizeHeader(value) {
@@ -48,11 +35,7 @@ function masterNormalizeHeader(value) {
 
 function masterNormalizeLocation(value) {
     let text = masterToEnglishDigits(masterCleanText(value));
-
-    if (/^\d+\.0$/.test(text)) {
-        text = text.slice(0, -2);
-    }
-
+    if (/^\d+\.0$/.test(text)) text = text.slice(0, -2);
     return text;
 }
 
@@ -63,29 +46,31 @@ function masterShowMessage(title, detail = "") {
                 <div style="font-size:38px;margin-bottom:12px;">${title}</div>
                 <div style="font-size:15px;line-height:2;color:#45534c;white-space:pre-line;">${detail}</div>
             </div>
-        </div>
-    `;
+        </div>`;
 }
 
 function masterLoadApp() {
     const script = document.createElement("script");
-    script.src = "app.js?v=20260822-5";
-    script.onload = () => {
-        window.__GOLZAR_MASTER_READY__ = true;
-    };
-    script.onerror = () => {
-        masterShowMessage("❌", "بارگذاری برنامه انجام نشد.\nفایل app.js در دسترس نیست.");
-    };
+    script.src = "app.js?v=20260822-6";
+    script.onload = () => { window.__GOLZAR_MASTER_READY__ = true; };
+    script.onerror = () => masterShowMessage("❌", "بارگذاری برنامه انجام نشد.\nفایل app.js در دسترس نیست.");
     document.body.appendChild(script);
 }
 
+// از HEAD+count استفاده نمی‌کنیم؛ در بعضی استقرارها این نوع درخواست
+// ممکن است بدون اینکه جدول واقعاً مشکل داشته باشد خطا بدهد.
 async function masterGetTableCount(client) {
-    const { count, error } = await client
+    const { data, error, count } = await client
         .from(MASTER_TABLE)
-        .select("id", { count: "exact", head: true });
+        .select("id", { count: "exact" });
 
-    if (error) throw new Error(`خطا در بررسی جدول martyrs:\n${error.message}`);
-    return Number(count || 0);
+    if (error) {
+        const detail = error.message || error.details || error.hint || error.code || JSON.stringify(error);
+        throw new Error(`خطا در بررسی جدول martyrs:\n${detail}`);
+    }
+
+    if (Number.isFinite(Number(count))) return Number(count);
+    return Array.isArray(data) ? data.length : 0;
 }
 
 function masterFindHeaderRow(rows) {
@@ -95,7 +80,7 @@ function masterFindHeaderRow(rows) {
         father_name: ["نامپدر", "نامپدرشهید", "fathername", "father"],
         piece: ["قطعه", "قطعهشهید", "piece"],
         grave_row: ["ردیف", "ردیفمزار", "ردیفقبر", "graverow", "row"],
-        grave_number: ["شماره", "شماره مزار", "شمارهقبر", "شمارهسنگ", "gravenumber", "number"],
+        grave_number: ["شماره", "شماره مزار", "شمارهقبر", "شمارهسنگ", "gravenumber", "number"]
     };
 
     let best = null;
@@ -104,85 +89,49 @@ function masterFindHeaderRow(rows) {
     for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
         const normalized = rows[rowIndex].map(masterNormalizeHeader);
         const map = {};
-
         for (const [field, fieldAliases] of Object.entries(aliases)) {
             const index = normalized.findIndex(h => fieldAliases.includes(h));
             if (index >= 0) map[field] = index;
         }
-
         const score = Object.keys(map).length;
-
-        if (!best || score > best.score) {
-            best = { rowIndex, map, score };
-        }
+        if (!best || score > best.score) best = { rowIndex, map, score };
     }
 
     if (!best || !best.map.name || !best.map.lastname || !best.map.piece || !best.map.grave_row || !best.map.grave_number) {
-        throw new Error(
-            "ستون‌های اصلی فایل Excel شناسایی نشدند.\n" +
-            "لازم است ستون‌های نام، نام خانوادگی، قطعه، ردیف و شماره مزار در فایل وجود داشته باشند."
-        );
+        throw new Error("ستون‌های اصلی فایل Excel شناسایی نشدند.\nلازم است ستون‌های نام، نام خانوادگی، قطعه، ردیف و شماره مزار در فایل وجود داشته باشند.");
     }
-
     return best;
 }
 
 async function masterReadExcel() {
-    if (!window.XLSX) {
-        throw new Error("کتابخانه Excel (SheetJS) بارگذاری نشده است.");
-    }
+    if (!window.XLSX) throw new Error("کتابخانه Excel (SheetJS) بارگذاری نشده است.");
 
-    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822-5`, {
-        cache: "no-store",
-        mode: "cors"
-    });
-
-    if (!response.ok) {
-        throw new Error(`دریافت فایل martyrs_master.xlsx ناموفق بود. HTTP ${response.status}`);
-    }
+    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822-6`, { cache: "no-store", mode: "cors" });
+    if (!response.ok) throw new Error(`دریافت فایل martyrs_master.xlsx ناموفق بود. HTTP ${response.status}`);
 
     const buffer = await response.arrayBuffer();
-    const workbook = XLSX.read(buffer, {
-        type: "array",
-        cellDates: false,
-        raw: true
-    });
-
+    const workbook = XLSX.read(buffer, { type: "array", cellDates: false, raw: true });
     let bestSheet = null;
 
     for (const sheetName of workbook.SheetNames) {
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, {
-            header: 1,
-            defval: "",
-            raw: true
-        });
-
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
         try {
             const header = masterFindHeaderRow(rows);
-            if (!bestSheet || header.score > bestSheet.header.score) {
-                bestSheet = { sheetName, rows, header };
-            }
-        } catch (_) {
-            // این Sheet ساختار بانک اصلی را ندارد؛ Sheet بعدی بررسی می‌شود.
-        }
+            if (!bestSheet || header.score > bestSheet.header.score) bestSheet = { sheetName, rows, header };
+        } catch (_) {}
     }
 
-    if (!bestSheet) {
-        throw new Error("هیچ Sheet قابل استفاده‌ای در martyrs_master.xlsx پیدا نشد.");
-    }
+    if (!bestSheet) throw new Error("هیچ Sheet قابل استفاده‌ای در martyrs_master.xlsx پیدا نشد.");
 
     const { rows, header } = bestSheet;
     const records = [];
 
     for (let i = header.rowIndex + 1; i < rows.length; i++) {
         const row = rows[i] || [];
-
         const name = masterCleanText(row[header.map.name]);
         const lastname = masterCleanText(row[header.map.lastname]);
-        const father_name = header.map.father_name !== undefined
-            ? masterCleanText(row[header.map.father_name])
-            : "";
+        const father_name = header.map.father_name !== undefined ? masterCleanText(row[header.map.father_name]) : "";
         const piece = masterNormalizeLocation(row[header.map.piece]);
         const grave_row = masterNormalizeLocation(row[header.map.grave_row]);
         const grave_number = masterNormalizeLocation(row[header.map.grave_number]);
@@ -191,48 +140,27 @@ async function masterReadExcel() {
         if (!name || !lastname || !piece || !grave_row || !grave_number) continue;
 
         records.push({
-            name,
-            lastname,
-            father_name: father_name || null,
-            piece,
-            grave_row,
-            grave_number,
-            stone_type: null,
-            stage: null,
-            notes: null,
-            status: MASTER_STATUS_APPROVED,
-            created_at: new Date().toISOString(),
-            edited_at: null,
-            edit_notes: null
+            name, lastname, father_name: father_name || null, piece, grave_row, grave_number,
+            stone_type: null, stage: null, notes: null, status: MASTER_STATUS_APPROVED,
+            created_at: new Date().toISOString(), edited_at: null, edit_notes: null
         });
     }
 
-    if (!records.length) {
-        throw new Error("از فایل Excel هیچ رکورد معتبر قابل انتقالی پیدا نشد.");
-    }
-
+    if (!records.length) throw new Error("از فایل Excel هیچ رکورد معتبر قابل انتقالی پیدا نشد.");
     return { sheetName: bestSheet.sheetName, records };
 }
 
 async function masterImportToSupabase(client, records) {
     let imported = 0;
-
     for (let start = 0; start < records.length; start += MASTER_BATCH_SIZE) {
         const batch = records.slice(start, start + MASTER_BATCH_SIZE);
-
-        const { error } = await client
-            .from(MASTER_TABLE)
-            .insert(batch);
-
+        const { error } = await client.from(MASTER_TABLE).insert(batch);
         if (error) {
-            throw new Error(
-                `خطا هنگام انتقال اطلاعات به Supabase (رکورد ${start + 1} تا ${Math.min(start + MASTER_BATCH_SIZE, records.length)}):\n${error.message}`
-            );
+            const detail = error.message || error.details || error.hint || error.code || JSON.stringify(error);
+            throw new Error(`خطا هنگام انتقال اطلاعات به Supabase (رکورد ${start + 1} تا ${Math.min(start + MASTER_BATCH_SIZE, records.length)}):\n${detail}`);
         }
-
         imported += batch.length;
     }
-
     return imported;
 }
 
@@ -240,11 +168,11 @@ async function startGolzarStone() {
     try {
         masterShowMessage("⏳", "در حال بررسی بانک اطلاعاتی...\nلطفاً صفحه را نبندید.");
 
-        const client = window.supabase.createClient(
-            MASTER_SUPABASE_URL,
-            MASTER_SUPABASE_KEY
-        );
+        if (!window.supabase || typeof window.supabase.createClient !== "function") {
+            throw new Error("کتابخانه Supabase در صفحه بارگذاری نشده است.");
+        }
 
+        const client = window.supabase.createClient(MASTER_SUPABASE_URL, MASTER_SUPABASE_KEY);
         const count = await masterGetTableCount(client);
 
         if (count > 0) {
@@ -253,27 +181,19 @@ async function startGolzarStone() {
         }
 
         masterShowMessage("⏳", "بانک اطلاعاتی خالی است.\nدر حال انتقال آخرین نسخه Excel به سامانه...\nاین مرحله فقط یک بار انجام می‌شود.");
-
         const { sheetName, records } = await masterReadExcel();
         const imported = await masterImportToSupabase(client, records);
         const finalCount = await masterGetTableCount(client);
 
         if (finalCount !== imported) {
-            throw new Error(
-                `کنترل نهایی انتقال ناموفق بود. تعداد رکوردهای واردشده: ${imported} — تعداد رکوردهای جدول martyrs: ${finalCount}`
-            );
+            throw new Error(`کنترل نهایی انتقال ناموفق بود. تعداد رکوردهای واردشده: ${imported} — تعداد رکوردهای جدول martyrs: ${finalCount}`);
         }
 
         console.info(`GolzarStone master import completed: ${imported} records from sheet "${sheetName}".`);
         masterLoadApp();
     } catch (error) {
         console.error("GolzarStone master import error:", error);
-        masterShowMessage(
-            "❌",
-            "اتصال بانک اصلی انجام نشد.\n\n" +
-            (error?.message || String(error)) +
-            "\n\nبانک اصلی فقط در صورت موفقیت هر Batch تغییر می‌کند."
-        );
+        masterShowMessage("❌", "اتصال بانک اصلی انجام نشد.\n\n" + (error?.message || String(error)) + "\n\nبانک اصلی فقط در صورت موفقیت هر Batch تغییر می‌کند.");
     }
 }
 
