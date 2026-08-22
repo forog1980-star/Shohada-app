@@ -10,10 +10,14 @@ const MASTER_SUPABASE_URL =
     "https://bafrksgdcmglahyrppfy.supabase.co";
 
 const MASTER_SUPABASE_KEY =
-    "sb_publishable_O5CkSuivysXjF-8hu1IUCA_izu8hWiX";
+    "sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX";
 
 const MASTER_TABLE = "martyrs";
-const MASTER_EXCEL_URL = "../ExcelData/martyrs_master.xlsx";
+
+// مسیر مطمئن فایل Excel روی GitHub؛ وابسته به مسیر استقرار GitHub Pages نیست.
+const MASTER_EXCEL_URL =
+    "https://raw.githubusercontent.com/forog1980-star/Shohada-app/main/ExcelData/martyrs_master.xlsx";
+
 const MASTER_BATCH_SIZE = 500;
 const MASTER_STATUS_APPROVED = "تأیید شده";
 
@@ -52,16 +56,6 @@ function masterNormalizeLocation(value) {
     return text;
 }
 
-function masterNormalizeId(value) {
-    const text = masterNormalizeLocation(value);
-    if (!text) return null;
-
-    const number = Number(text);
-    return Number.isSafeInteger(number) && number > 0
-        ? number
-        : null;
-}
-
 function masterShowMessage(title, detail = "") {
     document.body.innerHTML = `
         <div dir="rtl" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f7f5;font-family:Tahoma,Arial,sans-serif;padding:24px;box-sizing:border-box;">
@@ -75,7 +69,7 @@ function masterShowMessage(title, detail = "") {
 
 function masterLoadApp() {
     const script = document.createElement("script");
-    script.src = "app.js?v=20260822-4";
+    script.src = "app.js?v=20260822-5";
     script.onload = () => {
         window.__GOLZAR_MASTER_READY__ = true;
     };
@@ -96,7 +90,6 @@ async function masterGetTableCount(client) {
 
 function masterFindHeaderRow(rows) {
     const aliases = {
-        id: ["شناسهبانک", "شناسه", "کدشهید", "id", "bankid", "شناسهشهید"],
         name: ["نام", "نامشهید", "firstname", "name"],
         lastname: ["نامخانوادگی", "نامخانوادگی شهید", "نامخانوادگی_شهید", "lastname", "family"],
         father_name: ["نامپدر", "نامپدرشهید", "fathername", "father"],
@@ -106,7 +99,6 @@ function masterFindHeaderRow(rows) {
     };
 
     let best = null;
-
     const limit = Math.min(rows.length, 25);
 
     for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
@@ -140,8 +132,9 @@ async function masterReadExcel() {
         throw new Error("کتابخانه Excel (SheetJS) بارگذاری نشده است.");
     }
 
-    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822`, {
-        cache: "no-store"
+    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822-5`, {
+        cache: "no-store",
+        mode: "cors"
     });
 
     if (!response.ok) {
@@ -195,13 +188,8 @@ async function masterReadExcel() {
         const grave_number = masterNormalizeLocation(row[header.map.grave_number]);
 
         if (!name && !lastname && !piece && !grave_row && !grave_number) continue;
+        if (!name || !lastname || !piece || !grave_row || !grave_number) continue;
 
-        if (!name || !lastname || !piece || !grave_row || !grave_number) {
-            continue;
-        }
-
-        // id در جدول Supabase از نوع int8 و Identity است.
-        // شناسه Excel عمداً به ستون id ارسال نمی‌شود؛ PostgreSQL آن را خودکار می‌سازد.
         records.push({
             name,
             lastname,
@@ -223,10 +211,7 @@ async function masterReadExcel() {
         throw new Error("از فایل Excel هیچ رکورد معتبر قابل انتقالی پیدا نشد.");
     }
 
-    return {
-        sheetName: bestSheet.sheetName,
-        records
-    };
+    return { sheetName: bestSheet.sheetName, records };
 }
 
 async function masterImportToSupabase(client, records) {
@@ -262,7 +247,6 @@ async function startGolzarStone() {
 
         const count = await masterGetTableCount(client);
 
-        // اگر بانک قبلاً اطلاعات دارد، هیچ Excel Import انجام نمی‌شود.
         if (count > 0) {
             masterLoadApp();
             return;
@@ -272,7 +256,6 @@ async function startGolzarStone() {
 
         const { sheetName, records } = await masterReadExcel();
         const imported = await masterImportToSupabase(client, records);
-
         const finalCount = await masterGetTableCount(client);
 
         if (finalCount !== imported) {
@@ -281,10 +264,7 @@ async function startGolzarStone() {
             );
         }
 
-        console.info(
-            `GolzarStone master import completed: ${imported} records from sheet "${sheetName}".`
-        );
-
+        console.info(`GolzarStone master import completed: ${imported} records from sheet "${sheetName}".`);
         masterLoadApp();
     } catch (error) {
         console.error("GolzarStone master import error:", error);
