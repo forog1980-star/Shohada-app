@@ -20,18 +20,52 @@
         }
     </style>
 
-    <!-- Supabase باید قبل از Loader و app.js بارگذاری شود -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- SheetJS / XLSX برای خواندن بانک اصلی Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
     <div class="app"></div>
 
-    <!-- Loader بانک اصلی Excel و تطبیق رکوردهای جدید با Supabase -->
-    <script src="master-loader.js?v=20260822-11"></script>
+    <script src="master-loader.js?v=20260822-13"></script>
+
+    <!--
+      master-loader به صورت پویا app.js را بعد از DOMContentLoaded بارگذاری می‌کند.
+      بنابراین listener داخل app.js دیگر فرصت اجرا ندارد.
+      این پل، شروع برنامه را پس از پایان Loader انجام می‌دهد.
+    -->
+    <script>
+      (function waitForGolzarApp() {
+        let attempts = 0;
+        const timer = setInterval(function () {
+          attempts++;
+
+          if (window.__GOLZAR_MASTER_READY__ === true) {
+            clearInterval(timer);
+
+            try {
+              if (typeof window.initializeHistory === "function") {
+                window.initializeHistory();
+              }
+              if (typeof window.applyAppStyles === "function") {
+                window.applyAppStyles();
+              }
+              if (typeof window.showHome === "function") {
+                window.showHome();
+              }
+            } catch (error) {
+              console.error("GolzarStone app startup error:", error);
+            }
+            return;
+          }
+
+          if (attempts >= 300) {
+            clearInterval(timer);
+            console.error("GolzarStone app startup timeout.");
+          }
+        }, 100);
+      })();
+    </script>
 
 </body>
 </html>
