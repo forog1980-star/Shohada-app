@@ -1,7 +1,15 @@
 // ============================================================
 // GolzarStone — Master Excel Loader
-// اتصال اولیه بانک اصلی از ExcelData/martyrs_master.xlsx به Supabase
-// فقط وقتی جدول martyrs خالی باشد اجرا می‌شود.
+// بانک اصلی سنگ‌های مزار از ExcelData/martyrs_master.xlsx
+//
+// نکته مهم:
+// این فایل مربوط به پروژه GolzarStone است و با پروژه MartyrSearch
+// اشتباه گرفته نمی‌شود.
+// - هیچ ستون father_name از Excel خوانده نمی‌شود.
+// - Sheet «آمار» و Sheet عکس‌ها وارد بانک اصلی نمی‌شوند.
+// - هر Sheet قطعه‌ای که ستون‌های اصلی را داشته باشد خوانده می‌شود.
+// - اگر ستون «قطعه» در Sheet نباشد، شماره قطعه از نام Sheet تشخیص داده می‌شود.
+// - فقط وقتی public.martyrs خالی باشد، انتقال اولیه انجام می‌شود.
 // ============================================================
 
 "use strict";
@@ -22,7 +30,10 @@ function masterToEnglishDigits(value) {
 
 function masterCleanText(value) {
     if (value === null || value === undefined) return "";
-    return String(value).replace(/\u200c/g, " ").replace(/\s+/g, " ").trim();
+    return String(value)
+        .replace(/\u200c/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 }
 
 function masterNormalizeHeader(value) {
@@ -42,7 +53,7 @@ function masterNormalizeLocation(value) {
 function masterShowMessage(title, detail = "") {
     document.body.innerHTML = `
         <div dir="rtl" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f7f5;font-family:Tahoma,Arial,sans-serif;padding:24px;box-sizing:border-box;">
-            <div style="width:min(560px,100%);background:#fff;border-radius:20px;padding:28px;box-shadow:0 8px 30px rgba(0,0,0,.08);text-align:center;">
+            <div style="width:min(600px,100%);background:#fff;border-radius:20px;padding:28px;box-shadow:0 8px 30px rgba(0,0,0,.08);text-align:center;">
                 <div style="font-size:38px;margin-bottom:12px;">${title}</div>
                 <div id="master-message-detail" style="font-size:15px;line-height:2;color:#45534c;white-space:pre-line;">${detail}</div>
             </div>
@@ -56,7 +67,7 @@ function masterUpdateMessage(detail) {
 
 function masterLoadApp() {
     const script = document.createElement("script");
-    script.src = "app.js?v=20260822-9";
+    script.src = "app.js?v=20260822-10";
     script.onload = () => { window.__GOLZAR_MASTER_READY__ = true; };
     script.onerror = () => masterShowMessage("❌", "بارگذاری برنامه انجام نشد.\nفایل app.js در دسترس نیست.");
     document.body.appendChild(script);
@@ -65,8 +76,7 @@ function masterLoadApp() {
 async function masterGetTableCount(client) {
     const { data, error, count } = await client
         .from(MASTER_TABLE)
-        .select("id", { count: "exact", head: false })
-        .limit(1);
+        .select("id", { count: "exact", head: true });
 
     if (error) {
         const detail = error.message || error.details || error.hint || error.code || JSON.stringify(error);
@@ -77,51 +87,121 @@ async function masterGetTableCount(client) {
     return Array.isArray(data) ? data.length : 0;
 }
 
-function masterFindHeaderRow(rows) {
-    const aliases = {
-        name: ["نام", "نامشهید", "firstname", "name"],
-        lastname: ["نامخانوادگی", "نامخانوادگی شهید", "نامخانوادگی_شهید", "lastname", "family"],
-        piece: ["قطعه", "قطعهشهید", "piece"],
-        grave_row: ["ردیف", "ردیفمزار", "ردیفقبر", "graverow", "row"],
-        grave_number: ["شماره", "شماره مزار", "شمارهقبر", "شمارهسنگ", "gravenumber", "number"]
-    };
+const MASTER_ALIASES = {
+    name: [
+        "نام",
+        "نامشهید",
+        "نام شهید",
+        "firstname",
+        "first name",
+        "name"
+    ],
+    lastname: [
+        "نامخانوادگی",
+        "نام خانوادگی",
+        "نامخانوادگی شهید",
+        "نام خانوادگی شهید",
+        "lastname",
+        "last name",
+        "family"
+    ],
+    piece: [
+        "قطعه",
+        "قطعهشهید",
+        "قطعه شهید",
+        "piece"
+    ],
+    grave_row: [
+        "ردیف",
+        "ردیفمزار",
+        "ردیف مزار",
+        "ردیفقبر",
+        "ردیف قبر",
+        "graverow",
+        "grave row",
+        "row"
+    ],
+    grave_number: [
+        "شماره",
+        "شماره مزار",
+        "شمارهقبر",
+        "شماره قبر",
+        "شمارهسنگ",
+        "شماره سنگ",
+        "gravenumber",
+        "grave number",
+        "number"
+    ]
+};
 
+function masterFindHeaderRow(rows) {
     let best = null;
     const limit = Math.min(rows.length, 25);
 
     for (let rowIndex = 0; rowIndex < limit; rowIndex++) {
-        const normalized = rows[rowIndex].map(masterNormalizeHeader);
+        const row = Array.isArray(rows[rowIndex]) ? rows[rowIndex] : [];
+        const normalized = row.map(masterNormalizeHeader);
         const map = {};
-        for (const [field, fieldAliases] of Object.entries(aliases)) {
-            const index = normalized.findIndex(h => fieldAliases.includes(h));
+
+        for (const [field, aliases] of Object.entries(MASTER_ALIASES)) {
+            const normalizedAliases = aliases.map(masterNormalizeHeader);
+            const index = normalized.findIndex(h => normalizedAliases.includes(h));
             if (index >= 0) map[field] = index;
         }
+
+        const requiredScore = ["name", "lastname", "grave_row", "grave_number"]
+            .filter(field => map[field] !== undefined).length;
+
         const score = Object.keys(map).length;
-        if (!best || score > best.score) best = { rowIndex, map, score };
+        if (!best || score > best.score) {
+            best = { rowIndex, map, score, requiredScore };
+        }
     }
 
-    if (!best || !best.map.name || !best.map.lastname || !best.map.piece || !best.map.grave_row || !best.map.grave_number) {
-        throw new Error("ستون‌های اصلی فایل Excel شناسایی نشدند.\nلازم است ستون‌های نام، نام خانوادگی، قطعه، ردیف و شماره مزار در فایل وجود داشته باشند.");
-    }
+    if (!best || best.requiredScore < 4) return null;
     return best;
 }
 
+function masterInferPieceFromSheetName(sheetName) {
+    const text = masterToEnglishDigits(masterCleanText(sheetName));
+    const match = text.match(/(?:قطعه\s*)?(17|24|26|27|28|29|40|53)(?:\D|$)/);
+    return match ? match[1] : "";
+}
+
+function masterIsIgnoredSheet(sheetName) {
+    const normalized = masterNormalizeHeader(sheetName);
+    return [
+        "آمار",
+        "عکس",
+        "عکسها",
+        "عکسها",
+        "images",
+        "photos",
+        "statistics",
+        "stat"
+    ].map(masterNormalizeHeader).includes(normalized);
+}
+
 async function masterReadExcel() {
-    if (!window.XLSX) throw new Error("کتابخانه Excel (SheetJS) بارگذاری نشده است.");
+    if (!window.XLSX) {
+        throw new Error("کتابخانه Excel (SheetJS) بارگذاری نشده است.");
+    }
 
-    masterUpdateMessage("در حال دریافت فایل آخرین نسخه Excel...\nلطفاً صفحه را نبندید.");
+    masterUpdateMessage("در حال دریافت آخرین نسخه Excel از GitHub...\nلطفاً صفحه را نبندید.");
 
-    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822-9`, {
+    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822-10`, {
         cache: "no-store",
         mode: "cors"
     });
 
-    if (!response.ok) throw new Error(`دریافت فایل martyrs_master.xlsx ناموفق بود. HTTP ${response.status}`);
+    if (!response.ok) {
+        throw new Error(`دریافت فایل martyrs_master.xlsx ناموفق بود. HTTP ${response.status}`);
+    }
 
     const buffer = await response.arrayBuffer();
-    masterUpdateMessage("فایل Excel دریافت شد.\nدر حال آماده‌سازی اطلاعات برای انتقال...\nلطفاً صفحه را نبندید.");
 
-    // dense=true برای فایل‌های بزرگ سریع‌تر و کم‌حافظه‌تر است.
+    masterUpdateMessage("فایل Excel دریافت شد.\nدر حال شناسایی Sheetهای قطعات...\nلطفاً صفحه را نبندید.");
+
     const workbook = XLSX.read(buffer, {
         type: "array",
         cellDates: false,
@@ -135,61 +215,90 @@ async function masterReadExcel() {
         throw new Error("فایل Excel هیچ Sheet قابل استفاده‌ای ندارد.");
     }
 
-    // فایل master فعلی بر پایه Sheet «تجمیع» است. اگر این Sheet وجود داشت،
-    // فقط همان را می‌خوانیم؛ خواندن تمام Sheetها باعث کندی شدید مرورگر می‌شد.
-    const preferredNames = ["تجمیع", "تجمیع ", "master", "Master", "Sheet1"];
-    let sheetName = preferredNames.find(name => workbook.SheetNames.includes(name));
-    if (!sheetName) sheetName = workbook.SheetNames[0];
-
-    masterUpdateMessage(`Sheet «${sheetName}» انتخاب شد.\nدر حال خواندن رکوردها...\nلطفاً صفحه را نبندید.`);
-
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, {
-        header: 1,
-        defval: "",
-        raw: true,
-        blankrows: false
-    });
-
-    const header = masterFindHeaderRow(rows);
     const records = [];
-    const totalRows = rows.length;
+    const sheetReport = [];
 
-    for (let i = header.rowIndex + 1; i < rows.length; i++) {
-        const row = rows[i] || [];
-        const name = masterCleanText(row[header.map.name]);
-        const lastname = masterCleanText(row[header.map.lastname]);
-        const piece = masterNormalizeLocation(row[header.map.piece]);
-        const grave_row = masterNormalizeLocation(row[header.map.grave_row]);
-        const grave_number = masterNormalizeLocation(row[header.map.grave_number]);
+    for (const sheetName of workbook.SheetNames) {
+        if (masterIsIgnoredSheet(sheetName)) {
+            sheetReport.push(`Sheet «${sheetName}» نادیده گرفته شد.`);
+            continue;
+        }
 
-        if (!name && !lastname && !piece && !grave_row && !grave_number) continue;
-        if (!name || !lastname || !piece || !grave_row || !grave_number) continue;
-
-        records.push({
-            name,
-            lastname,
-            piece,
-            grave_row,
-            grave_number,
-            stone_type: null,
-            stage: null,
-            notes: null,
-            status: MASTER_STATUS_APPROVED,
-            created_at: new Date().toISOString(),
-            edited_at: null,
-            edit_notes: null
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            defval: "",
+            raw: true,
+            blankrows: false
         });
 
-        if (i % 1000 === 0) {
-            masterUpdateMessage(`در حال آماده‌سازی رکوردها...\n${i.toLocaleString("fa-IR")} از ${totalRows.toLocaleString("fa-IR")} ردیف بررسی شد.`);
-            await new Promise(resolve => setTimeout(resolve, 0));
+        if (!rows.length) continue;
+
+        const header = masterFindHeaderRow(rows);
+        if (!header) {
+            sheetReport.push(`Sheet «${sheetName}» بدون ستون‌های اصلی کنار گذاشته شد.`);
+            continue;
         }
+
+        const inferredPiece = masterInferPieceFromSheetName(sheetName);
+        let added = 0;
+        let skipped = 0;
+
+        for (let i = header.rowIndex + 1; i < rows.length; i++) {
+            const row = rows[i] || [];
+
+            const name = masterCleanText(row[header.map.name]);
+            const lastname = masterCleanText(row[header.map.lastname]);
+            const piece = header.map.piece !== undefined
+                ? masterNormalizeLocation(row[header.map.piece])
+                : inferredPiece;
+            const grave_row = masterNormalizeLocation(row[header.map.grave_row]);
+            const grave_number = masterNormalizeLocation(row[header.map.grave_number]);
+
+            if (!name && !lastname && !piece && !grave_row && !grave_number) continue;
+
+            if (!name || !lastname || !piece || !grave_row || !grave_number) {
+                skipped++;
+                continue;
+            }
+
+            records.push({
+                name,
+                lastname,
+                piece,
+                grave_row,
+                grave_number,
+                stone_type: null,
+                stage: null,
+                notes: null,
+                status: MASTER_STATUS_APPROVED,
+                created_at: new Date().toISOString(),
+                edited_at: null,
+                edit_notes: null
+            });
+
+            added++;
+        }
+
+        sheetReport.push(`Sheet «${sheetName}»: ${added.toLocaleString("fa-IR")} رکورد آماده شد${skipped ? `، ${skipped.toLocaleString("fa-IR")} ردیف ناقص کنار گذاشته شد` : ""}.`);
+
+        await new Promise(resolve => setTimeout(resolve, 0));
     }
 
-    if (!records.length) throw new Error("از فایل Excel هیچ رکورد معتبر قابل انتقالی پیدا نشد.");
+    if (!records.length) {
+        throw new Error(
+            "هیچ رکورد قابل انتقالی از Sheetهای قطعات پیدا نشد.\n\n" +
+            sheetReport.join("\n")
+        );
+    }
 
-    return { sheetName, records };
+    masterUpdateMessage(
+        `آماده‌سازی بانک اصلی انجام شد.\n\nتعداد رکوردهای آماده انتقال: ${records.length.toLocaleString("fa-IR")}\n\nدر حال شروع انتقال به Supabase...`
+    );
+
+    console.info("GolzarStone master Excel report:", sheetReport);
+
+    return { records, sheetReport };
 }
 
 async function masterImportToSupabase(client, records) {
@@ -226,7 +335,11 @@ async function startGolzarStone() {
             throw new Error("کتابخانه Supabase در صفحه بارگذاری نشده است.");
         }
 
-        const client = window.supabase.createClient(MASTER_SUPABASE_URL, MASTER_SUPABASE_KEY);
+        const client = window.supabase.createClient(
+            MASTER_SUPABASE_URL,
+            MASTER_SUPABASE_KEY
+        );
+
         const count = await masterGetTableCount(client);
 
         if (count > 0) {
@@ -234,22 +347,37 @@ async function startGolzarStone() {
             return;
         }
 
-        masterShowMessage("⏳", "بانک اطلاعاتی خالی است.\nدر حال انتقال آخرین نسخه Excel به سامانه...\nاین مرحله فقط یک بار انجام می‌شود.");
+        masterShowMessage(
+            "⏳",
+            "بانک اطلاعاتی خالی است.\nدر حال انتقال آخرین نسخه Excel به سامانه...\nاین مرحله فقط یک بار انجام می‌شود."
+        );
 
-        const { sheetName, records } = await masterReadExcel();
+        const { records } = await masterReadExcel();
         const imported = await masterImportToSupabase(client, records);
         const finalCount = await masterGetTableCount(client);
 
         if (finalCount !== imported) {
-            throw new Error(`کنترل نهایی انتقال ناموفق بود. تعداد رکوردهای واردشده: ${imported} — تعداد رکوردهای جدول martyrs: ${finalCount}`);
+            throw new Error(
+                `کنترل نهایی انتقال ناموفق بود. تعداد رکوردهای منتقل‌شده: ${imported} — تعداد رکوردهای جدول martyrs: ${finalCount}`
+            );
         }
 
-        console.info(`GolzarStone master import completed: ${imported} records from sheet "${sheetName}".`);
-        masterShowMessage("✅", `انتقال بانک اصلی با موفقیت انجام شد.\n\nتعداد رکوردهای منتقل‌شده: ${imported.toLocaleString("fa-IR")}\n\nدر حال ورود به برنامه...`);
+        console.info(`GolzarStone master import completed: ${imported} records.`);
+
+        masterShowMessage(
+            "✅",
+            `انتقال بانک اصلی با موفقیت انجام شد.\n\nتعداد رکوردهای منتقل‌شده: ${imported.toLocaleString("fa-IR")}\n\nدر حال ورود به برنامه...`
+        );
+
         setTimeout(masterLoadApp, 700);
     } catch (error) {
         console.error("GolzarStone master import error:", error);
-        masterShowMessage("❌", "اتصال بانک اصلی انجام نشد.\n\n" + (error?.message || String(error)) + "\n\nهیچ Batch ناموفقی به‌عنوان موفق ثبت نمی‌شود.");
+        masterShowMessage(
+            "❌",
+            "اتصال بانک اصلی انجام نشد.\n\n" +
+            (error?.message || String(error)) +
+            "\n\nهیچ رکوردی از father_name یا اطلاعات پروژه MartyrSearch از Excel خوانده نمی‌شود."
+        );
     }
 }
 
