@@ -1,18 +1,13 @@
 // ============================================================
 // GolzarStone — Master Excel Loader
 // اتصال اولیه بانک اصلی از ExcelData/martyrs_master.xlsx به Supabase
-// فقط وقتی جدول martyrs کاملاً خالی باشد اجرا می‌شود.
+// فقط وقتی جدول martyrs خالی باشد اجرا می‌شود.
 // ============================================================
 
 "use strict";
 
 const MASTER_SUPABASE_URL = "https://bafrksgdcmglahyrppfy.supabase.co";
-
-// کلید Legacy anon فعال پروژه؛ برای سازگاری با استقرارهای فعلی مرورگر
-// در Loader استفاده می‌شود. این کلید عمومی است و مجوز آن توسط RLS کنترل می‌شود.
-const MASTER_SUPABASE_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZnJrc2dkY21nbGFoeXJwcGZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMTY4MjQsImV4cCI6MjEwMjY5MjgyNH0.DiWX7vECRUyio5vquCSLMlwhYPaYsummPk0908TYJw8";
-
+const MASTER_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZnJrc2dkY21nbGFoeXJwcGZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMTY4MjQsImV4cCI6MjEwMjY5MjgyNH0.DiWX7vECRUyio5vquCSLMlwhYPaYsummPk0908TYJw8";
 const MASTER_TABLE = "martyrs";
 const MASTER_EXCEL_URL = "https://raw.githubusercontent.com/forog1980-star/Shohada-app/main/ExcelData/martyrs_master.xlsx";
 const MASTER_BATCH_SIZE = 500;
@@ -49,14 +44,19 @@ function masterShowMessage(title, detail = "") {
         <div dir="rtl" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f7f5;font-family:Tahoma,Arial,sans-serif;padding:24px;box-sizing:border-box;">
             <div style="width:min(560px,100%);background:#fff;border-radius:20px;padding:28px;box-shadow:0 8px 30px rgba(0,0,0,.08);text-align:center;">
                 <div style="font-size:38px;margin-bottom:12px;">${title}</div>
-                <div style="font-size:15px;line-height:2;color:#45534c;white-space:pre-line;">${detail}</div>
+                <div id="master-message-detail" style="font-size:15px;line-height:2;color:#45534c;white-space:pre-line;">${detail}</div>
             </div>
         </div>`;
 }
 
+function masterUpdateMessage(detail) {
+    const el = document.getElementById("master-message-detail");
+    if (el) el.textContent = detail;
+}
+
 function masterLoadApp() {
     const script = document.createElement("script");
-    script.src = "app.js?v=20260822-8";
+    script.src = "app.js?v=20260822-9";
     script.onload = () => { window.__GOLZAR_MASTER_READY__ = true; };
     script.onerror = () => masterShowMessage("❌", "بارگذاری برنامه انجام نشد.\nفایل app.js در دسترس نیست.");
     document.body.appendChild(script);
@@ -109,26 +109,51 @@ function masterFindHeaderRow(rows) {
 async function masterReadExcel() {
     if (!window.XLSX) throw new Error("کتابخانه Excel (SheetJS) بارگذاری نشده است.");
 
-    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822-8`, { cache: "no-store", mode: "cors" });
+    masterUpdateMessage("در حال دریافت فایل آخرین نسخه Excel...\nلطفاً صفحه را نبندید.");
+
+    const response = await fetch(`${MASTER_EXCEL_URL}?v=20260822-9`, {
+        cache: "no-store",
+        mode: "cors"
+    });
+
     if (!response.ok) throw new Error(`دریافت فایل martyrs_master.xlsx ناموفق بود. HTTP ${response.status}`);
 
     const buffer = await response.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: "array", cellDates: false, raw: true });
-    let bestSheet = null;
+    masterUpdateMessage("فایل Excel دریافت شد.\nدر حال آماده‌سازی اطلاعات برای انتقال...\nلطفاً صفحه را نبندید.");
 
-    for (const sheetName of workbook.SheetNames) {
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
-        try {
-            const header = masterFindHeaderRow(rows);
-            if (!bestSheet || header.score > bestSheet.header.score) bestSheet = { sheetName, rows, header };
-        } catch (_) {}
+    // dense=true برای فایل‌های بزرگ سریع‌تر و کم‌حافظه‌تر است.
+    const workbook = XLSX.read(buffer, {
+        type: "array",
+        cellDates: false,
+        raw: true,
+        dense: true,
+        cellNF: false,
+        cellStyles: false
+    });
+
+    if (!workbook.SheetNames.length) {
+        throw new Error("فایل Excel هیچ Sheet قابل استفاده‌ای ندارد.");
     }
 
-    if (!bestSheet) throw new Error("هیچ Sheet قابل استفاده‌ای در martyrs_master.xlsx پیدا نشد.");
+    // فایل master فعلی بر پایه Sheet «تجمیع» است. اگر این Sheet وجود داشت،
+    // فقط همان را می‌خوانیم؛ خواندن تمام Sheetها باعث کندی شدید مرورگر می‌شد.
+    const preferredNames = ["تجمیع", "تجمیع ", "master", "Master", "Sheet1"];
+    let sheetName = preferredNames.find(name => workbook.SheetNames.includes(name));
+    if (!sheetName) sheetName = workbook.SheetNames[0];
 
-    const { rows, header } = bestSheet;
+    masterUpdateMessage(`Sheet «${sheetName}» انتخاب شد.\nدر حال خواندن رکوردها...\nلطفاً صفحه را نبندید.`);
+
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: "",
+        raw: true,
+        blankrows: false
+    });
+
+    const header = masterFindHeaderRow(rows);
     const records = [];
+    const totalRows = rows.length;
 
     for (let i = header.rowIndex + 1; i < rows.length; i++) {
         const row = rows[i] || [];
@@ -141,8 +166,6 @@ async function masterReadExcel() {
         if (!name && !lastname && !piece && !grave_row && !grave_number) continue;
         if (!name || !lastname || !piece || !grave_row || !grave_number) continue;
 
-        // فقط ستون‌هایی که در مدل عملیاتی سامانه لازم هستند ارسال می‌شوند.
-        // father_name عمداً از انتقال Excel حذف شده است.
         records.push({
             name,
             lastname,
@@ -157,25 +180,39 @@ async function masterReadExcel() {
             edited_at: null,
             edit_notes: null
         });
+
+        if (i % 1000 === 0) {
+            masterUpdateMessage(`در حال آماده‌سازی رکوردها...\n${i.toLocaleString("fa-IR")} از ${totalRows.toLocaleString("fa-IR")} ردیف بررسی شد.`);
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
     }
 
     if (!records.length) throw new Error("از فایل Excel هیچ رکورد معتبر قابل انتقالی پیدا نشد.");
-    return { sheetName: bestSheet.sheetName, records };
+
+    return { sheetName, records };
 }
 
 async function masterImportToSupabase(client, records) {
     let imported = 0;
+    const totalBatches = Math.ceil(records.length / MASTER_BATCH_SIZE);
 
-    for (let start = 0; start < records.length; start += MASTER_BATCH_SIZE) {
-        const batch = records.slice(start, start + MASTER_BATCH_SIZE);
+    for (let start = 0, batchNo = 1; start < records.length; start += MASTER_BATCH_SIZE, batchNo++) {
+        const end = Math.min(start + MASTER_BATCH_SIZE, records.length);
+        const batch = records.slice(start, end);
+
+        masterUpdateMessage(
+            `در حال انتقال بانک اصلی به Supabase...\n\nBatch ${batchNo} از ${totalBatches}\nرکوردهای ${start + 1} تا ${end}\n\nلطفاً صفحه را نبندید.`
+        );
+
         const { error } = await client.from(MASTER_TABLE).insert(batch);
 
         if (error) {
             const detail = error.message || error.details || error.hint || error.code || JSON.stringify(error);
-            throw new Error(`خطا هنگام انتقال اطلاعات به Supabase (رکورد ${start + 1} تا ${Math.min(start + MASTER_BATCH_SIZE, records.length)}):\n${detail}`);
+            throw new Error(`خطا هنگام انتقال اطلاعات به Supabase (رکورد ${start + 1} تا ${end}):\n${detail}`);
         }
 
         imported += batch.length;
+        await new Promise(resolve => setTimeout(resolve, 0));
     }
 
     return imported;
@@ -208,7 +245,8 @@ async function startGolzarStone() {
         }
 
         console.info(`GolzarStone master import completed: ${imported} records from sheet "${sheetName}".`);
-        masterLoadApp();
+        masterShowMessage("✅", `انتقال بانک اصلی با موفقیت انجام شد.\n\nتعداد رکوردهای منتقل‌شده: ${imported.toLocaleString("fa-IR")}\n\nدر حال ورود به برنامه...`);
+        setTimeout(masterLoadApp, 700);
     } catch (error) {
         console.error("GolzarStone master import error:", error);
         masterShowMessage("❌", "اتصال بانک اصلی انجام نشد.\n\n" + (error?.message || String(error)) + "\n\nهیچ Batch ناموفقی به‌عنوان موفق ثبت نمی‌شود.");
