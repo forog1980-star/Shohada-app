@@ -1,6 +1,6 @@
 // ============================================================
 // Shohada-app / GolzarStone
-// نسخه نهایی ویرایش + بازگشت خودکار + تازه‌سازی نتایج
+// app.js — نسخه نهایی ویرایش + تازه‌سازی خودکار + Excel
 // ============================================================
 
 "use strict";
@@ -20,20 +20,12 @@ const supabaseClient = window.supabase.createClient(
 
 const TABLE_NAME = "martyrs";
 
-// ============================================================
-// وضعیت‌ها
-// ============================================================
-
 const STATUS = {
   PENDING: "در انتظار تأیید",
   APPROVED: "تأیید شده",
 };
 
 const MAX_RECORDS_PER_QUERY = 200;
-
-// ============================================================
-// تنظیمات
-// ============================================================
 
 const PIECES = ["17", "24", "26", "27", "28", "29", "40", "53"];
 
@@ -63,32 +55,25 @@ let isHandlingHistory = false;
 let firstBackPressTime = 0;
 const DOUBLE_BACK_INTERVAL = 2000;
 
-// این متغیر مشخص می‌کند پرونده فعلی از کدام صفحه باز شده
-let currentDetailSource = "records";
+// رکوردی که در حال ویرایش است
+let editingRecordId = null;
+let editingRecordSource = "search";
 
 // ============================================================
-// ابزار تبدیل اعداد
+// ابزار اعداد و متن
 // ============================================================
 
 function toPersianDigits(value) {
   if (value === null || value === undefined) return "";
-
-  return String(value).replace(
-    /[0-9]/g,
-    (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]
-  );
+  return String(value).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 }
 
 function toEnglishDigits(value) {
   if (value === null || value === undefined) return "";
 
   return String(value)
-    .replace(/[۰-۹]/g, (d) =>
-      String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))
-    )
-    .replace(/[٠-٩]/g, (d) =>
-      String("٠١٢٣٤٥٦٧٨٩".indexOf(d))
-    );
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 }
 
 function normalizeSearchText(value) {
@@ -122,10 +107,7 @@ function escapeHtml(value) {
 // ============================================================
 
 function gregorianToJalali(gy, gm, gd) {
-  const g_d_m = [
-    0, 31, 59, 90, 120, 151,
-    181, 212, 243, 273, 304, 334
-  ];
+  const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
 
   let jy;
 
@@ -149,11 +131,9 @@ function gregorianToJalali(gy, gm, gd) {
     g_d_m[gm - 1];
 
   jy += 33 * Math.floor(days / 12053);
-
   days %= 12053;
 
   jy += 4 * Math.floor(days / 1461);
-
   days %= 1461;
 
   if (days > 365) {
@@ -207,6 +187,18 @@ function getRecordCreatedAt(record) {
   return null;
 }
 
+function getRecordEditedAt(record) {
+  if (!record) return null;
+
+  return (
+    record.edited_at ||
+    record.editedAt ||
+    record.edit_date ||
+    record.editDate ||
+    null
+  );
+}
+
 function formatJalaliDate(dateValue) {
   const date = parseSupabaseDate(dateValue);
 
@@ -238,11 +230,10 @@ function formatJalaliDateForExcel(dateValue) {
     date.getDate()
   );
 
-  return (
-    `${String(jy).padStart(4, "0")}-` +
-    `${String(jm).padStart(2, "0")}-` +
-    `${String(jd).padStart(2, "0")}`
-  );
+  return `${String(jy).padStart(4, "0")}-${String(jm).padStart(
+    2,
+    "0"
+  )}-${String(jd).padStart(2, "0")}`;
 }
 
 function getJalaliDateTime(dateValue) {
@@ -255,10 +246,9 @@ function getJalaliDateTime(dateValue) {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
 
-  return (
-    `${datePart} - ` +
-    `${toPersianDigits(hours)}:${toPersianDigits(minutes)}`
-  );
+  return `${datePart} - ${toPersianDigits(hours)}:${toPersianDigits(
+    minutes
+  )}`;
 }
 
 function getTodayJalaliForFileName() {
@@ -280,7 +270,7 @@ function isValidStageForStoneType(stoneType, stage) {
 }
 
 // ============================================================
-// Supabase Helper
+// Supabase helper
 // ============================================================
 
 async function runSupabaseQuery(
@@ -291,43 +281,24 @@ async function runSupabaseQuery(
     const { data, error } = await queryPromise;
 
     if (error) {
-      console.error(
-        errorAlertPrefix || "Supabase error:",
-        error
-      );
+      console.error(errorAlertPrefix || "Supabase error:", error);
 
       if (errorAlertPrefix) {
-        alert(
-          `${errorAlertPrefix}\n\n${error.message}`
-        );
+        alert(`${errorAlertPrefix}\n\n${error.message}`);
       }
 
-      return {
-        data: null,
-        error,
-      };
+      return { data: null, error };
     }
 
-    return {
-      data,
-      error: null,
-    };
+    return { data, error: null };
   } catch (error) {
-    console.error(
-      "Unexpected Supabase error:",
-      error
-    );
+    console.error("Unexpected Supabase error:", error);
 
     if (errorAlertPrefix) {
-      alert(
-        `خطای غیرمنتظره.\n\n${errorAlertPrefix}`
-      );
+      alert(`خطای غیرمنتظره.\n\n${errorAlertPrefix}`);
     }
 
-    return {
-      data: null,
-      error,
-    };
+    return { data: null, error };
   }
 }
 
@@ -436,6 +407,18 @@ window.addEventListener("popstate", (event) => {
         showPendingRecords(true);
         break;
 
+      case "edit":
+        if (editingRecordId) {
+          showEditRecord(
+            editingRecordId,
+            editingRecordSource,
+            true
+          );
+        } else {
+          showHome();
+        }
+        break;
+
       default:
         showHome();
     }
@@ -446,30 +429,20 @@ window.addEventListener("popstate", (event) => {
   }
 });
 
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-    initializeHistory();
-    applyAppStyles();
-    showHome();
-  }
-);
+document.addEventListener("DOMContentLoaded", () => {
+  initializeHistory();
+  applyAppStyles();
+  showHome();
+});
 
 // ============================================================
 // CSS
 // ============================================================
 
 function applyAppStyles() {
-  if (
-    document.getElementById(
-      "golzar-app-styles"
-    )
-  ) {
-    return;
-  }
+  if (document.getElementById("golzar-app-styles")) return;
 
-  const style =
-    document.createElement("style");
+  const style = document.createElement("style");
 
   style.id = "golzar-app-styles";
 
@@ -494,32 +467,23 @@ function applyAppStyles() {
       --white: #ffffff;
       --border: #dce6df;
 
-      --shadow:
-        0 5px 18px rgba(23, 99, 61, 0.08);
+      --shadow: 0 5px 18px rgba(23, 99, 61, 0.08);
     }
 
     .app {
       direction: rtl;
-      font-family:
-        "B Nazanin",
-        "B Yekan",
-        Tahoma,
-        Arial,
-        sans-serif;
-
+      font-family: "B Nazanin", "B Yekan", Tahoma, Arial, sans-serif;
       color: var(--text);
       background: var(--bg);
       min-height: 100vh;
     }
 
     .header {
-      background:
-        linear-gradient(
-          145deg,
-          var(--green-dark),
-          var(--green)
-        );
-
+      background: linear-gradient(
+        145deg,
+        var(--green-dark),
+        var(--green)
+      );
       color: white;
       text-align: center;
       padding: 30px 20px 28px;
@@ -561,18 +525,14 @@ function applyAppStyles() {
       border-radius: 20px;
       min-height: 92px;
       padding: 15px 18px;
-
       display: flex;
       align-items: center;
       gap: 14px;
-
       text-align: right;
       cursor: pointer;
-
       background: white;
       box-shadow: var(--shadow);
       color: var(--text);
-
       transition: .15s ease;
     }
 
@@ -584,11 +544,9 @@ function applyAppStyles() {
       width: 52px;
       height: 52px;
       border-radius: 16px;
-
       display: flex;
       align-items: center;
       justify-content: center;
-
       font-size: 25px;
       flex-shrink: 0;
     }
@@ -648,39 +606,36 @@ function applyAppStyles() {
       display: flex;
       align-items: center;
       gap: 8px;
-
       background: white;
       padding: 15px;
-
       border-bottom: 1px solid var(--border);
-
       position: sticky;
       top: 0;
       z-index: 10;
     }
 
-    .back-button,
-    .refresh-button {
+    .back-button {
       border: none;
+      background: var(--green-light);
+      color: var(--green-dark);
       border-radius: 13px;
-
-      padding: 10px 12px;
-
+      padding: 10px 13px;
       font-family: inherit;
       font-size: 14px;
-
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .back-button {
-      background: var(--green-light);
-      color: var(--green-dark);
-    }
-
     .refresh-button {
+      border: none;
       background: var(--blue-light);
       color: var(--blue);
+      border-radius: 13px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
     .internal-title {
@@ -702,12 +657,10 @@ function applyAppStyles() {
       padding: 16px;
     }
 
-    .card,
-    .detail-card {
+    .card {
       background: white;
       border-radius: 20px;
       padding: 18px;
-
       box-shadow: var(--shadow);
       border: 1px solid var(--border);
     }
@@ -722,12 +675,9 @@ function applyAppStyles() {
     .section-title {
       font-size: 16px;
       font-weight: bold;
-
       color: var(--green-dark);
-
       border-right: 4px solid var(--green);
       padding-right: 9px;
-
       margin: 22px 0 13px;
     }
 
@@ -747,18 +697,13 @@ function applyAppStyles() {
     textarea {
       width: 100%;
       box-sizing: border-box;
-
       border: 1px solid var(--border);
       border-radius: 13px;
-
       padding: 12px 13px;
-
       font-family: inherit;
       font-size: 15px;
-
       background: #fbfdfc;
       color: var(--text);
-
       outline: none;
     }
 
@@ -766,10 +711,7 @@ function applyAppStyles() {
     select:focus,
     textarea:focus {
       border-color: var(--green);
-
-      box-shadow:
-        0 0 0 3px
-        rgba(35,139,87,.10);
+      box-shadow: 0 0 0 3px rgba(35,139,87,.10);
     }
 
     textarea {
@@ -778,34 +720,26 @@ function applyAppStyles() {
 
     .form-row {
       display: grid;
-      grid-template-columns:
-        1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
     }
 
     .choice-grid {
       display: grid;
-      grid-template-columns:
-        1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
 
     .choice-card {
       position: relative;
-
       min-height: 82px;
-
       border: 2px solid var(--border);
       border-radius: 18px;
-
       background: white;
-
       display: flex;
       align-items: center;
       justify-content: center;
-
       cursor: pointer;
-
       font-size: 18px;
       font-weight: bold;
     }
@@ -824,46 +758,33 @@ function applyAppStyles() {
 
     .choice-card span::before {
       content: "";
-
       display: inline-block;
-
       width: 18px;
       height: 18px;
-
       border: 3px solid #b8c6be;
       border-radius: 50%;
-
       vertical-align: -3px;
-
       margin-left: 9px;
       box-sizing: border-box;
     }
 
     .stage-list {
       display: grid;
-      grid-template-columns:
-        1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
 
     .stage-option {
       position: relative;
-
       min-height: 70px;
-
       border: 2px solid var(--border);
       border-radius: 16px;
-
       padding: 12px 14px;
       box-sizing: border-box;
-
       display: flex;
       align-items: center;
-
       cursor: pointer;
-
       background: white;
-
       font-size: 14px;
     }
 
@@ -886,81 +807,44 @@ function applyAppStyles() {
       font-weight: bold;
     }
 
-    .primary-button,
-    .approve-button,
-    .edit-button,
-    .save-edit-button {
+    .primary-button {
       width: 100%;
-
       border: none;
       border-radius: 15px;
-
       padding: 14px;
-
+      background: var(--green);
+      color: white;
       font-family: inherit;
       font-size: 17px;
       font-weight: bold;
-
       cursor: pointer;
-    }
-
-    .primary-button {
-      background: var(--green);
-      color: white;
       margin-top: 10px;
     }
 
-    .edit-button {
-      background: var(--blue);
-      color: white;
-    }
-
-    .save-edit-button {
-      background: var(--green);
-      color: white;
-    }
-
-    .cancel-edit-button {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      padding: 13px;
-      background: white;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 15px;
-      cursor: pointer;
+    .primary-button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
     }
 
     .export-button {
       width: 100%;
       min-height: 58px;
-
       border: none;
       border-radius: 16px;
-
       padding: 15px 18px;
-
       background: var(--blue);
       color: white;
-
       font-family: inherit;
       font-size: 18px;
       font-weight: bold;
-
       cursor: pointer;
-
       margin: 12px 0 18px;
-
-      box-shadow:
-        0 5px 15px
-        rgba(40,120,184,.22);
+      box-shadow: 0 5px 15px rgba(40,120,184,.22);
     }
 
     .records-summary {
       display: grid;
-      grid-template-columns:
-        1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
       margin-bottom: 15px;
     }
@@ -1020,11 +904,8 @@ function applyAppStyles() {
     .status-badge {
       background: var(--orange-light);
       color: #8a4f13;
-
       padding: 5px 9px;
-
       border-radius: 20px;
-
       font-size: 11px;
       white-space: nowrap;
     }
@@ -1034,23 +915,9 @@ function applyAppStyles() {
       color: var(--green-dark);
     }
 
-    .edited-badge {
-      background: var(--blue-light);
-      color: var(--blue);
-
-      padding: 5px 9px;
-
-      border-radius: 20px;
-
-      font-size: 11px;
-      white-space: nowrap;
-    }
-
     .location-box {
       display: grid;
-      grid-template-columns:
-        1fr 1fr 1fr;
-
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
       margin-bottom: 12px;
     }
@@ -1085,18 +952,27 @@ function applyAppStyles() {
       color: var(--muted);
     }
 
+    .edited-info {
+      margin-top: 12px;
+      padding: 9px 11px;
+      border-radius: 11px;
+      background: #fff7e9;
+      border: 1px solid #f0d29b;
+      color: #8a5b18;
+      font-size: 13px;
+    }
+
+    .edited-info strong {
+      color: #74480c;
+    }
+
     .search-count {
       background: var(--blue-light);
       color: var(--blue);
-
       border-radius: 13px;
-
       padding: 10px 12px;
-
       margin-bottom: 12px;
-
       text-align: center;
-
       font-size: 14px;
       font-weight: bold;
     }
@@ -1116,6 +992,14 @@ function applyAppStyles() {
       border-radius: 14px;
     }
 
+    .detail-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
     .detail-title {
       font-size: 22px;
       font-weight: bold;
@@ -1126,13 +1010,9 @@ function applyAppStyles() {
     .detail-row {
       display: flex;
       justify-content: space-between;
-
       gap: 12px;
-
       padding: 12px 0;
-
       border-bottom: 1px solid var(--border);
-
       font-size: 14px;
     }
 
@@ -1144,77 +1024,108 @@ function applyAppStyles() {
       text-align: left;
     }
 
-    .detail-actions {
-      margin-top: 20px;
+    .detail-row.edited-row {
+      margin: 5px -8px;
+      padding: 12px 8px;
+      border-radius: 10px;
+      background: #fff7e9;
+      border-bottom: 1px solid #f0d29b;
+    }
 
-      display: flex;
-      flex-direction: column;
-      gap: 9px;
+    .detail-row.edited-row span,
+    .detail-row.edited-row strong {
+      color: #8a5b18;
+    }
+
+    .edit-button {
+      width: 100%;
+      border: none;
+      border-radius: 13px;
+      padding: 13px;
+      background: #f3a84b;
+      color: #6f430b;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .edit-button:active {
+      transform: scale(.985);
     }
 
     .approve-button {
+      border: none;
+      border-radius: 13px;
+      padding: 13px;
       background: var(--green);
       color: white;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
     }
 
     .danger-button {
       width: 100%;
-
       border: none;
       border-radius: 12px;
-
       padding: 11px;
-
       background: #fff0f0;
       color: var(--red);
-
       font-family: inherit;
-
       margin-top: 13px;
-
       cursor: pointer;
     }
 
     .back-secondary {
       border: 1px solid var(--border);
       border-radius: 13px;
-
       padding: 12px;
-
       background: white;
       color: var(--text);
-
       font-family: inherit;
       cursor: pointer;
     }
 
-    .edit-info-box {
-      background: var(--blue-light);
-      border-radius: 14px;
-      padding: 12px;
-      margin-top: 15px;
-    }
-
-    .edit-info-box-title {
-      font-weight: bold;
-      color: var(--blue);
-      margin-bottom: 7px;
-    }
-
-    .edit-info-box-text {
-      font-size: 13px;
-      line-height: 1.9;
-    }
-
-    .edit-form {
-      margin-top: 15px;
-    }
-
-    .edit-form-actions {
+    .detail-actions {
+      margin-top: 20px;
       display: flex;
       flex-direction: column;
       gap: 9px;
+    }
+
+    .edit-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
       margin-top: 18px;
+    }
+
+    .cancel-edit-button {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 13px;
+      background: white;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .edit-save-button {
+      width: 100%;
+      border: none;
+      border-radius: 13px;
+      padding: 13px;
+      background: var(--green);
+      color: white;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
     }
 
     @media (max-width: 390px) {
@@ -1226,8 +1137,7 @@ function applyAppStyles() {
         gap: 7px;
       }
 
-      .card,
-      .detail-card {
+      .card {
         padding: 14px;
       }
     }
@@ -1251,13 +1161,10 @@ function internalHeader(
         type="button"
         class="back-button"
         id="back-home"
-      >
-        ← بازگشت
-      </button>
+      >بازگشت</button>
 
       <div class="internal-title">
         <h2>${escapeHtml(title)}</h2>
-
         ${
           subtitle
             ? `<p>${escapeHtml(subtitle)}</p>`
@@ -1267,15 +1174,7 @@ function internalHeader(
 
       ${
         showRefresh
-          ? `
-            <button
-              type="button"
-              class="refresh-button"
-              id="refresh-page"
-            >
-              ↻ تازه‌سازی
-            </button>
-          `
+          ? `<button type="button" class="refresh-button" id="refresh-page">↻ تازه‌سازی</button>`
           : ""
       }
     </header>
@@ -1290,25 +1189,17 @@ function showHome() {
   applyAppStyles();
 
   currentAppPage = "home";
+  editingRecordId = null;
 
-  const app =
-    document.querySelector(".app");
+  const app = document.querySelector(".app");
 
   if (!app) return;
 
   app.innerHTML = `
     <header class="header">
-      <div class="header-badge">
-        گلزار شهدای تهران
-      </div>
-
-      <h1>
-        گلزار شهدای تهران
-      </h1>
-
-      <p>
-        سامانه مدیریت و پایش سنگ مزار
-      </p>
+      <div class="header-badge">گلزار شهدای تهران</div>
+      <h1>گلزار شهدای تهران</h1>
+      <p>سامانه مدیریت و پایش سنگ مزار</p>
     </header>
 
     <main class="menu">
@@ -1322,14 +1213,10 @@ function showHome() {
 
         <span class="button-text">
           <strong>جستجوی شهید</strong>
-          <small>
-            جستجو و مشاهده اطلاعات شهید
-          </small>
+          <small>جستجو و مشاهده اطلاعات شهید</small>
         </span>
 
-        <span class="button-arrow">
-          ‹
-        </span>
+        <span class="button-arrow">‹</span>
       </button>
 
       <button
@@ -1340,18 +1227,11 @@ function showHome() {
         <span class="icon">➕</span>
 
         <span class="button-text">
-          <strong>
-            ثبت اطلاعات شهید جدید
-          </strong>
-
-          <small>
-            ثبت اطلاعات اولیه شهید برای بررسی و تأیید
-          </small>
+          <strong>ثبت اطلاعات شهید جدید</strong>
+          <small>ثبت اطلاعات اولیه شهید برای بررسی و تأیید</small>
         </span>
 
-        <span class="button-arrow">
-          ‹
-        </span>
+        <span class="button-arrow">‹</span>
       </button>
 
       <button
@@ -1362,18 +1242,11 @@ function showHome() {
         <span class="icon">📋</span>
 
         <span class="button-text">
-          <strong>
-            اطلاعات ثبت‌شده
-          </strong>
-
-          <small>
-            بررسی، تأیید و مدیریت اطلاعات ثبت‌شده
-          </small>
+          <strong>اطلاعات ثبت‌شده</strong>
+          <small>بررسی، تأیید و مدیریت اطلاعات ثبت‌شده</small>
         </span>
 
-        <span class="button-arrow">
-          ‹
-        </span>
+        <span class="button-arrow">‹</span>
       </button>
 
       <button
@@ -1385,51 +1258,33 @@ function showHome() {
 
         <span class="button-text">
           <strong>تست اتصال</strong>
-
-          <small>
-            بررسی ارتباط با بانک اطلاعاتی
-          </small>
+          <small>بررسی ارتباط با بانک اطلاعاتی</small>
         </span>
 
-        <span class="button-arrow">
-          ‹
-        </span>
+        <span class="button-arrow">‹</span>
       </button>
 
     </main>
 
     <footer class="footer">
-      <strong>
-        گلزار شهدای تهران
-      </strong>
-      <br>
-
-      سامانه بهسازی و پایش سنگ مزار شهدا
-      <br>
+      <strong>گلزار شهدای تهران</strong><br>
+      سامانه بهسازی و پایش سنگ مزار شهدا<br>
 
       <a
         href="https://golzarteh.ir/"
         target="_blank"
         rel="noopener noreferrer"
-      >
-        golzarteh.ir
-      </a>
+      >golzarteh.ir</a>
     </footer>
   `;
 
   document
     .getElementById("btn-search")
-    .addEventListener(
-      "click",
-      showSearch
-    );
+    .addEventListener("click", showSearch);
 
   document
     .getElementById("btn-new")
-    .addEventListener(
-      "click",
-      showNewRecord
-    );
+    .addEventListener("click", showNewRecord);
 
   document
     .getElementById("btn-pending")
@@ -1451,17 +1306,16 @@ function showHome() {
 // ============================================================
 
 async function testSupabaseConnection() {
-  const { error } =
-    await runSupabaseQuery(
-      supabaseClient
-        .from(TABLE_NAME)
-        .select("id")
-        .limit(1),
-      {
-        errorAlertPrefix:
-          "اتصال به Supabase برقرار نشد.",
-      },
-    );
+  const { error } = await runSupabaseQuery(
+    supabaseClient
+      .from(TABLE_NAME)
+      .select("id")
+      .limit(1),
+    {
+      errorAlertPrefix:
+        "اتصال به Supabase برقرار نشد.",
+    },
+  );
 
   if (!error) {
     alert(
@@ -1471,7 +1325,7 @@ async function testSupabaseConnection() {
 }
 
 // ============================================================
-// ثبت رکورد جدید
+// ثبت جدید
 // ============================================================
 
 function showNewRecord() {
@@ -1479,8 +1333,9 @@ function showNewRecord() {
     pushAppHistory("new");
   }
 
-  const app =
-    document.querySelector(".app");
+  currentAppPage = "new";
+
+  const app = document.querySelector(".app");
 
   app.innerHTML = `
     ${internalHeader(
@@ -1489,7 +1344,6 @@ function showNewRecord() {
     )}
 
     <main class="content">
-
       <div class="card">
 
         <div class="card-title">
@@ -1497,10 +1351,7 @@ function showNewRecord() {
         </div>
 
         <div class="form-group">
-          <label for="new-name">
-            نام
-          </label>
-
+          <label for="new-name">نام</label>
           <input
             type="text"
             id="new-name"
@@ -1534,9 +1385,7 @@ function showNewRecord() {
               name="stone-type"
               value="ترمیمی"
             >
-            <span>
-              ترمیمی
-            </span>
+            <span>ترمیمی</span>
           </label>
 
           <label class="choice-card">
@@ -1545,9 +1394,7 @@ function showNewRecord() {
               name="stone-type"
               value="تعویضی"
             >
-            <span>
-              تعویضی
-            </span>
+            <span>تعویضی</span>
           </label>
 
         </div>
@@ -1559,9 +1406,7 @@ function showNewRecord() {
         <div class="form-row">
 
           <div class="form-group">
-            <label for="new-piece">
-              قطعه
-            </label>
+            <label for="new-piece">قطعه</label>
 
             <select id="new-piece">
               <option value="">
@@ -1578,9 +1423,7 @@ function showNewRecord() {
           </div>
 
           <div class="form-group">
-            <label for="new-row">
-              ردیف
-            </label>
+            <label for="new-row">ردیف</label>
 
             <input
               type="text"
@@ -1591,9 +1434,7 @@ function showNewRecord() {
           </div>
 
           <div class="form-group">
-            <label for="new-number">
-              شماره
-            </label>
+            <label for="new-number">شماره</label>
 
             <input
               type="text"
@@ -1670,10 +1511,6 @@ function showNewRecord() {
     .focus();
 }
 
-// ============================================================
-// Stage Options
-// ============================================================
-
 function renderStageOptions(
   selectedStage = ""
 ) {
@@ -1689,7 +1526,6 @@ function renderStageOptions(
           class="stage-option disabled"
           data-stage="${escapeHtml(stage)}"
         >
-
           <input
             type="radio"
             name="stage"
@@ -1701,11 +1537,7 @@ function renderStageOptions(
                 : ""
             }
           >
-
-          <span>
-            ${escapeHtml(stage)}
-          </span>
-
+          <span>${escapeHtml(stage)}</span>
         </label>
       `
     )
@@ -1756,20 +1588,16 @@ function updateStageOptions() {
   });
 }
 
-// ============================================================
-// ذخیره رکورد جدید
-// ============================================================
-
 async function saveNewRecord() {
   const name =
-    document
-      .getElementById("new-name")
-      .value.trim();
+    document.getElementById(
+      "new-name"
+    ).value.trim();
 
   const lastname =
-    document
-      .getElementById("new-lastname")
-      .value.trim();
+    document.getElementById(
+      "new-lastname"
+    ).value.trim();
 
   const piece =
     document.getElementById(
@@ -1777,14 +1605,14 @@ async function saveNewRecord() {
     ).value;
 
   const row =
-    document
-      .getElementById("new-row")
-      .value.trim();
+    document.getElementById(
+      "new-row"
+    ).value.trim();
 
   const number =
-    document
-      .getElementById("new-number")
-      .value.trim();
+    document.getElementById(
+      "new-number"
+    ).value.trim();
 
   const stoneType =
     document.querySelector(
@@ -1797,9 +1625,9 @@ async function saveNewRecord() {
     );
 
   const notes =
-    document
-      .getElementById("new-notes")
-      .value.trim();
+    document.getElementById(
+      "new-notes"
+    ).value.trim();
 
   const validations = [
     [!name, "نام شهید را وارد کنید."],
@@ -1829,10 +1657,7 @@ async function saveNewRecord() {
     ],
   ];
 
-  for (
-    const [failed, message]
-    of validations
-  ) {
+  for (const [failed, message] of validations) {
     if (failed) {
       alert(message);
       return;
@@ -1848,14 +1673,11 @@ async function saveNewRecord() {
     alert(
       "مرحله انتخاب‌شده با نوع عملیات سازگار نیست."
     );
-
     return;
   }
 
   const button =
-    document.getElementById(
-      "save-new"
-    );
+    document.getElementById("save-new");
 
   button.disabled = true;
   button.textContent =
@@ -1889,7 +1711,6 @@ async function saveNewRecord() {
     button.disabled = false;
     button.textContent =
       "ذخیره اطلاعات";
-
     return;
   }
 
@@ -1907,18 +1728,16 @@ async function saveNewRecord() {
 
   alert(
     "اطلاعات شهید با موفقیت ثبت شد." +
-      (
-        registeredDate
-          ? `\n\nتاریخ ثبت: ${registeredDate}`
-          : ""
-      )
+      (registeredDate
+        ? `\n\nتاریخ ثبت: ${registeredDate}`
+        : "")
   );
 
   showNewRecord();
 }
 
 // ============================================================
-// اطلاعات ثبت‌شده
+// اطلاعات ثبت شده
 // ============================================================
 
 async function showPendingRecords(
@@ -1944,7 +1763,6 @@ async function showPendingRecords(
     )}
 
     <main class="content">
-
       <div class="card">
 
         <div
@@ -1962,7 +1780,6 @@ async function showPendingRecords(
         </div>
 
       </div>
-
     </main>
   `;
 
@@ -2013,9 +1830,7 @@ async function loadPendingRecords() {
         )
         .order(
           "created_at",
-          {
-            ascending: false,
-          }
+          { ascending: false }
         )
         .limit(
           MAX_RECORDS_PER_QUERY
@@ -2027,16 +1842,13 @@ async function loadPendingRecords() {
       error.message ||
         "خطای غیرمنتظره هنگام دریافت اطلاعات."
     );
-
     return;
   }
 
   const records = data || [];
 
   summary.innerHTML = `
-    <div
-      class="summary-box warning"
-    >
+    <div class="summary-box warning">
       <strong>
         ${toPersianDigits(records.length)}
       </strong>
@@ -2063,64 +1875,56 @@ async function loadPendingRecords() {
         رکوردی در انتظار تأیید وجود ندارد.
       </div>
     `;
-
     return;
   }
 
   container.innerHTML =
     records
-      .map(
-        (record) =>
-          recordSummaryCard(record)
-      )
+      .map(recordSummaryCard)
       .join("");
 
-  records.forEach(
-    (record) => {
-      const card =
-        document.getElementById(
-          `record-summary-${record.id}`
-        );
+  records.forEach((record) => {
+    const card =
+      document.getElementById(
+        `record-summary-${record.id}`
+      );
 
-      if (card) {
-        card.addEventListener(
-          "click",
-          () =>
-            showRecordDetail(
-              record.id,
-              "records"
-            )
-        );
-      }
+    if (card) {
+      card.addEventListener(
+        "click",
+        () =>
+          showRecordDetail(
+            record.id,
+            "records"
+          )
+      );
     }
-  );
+  });
 }
 
 async function refreshPendingRecords() {
-  const refreshButton =
+  const button =
     document.getElementById(
       "refresh-page"
     );
 
-  if (refreshButton) {
-    refreshButton.disabled = true;
-
-    refreshButton.textContent =
+  if (button) {
+    button.disabled = true;
+    button.textContent =
       "↻ در حال تازه‌سازی...";
   }
 
   await loadPendingRecords();
 
-  if (refreshButton) {
-    refreshButton.disabled = false;
-
-    refreshButton.textContent =
+  if (button) {
+    button.disabled = false;
+    button.textContent =
       "↻ تازه‌سازی";
   }
 }
 
 // ============================================================
-// کارت خلاصه رکورد
+// کارت رکورد
 // ============================================================
 
 function recordSummaryCard(record) {
@@ -2133,8 +1937,8 @@ function recordSummaryCard(record) {
       ? "approved"
       : "";
 
-  const createdAt =
-    getRecordCreatedAt(record);
+  const editedAt =
+    getRecordEditedAt(record);
 
   return `
     <div
@@ -2149,31 +1953,11 @@ function recordSummaryCard(record) {
           ${escapeHtml(record.lastname)}
         </div>
 
-        <div style="
-          display:flex;
-          gap:5px;
-          align-items:center;
-          flex-wrap:wrap;
-          justify-content:flex-end;
-        ">
-
-          <span
-            class="status-badge ${statusClass}"
-          >
-            ${escapeHtml(status)}
-          </span>
-
-          ${
-            record.edited_at
-              ? `
-                <span class="edited-badge">
-                  ویرایش شده
-                </span>
-              `
-              : ""
-          }
-
-        </div>
+        <span
+          class="status-badge ${statusClass}"
+        >
+          ${escapeHtml(status)}
+        </span>
 
       </div>
 
@@ -2182,27 +1966,21 @@ function recordSummaryCard(record) {
         <div>
           <small>قطعه</small>
           <strong>
-            ${toPersianDigits(
-              record.piece
-            )}
+            ${toPersianDigits(record.piece)}
           </strong>
         </div>
 
         <div>
           <small>ردیف</small>
           <strong>
-            ${escapeHtml(
-              record.grave_row
-            )}
+            ${escapeHtml(record.grave_row)}
           </strong>
         </div>
 
         <div>
           <small>شماره</small>
           <strong>
-            ${escapeHtml(
-              record.grave_number
-            )}
+            ${escapeHtml(record.grave_number)}
           </strong>
         </div>
 
@@ -2211,30 +1989,26 @@ function recordSummaryCard(record) {
       <div class="record-info">
         <span>نوع عملیات:</span>
         <strong>
-          ${escapeHtml(
-            record.stone_type
-          )}
+          ${escapeHtml(record.stone_type)}
         </strong>
       </div>
 
       <div class="record-info">
         <span>مرحله:</span>
         <strong>
-          ${escapeHtml(
-            record.stage
-          )}
+          ${escapeHtml(record.stage)}
         </strong>
       </div>
 
       ${
-        createdAt
+        getRecordCreatedAt(record)
           ? `
             <div class="record-info">
               <span>تاریخ ثبت:</span>
               <strong>
                 ${escapeHtml(
                   getJalaliDateTime(
-                    createdAt
+                    getRecordCreatedAt(record)
                   )
                 )}
               </strong>
@@ -2244,17 +2018,16 @@ function recordSummaryCard(record) {
       }
 
       ${
-        record.edited_at
+        editedAt
           ? `
-            <div class="record-info">
-              <span>آخرین ویرایش:</span>
-              <strong>
-                ${escapeHtml(
-                  getJalaliDateTime(
-                    record.edited_at
-                  )
-                )}
-              </strong>
+            <div class="edited-info">
+              ✏️
+              <strong>آخرین ویرایش:</strong>
+              ${escapeHtml(
+                getJalaliDateTime(
+                  editedAt
+                )
+              )}
             </div>
           `
           : ""
@@ -2272,8 +2045,6 @@ async function showRecordDetail(
   id,
   source = "records"
 ) {
-  currentDetailSource = source;
-
   const app =
     document.querySelector(".app");
 
@@ -2281,7 +2052,7 @@ async function showRecordDetail(
     ${internalHeader(
       "جزئیات اطلاعات شهید",
       source === "search"
-        ? "مشاهده و ویرایش اطلاعات شهید"
+        ? "مشاهده اطلاعات شهید"
         : "بررسی و تصمیم نهایی کارشناس"
     )}
 
@@ -2291,21 +2062,18 @@ async function showRecordDetail(
         id="detail-container"
         class="detail-card"
       >
-
         <div class="loading-message">
           در حال دریافت اطلاعات...
         </div>
-
       </div>
 
     </main>
   `;
 
-  const goBack =
+  const goBack = () =>
     source === "search"
-      ? restoreSearchPage
-      : () =>
-          showPendingRecords(true);
+      ? restoreSearchPage()
+      : showPendingRecords(true);
 
   document
     .getElementById("back-home")
@@ -2333,45 +2101,11 @@ async function showRecordDetail(
       <div class="error-message">
         دریافت اطلاعات انجام نشد.
         <br><br>
-        ${escapeHtml(
-          error.message
-        )}
+        ${escapeHtml(error.message)}
       </div>
     `;
-
     return;
   }
-
-  if (!data) {
-    detailContainer.innerHTML = `
-      <div class="error-message">
-        رکورد موردنظر پیدا نشد.
-      </div>
-    `;
-
-    return;
-  }
-
-  renderRecordDetail(
-    data,
-    source
-  );
-}
-
-// ============================================================
-// نمایش جزئیات
-// ============================================================
-
-function renderRecordDetail(
-  data,
-  source
-) {
-  const detailContainer =
-    document.getElementById(
-      "detail-container"
-    );
-
-  if (!detailContainer) return;
 
   const status =
     data.status ||
@@ -2383,8 +2117,8 @@ function renderRecordDetail(
   const showManagementActions =
     source === "records";
 
-  const createdAt =
-    getRecordCreatedAt(data);
+  const editedAt =
+    getRecordEditedAt(data);
 
   detailContainer.innerHTML = `
     <div class="detail-title">
@@ -2409,57 +2143,47 @@ function renderRecordDetail(
     <div class="detail-row">
       <span>نوع عملیات سنگ</span>
       <strong>
-        ${escapeHtml(
-          data.stone_type
-        )}
+        ${escapeHtml(data.stone_type)}
       </strong>
     </div>
 
     <div class="detail-row">
       <span>قطعه</span>
       <strong>
-        ${toPersianDigits(
-          data.piece
-        )}
+        ${toPersianDigits(data.piece)}
       </strong>
     </div>
 
     <div class="detail-row">
       <span>ردیف</span>
       <strong>
-        ${escapeHtml(
-          data.grave_row
-        )}
+        ${escapeHtml(data.grave_row)}
       </strong>
     </div>
 
     <div class="detail-row">
       <span>شماره</span>
       <strong>
-        ${escapeHtml(
-          data.grave_number
-        )}
+        ${escapeHtml(data.grave_number)}
       </strong>
     </div>
 
     <div class="detail-row">
       <span>مرحله فعلی کار</span>
       <strong>
-        ${escapeHtml(
-          data.stage
-        )}
+        ${escapeHtml(data.stage)}
       </strong>
     </div>
 
     ${
-      createdAt
+      getRecordCreatedAt(data)
         ? `
           <div class="detail-row">
             <span>تاریخ ثبت</span>
             <strong>
               ${escapeHtml(
                 getJalaliDateTime(
-                  createdAt
+                  getRecordCreatedAt(data)
                 )
               )}
             </strong>
@@ -2469,15 +2193,31 @@ function renderRecordDetail(
     }
 
     ${
-      data.edited_at
+      editedAt
         ? `
-          <div class="detail-row">
+          <div class="detail-row edited-row">
             <span>آخرین ویرایش</span>
             <strong>
+              ✏️
               ${escapeHtml(
                 getJalaliDateTime(
-                  data.edited_at
+                  editedAt
                 )
+              )}
+            </strong>
+          </div>
+        `
+        : ""
+    }
+
+    ${
+      data.edit_notes
+        ? `
+          <div class="detail-row edited-row">
+            <span>توضیحات ویرایش</span>
+            <strong>
+              ${escapeHtml(
+                data.edit_notes
               )}
             </strong>
           </div>
@@ -2491,30 +2231,8 @@ function renderRecordDetail(
           <div class="detail-row">
             <span>توضیحات</span>
             <strong>
-              ${escapeHtml(
-                data.notes
-              )}
+              ${escapeHtml(data.notes)}
             </strong>
-          </div>
-        `
-        : ""
-    }
-
-    ${
-      data.edit_notes
-        ? `
-          <div class="edit-info-box">
-
-            <div class="edit-info-box-title">
-              توضیحات آخرین ویرایش
-            </div>
-
-            <div class="edit-info-box-text">
-              ${escapeHtml(
-                data.edit_notes
-              )}
-            </div>
-
           </div>
         `
         : ""
@@ -2522,13 +2240,19 @@ function renderRecordDetail(
 
     <div class="detail-actions">
 
-      <button
-        type="button"
-        class="edit-button"
-        id="edit-record"
-      >
-        ✏️ ویرایش اطلاعات
-      </button>
+      ${
+        source === "search"
+          ? `
+            <button
+              type="button"
+              class="edit-button"
+              id="edit-record"
+            >
+              ✏️ ویرایش اطلاعات
+            </button>
+          `
+          : ""
+      }
 
       ${
         showManagementActions &&
@@ -2574,19 +2298,18 @@ function renderRecordDetail(
     </div>
   `;
 
-  // مهم:
-  // دکمه ویرایش برای رکوردهای جستجو و
-  // اطلاعات ثبت‌شده همیشه وجود دارد.
-  document
-    .getElementById("edit-record")
-    .addEventListener(
-      "click",
-      () =>
-        showEditRecord(
-          data.id,
-          source
-        )
-    );
+  if (source === "search") {
+    document
+      .getElementById("edit-record")
+      .addEventListener(
+        "click",
+        () =>
+          showEditRecord(
+            id,
+            "search"
+          )
+      );
+  }
 
   if (
     showManagementActions &&
@@ -2599,7 +2322,7 @@ function renderRecordDetail(
       .addEventListener(
         "click",
         () =>
-          approveRecord(data.id)
+          approveRecord(id)
       );
   }
 
@@ -2611,7 +2334,7 @@ function renderRecordDetail(
       .addEventListener(
         "click",
         () =>
-          deleteRecord(data.id)
+          deleteRecord(id)
       );
   }
 
@@ -2621,21 +2344,31 @@ function renderRecordDetail(
     )
     .addEventListener(
       "click",
-      () =>
-        source === "search"
-          ? restoreSearchPage()
-          : showPendingRecords(true)
+      goBack
     );
 }
 
 // ============================================================
-// فرم ویرایش
+// ویرایش رکورد
 // ============================================================
 
 async function showEditRecord(
   id,
-  source = "search"
+  source = "search",
+  fromHistory = false
 ) {
+  editingRecordId = id;
+  editingRecordSource = source;
+
+  if (
+    !isHandlingHistory &&
+    !fromHistory
+  ) {
+    pushAppHistory("edit");
+  }
+
+  currentAppPage = "edit";
+
   const app =
     document.querySelector(".app");
 
@@ -2651,25 +2384,22 @@ async function showEditRecord(
         id="edit-container"
         class="card"
       >
-
         <div class="loading-message">
           در حال دریافت اطلاعات...
         </div>
-
       </div>
 
     </main>
   `;
 
+  // بازگشت فعال است
   document
     .getElementById("back-home")
     .addEventListener(
       "click",
-      () =>
-        showRecordDetail(
-          id,
-          source
-        )
+      () => {
+        cancelEdit();
+      }
     );
 
   const { data, error } =
@@ -2678,11 +2408,7 @@ async function showEditRecord(
         .from(TABLE_NAME)
         .select("*")
         .eq("id", id)
-        .single(),
-      {
-        errorAlertPrefix:
-          "دریافت اطلاعات برای ویرایش انجام نشد.",
-      }
+        .single()
     );
 
   const container =
@@ -2690,277 +2416,218 @@ async function showEditRecord(
       "edit-container"
     );
 
-  if (error || !data) {
+  if (error) {
     container.innerHTML = `
       <div class="error-message">
-        اطلاعات برای ویرایش پیدا نشد.
+        دریافت اطلاعات برای ویرایش انجام نشد.
+        <br><br>
+        ${escapeHtml(error.message)}
       </div>
     `;
-
     return;
   }
 
-  renderEditForm(
-    data,
-    source
-  );
-}
-
-// ============================================================
-// ساخت فرم ویرایش
-// ============================================================
-
-function renderEditForm(
-  data,
-  source
-) {
-  const container =
-    document.getElementById(
-      "edit-container"
-    );
-
-  if (!container) return;
-
-  const selectedStoneType =
-    data.stone_type || "";
-
-  const selectedStage =
-    data.stage || "";
-
   container.innerHTML = `
-
     <div class="card-title">
-      ویرایش اطلاعات شهید
+      ویرایش اطلاعات:
+      ${escapeHtml(data.name)}
+      ${escapeHtml(data.lastname)}
     </div>
 
-    <div class="edit-info-box">
-      <div class="edit-info-box-title">
-        رکورد در حال ویرایش
-      </div>
+    <div class="form-group">
+      <label for="edit-name">
+        نام
+      </label>
 
-      <div class="edit-info-box-text">
-        شناسه رکورد:
-        ${escapeHtml(data.id)}
-      </div>
-    </div>
-
-    <div class="edit-form">
-
-      <div class="form-group">
-        <label for="edit-name">
-          نام
-        </label>
-
-        <input
-          type="text"
-          id="edit-name"
-          value="${escapeHtml(
-            data.name || ""
-          )}"
-          autocomplete="off"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="edit-lastname">
-          نام خانوادگی
-        </label>
-
-        <input
-          type="text"
-          id="edit-lastname"
-          value="${escapeHtml(
-            data.lastname || ""
-          )}"
-          autocomplete="off"
-        >
-      </div>
-
-      <div class="section-title">
-        نوع عملیات سنگ
-      </div>
-
-      <div class="choice-grid">
-
-        <label class="choice-card">
-
-          <input
-            type="radio"
-            name="edit-stone-type"
-            value="ترمیمی"
-            ${
-              selectedStoneType ===
-              "ترمیمی"
-                ? "checked"
-                : ""
-            }
-          >
-
-          <span>
-            ترمیمی
-          </span>
-
-        </label>
-
-        <label class="choice-card">
-
-          <input
-            type="radio"
-            name="edit-stone-type"
-            value="تعویضی"
-            ${
-              selectedStoneType ===
-              "تعویضی"
-                ? "checked"
-                : ""
-            }
-          >
-
-          <span>
-            تعویضی
-          </span>
-
-        </label>
-
-      </div>
-
-      <div class="section-title">
-        محل مزار
-      </div>
-
-      <div class="form-row">
-
-        <div class="form-group">
-
-          <label for="edit-piece">
-            قطعه
-          </label>
-
-          <select id="edit-piece">
-
-            <option value="">
-              انتخاب قطعه
-            </option>
-
-            ${PIECES.map(
-              (p) =>
-                `
-                <option
-                  value="${p}"
-                  ${
-                    String(
-                      data.piece
-                    ) === String(p)
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  ${toPersianDigits(p)}
-                </option>
-                `
-            ).join("")}
-
-          </select>
-
-        </div>
-
-        <div class="form-group">
-
-          <label for="edit-row">
-            ردیف
-          </label>
-
-          <input
-            type="text"
-            id="edit-row"
-            value="${escapeHtml(
-              data.grave_row || ""
-            )}"
-            autocomplete="off"
-          >
-
-        </div>
-
-        <div class="form-group">
-
-          <label for="edit-number">
-            شماره
-          </label>
-
-          <input
-            type="text"
-            id="edit-number"
-            value="${escapeHtml(
-              data.grave_number || ""
-            )}"
-            autocomplete="off"
-          >
-
-        </div>
-
-      </div>
-
-      <div class="section-title">
-        مرحله فعلی کار
-      </div>
-
-      <div
-        class="stage-list"
-        id="edit-stage-list"
+      <input
+        type="text"
+        id="edit-name"
+        value="${escapeHtml(
+          data.name || ""
+        )}"
+        autocomplete="off"
       >
-        ${renderStageOptions(
-          selectedStage
-        )}
-      </div>
+    </div>
 
-      <div class="section-title">
-        توضیحات فعلی
+    <div class="form-group">
+      <label for="edit-lastname">
+        نام خانوادگی
+      </label>
+
+      <input
+        type="text"
+        id="edit-lastname"
+        value="${escapeHtml(
+          data.lastname || ""
+        )}"
+        autocomplete="off"
+      >
+    </div>
+
+    <div class="section-title">
+      نوع عملیات سنگ
+    </div>
+
+    <div class="choice-grid">
+
+      <label class="choice-card">
+        <input
+          type="radio"
+          name="edit-stone-type"
+          value="ترمیمی"
+          ${
+            data.stone_type ===
+            "ترمیمی"
+              ? "checked"
+              : ""
+          }
+        >
+        <span>ترمیمی</span>
+      </label>
+
+      <label class="choice-card">
+        <input
+          type="radio"
+          name="edit-stone-type"
+          value="تعویضی"
+          ${
+            data.stone_type ===
+            "تعویضی"
+              ? "checked"
+              : ""
+          }
+        >
+        <span>تعویضی</span>
+      </label>
+
+    </div>
+
+    <div class="section-title">
+      محل مزار
+    </div>
+
+    <div class="form-row">
+
+      <div class="form-group">
+        <label for="edit-piece">
+          قطعه
+        </label>
+
+        <select id="edit-piece">
+
+          <option value="">
+            انتخاب قطعه
+          </option>
+
+          ${PIECES.map(
+            (p) =>
+              `<option
+                value="${p}"
+                ${
+                  String(
+                    data.piece || ""
+                  ) === String(p)
+                    ? "selected"
+                    : ""
+                }
+              >
+                ${toPersianDigits(p)}
+              </option>`
+          ).join("")}
+
+        </select>
       </div>
 
       <div class="form-group">
+        <label for="edit-row">
+          ردیف
+        </label>
 
-        <textarea
-          id="edit-notes"
-          rows="4"
-        >${escapeHtml(
-          data.notes || ""
-        )}</textarea>
-
-      </div>
-
-      <div class="section-title">
-        توضیحات این ویرایش
+        <input
+          type="text"
+          id="edit-row"
+          value="${escapeHtml(
+            data.grave_row || ""
+          )}"
+          autocomplete="off"
+        >
       </div>
 
       <div class="form-group">
+        <label for="edit-number">
+          شماره
+        </label>
 
-        <textarea
-          id="edit-notes-history"
-          rows="4"
-          placeholder="مثلاً اصلاح نام خانوادگی طبق سند..."
-        ></textarea>
-
+        <input
+          type="text"
+          id="edit-number"
+          value="${escapeHtml(
+            data.grave_number || ""
+          )}"
+          autocomplete="off"
+        >
       </div>
 
-      <div class="edit-form-actions">
+    </div>
 
-        <button
-          type="button"
-          class="save-edit-button"
-          id="save-edit"
-        >
-          💾 ذخیره و ثبت ویرایش
-        </button>
+    <div class="section-title">
+      مرحله فعلی کار
+    </div>
 
-        <button
-          type="button"
-          class="cancel-edit-button"
-          id="cancel-edit"
-        >
-          انصراف
-        </button>
+    <div
+      class="stage-list"
+      id="edit-stage-list"
+    >
+      ${renderStageOptions(
+        data.stage || ""
+      )}
+    </div>
 
-      </div>
+    <div class="section-title">
+      توضیحات
+    </div>
+
+    <div class="form-group">
+      <textarea
+        id="edit-notes"
+        rows="4"
+        placeholder="توضیحات..."
+      >${escapeHtml(
+        data.notes || ""
+      )}</textarea>
+    </div>
+
+    <div class="section-title">
+      توضیحات ویرایش
+    </div>
+
+    <div class="form-group">
+      <textarea
+        id="edit-notes-change"
+        rows="3"
+        placeholder="علت یا توضیح این ویرایش را وارد کنید..."
+      >${escapeHtml(
+        data.edit_notes || ""
+      )}</textarea>
+    </div>
+
+    <div class="edit-actions">
+
+      <button
+        type="button"
+        class="edit-save-button"
+        id="save-edit"
+      >
+        ذخیره و ثبت ویرایش
+      </button>
+
+      <button
+        type="button"
+        class="cancel-edit-button"
+        id="cancel-edit"
+      >
+        انصراف
+      </button>
 
     </div>
   `;
@@ -2983,8 +2650,8 @@ function renderEditForm(
     .addEventListener(
       "click",
       () =>
-        saveEditedRecord(
-          data.id,
+        saveEditRecord(
+          id,
           source
         )
     );
@@ -2993,17 +2660,9 @@ function renderEditForm(
     .getElementById("cancel-edit")
     .addEventListener(
       "click",
-      () =>
-        showRecordDetail(
-          data.id,
-          source
-        )
+      cancelEdit
     );
 }
-
-// ============================================================
-// فعال/غیرفعال کردن مراحل در فرم ویرایش
-// ============================================================
 
 function updateEditStageOptions() {
   const selectedType =
@@ -3011,65 +2670,57 @@ function updateEditStageOptions() {
       'input[name="edit-stone-type"]:checked'
     );
 
-  const stageOptions =
+  const options =
     document.querySelectorAll(
       "#edit-stage-list .stage-option"
     );
 
-  stageOptions.forEach(
-    (option) => {
-      const stage =
-        option.dataset.stage;
+  options.forEach((option) => {
+    const stage =
+      option.dataset.stage;
 
-      const input =
-        option.querySelector(
-          'input[name="stage"]'
-        );
+    const input =
+      option.querySelector(
+        'input[name="stage"]'
+      );
 
-      const allowed =
-        selectedType &&
-        isValidStageForStoneType(
-          selectedType.value,
-          stage
-        );
+    const allowed =
+      selectedType &&
+      isValidStageForStoneType(
+        selectedType.value,
+        stage
+      );
 
-      if (allowed) {
-        option.classList.remove(
-          "disabled"
-        );
+    if (allowed) {
+      option.classList.remove(
+        "disabled"
+      );
 
-        input.disabled = false;
-      } else {
-        option.classList.add(
-          "disabled"
-        );
+      input.disabled = false;
+    } else {
+      option.classList.add(
+        "disabled"
+      );
 
-        input.disabled = true;
-        input.checked = false;
-      }
+      input.disabled = true;
+      input.checked = false;
     }
-  );
+  });
 }
 
-// ============================================================
-// ذخیره ویرایش
-// ============================================================
-
-async function saveEditedRecord(
+async function saveEditRecord(
   id,
   source
 ) {
   const name =
-    document
-      .getElementById("edit-name")
-      .value.trim();
+    document.getElementById(
+      "edit-name"
+    ).value.trim();
 
   const lastname =
-    document
-      .getElementById(
-        "edit-lastname"
-      )
-      .value.trim();
+    document.getElementById(
+      "edit-lastname"
+    ).value.trim();
 
   const piece =
     document.getElementById(
@@ -3077,16 +2728,14 @@ async function saveEditedRecord(
     ).value;
 
   const row =
-    document
-      .getElementById("edit-row")
-      .value.trim();
+    document.getElementById(
+      "edit-row"
+    ).value.trim();
 
   const number =
-    document
-      .getElementById(
-        "edit-number"
-      )
-      .value.trim();
+    document.getElementById(
+      "edit-number"
+    ).value.trim();
 
   const stoneType =
     document.querySelector(
@@ -3099,16 +2748,14 @@ async function saveEditedRecord(
     );
 
   const notes =
-    document
-      .getElementById("edit-notes")
-      .value.trim();
+    document.getElementById(
+      "edit-notes"
+    ).value.trim();
 
   const editNotes =
-    document
-      .getElementById(
-        "edit-notes-history"
-      )
-      .value.trim();
+    document.getElementById(
+      "edit-notes-change"
+    ).value.trim();
 
   const validations = [
     [!name, "نام شهید را وارد کنید."],
@@ -3138,10 +2785,7 @@ async function saveEditedRecord(
     ],
   ];
 
-  for (
-    const [failed, message]
-    of validations
-  ) {
+  for (const [failed, message] of validations) {
     if (failed) {
       alert(message);
       return;
@@ -3157,7 +2801,6 @@ async function saveEditedRecord(
     alert(
       "مرحله انتخاب‌شده با نوع عملیات سازگار نیست."
     );
-
     return;
   }
 
@@ -3166,12 +2809,18 @@ async function saveEditedRecord(
       "save-edit"
     );
 
+  const cancelButton =
+    document.getElementById(
+      "cancel-edit"
+    );
+
   button.disabled = true;
+  cancelButton.disabled = true;
 
   button.textContent =
     "در حال ذخیره ویرایش...";
 
-  const now =
+  const editedAt =
     new Date().toISOString();
 
   const updatePayload = {
@@ -3180,17 +2829,11 @@ async function saveEditedRecord(
     piece,
     grave_row: row,
     grave_number: number,
-    stone_type:
-      stoneType.value,
+    stone_type: stoneType.value,
     stage: stage.value,
     notes: notes || null,
-
-    // زمان آخرین ویرایش
-    edited_at: now,
-
-    // توضیح آخرین ویرایش
-    edit_notes:
-      editNotes || null,
+    edited_at: editedAt,
+    edit_notes: editNotes || null,
   };
 
   const { data, error } =
@@ -3203,186 +2846,102 @@ async function saveEditedRecord(
         .single(),
       {
         errorAlertPrefix:
-          "ذخیره ویرایش انجام نشد.",
+          "ویرایش اطلاعات انجام نشد.",
       }
     );
 
   if (error) {
     button.disabled = false;
-
+    cancelButton.disabled = false;
     button.textContent =
-      "💾 ذخیره و ثبت ویرایش";
-
+      "ذخیره و ثبت ویرایش";
     return;
   }
 
   if (!data) {
     button.disabled = false;
+    cancelButton.disabled = false;
 
     button.textContent =
-      "💾 ذخیره و ثبت ویرایش";
+      "ذخیره و ثبت ویرایش";
 
     alert(
-      "رکورد پیدا نشد یا اجازه ویرایش آن وجود ندارد."
+      "رکورد پیدا نشد یا اجازه ویرایش وجود ندارد."
     );
 
     return;
   }
 
-  const editedDate =
-    data.edited_at
-      ? getJalaliDateTime(
-          data.edited_at
-        )
-      : "";
+  // ========================================================
+  // مهم:
+  // رکورد تازه‌شده را مستقیماً در نتایج قبلی جایگزین می‌کنیم.
+  // بنابراین برای Excel نیازی به جستجوی مجدد نیست.
+  // ========================================================
+
+  updateLastSearchResult(data);
+
+  editingRecordId = null;
 
   alert(
     "اطلاعات شهید با موفقیت ویرایش شد." +
-      (
-        editedDate
-          ? `\n\nتاریخ ویرایش: ${editedDate}`
-          : ""
-      )
+      `\n\nتاریخ ویرایش: ${getJalaliDateTime(
+        data.edited_at
+      )}`
   );
 
-  // ==========================================================
-  // مهم‌ترین بخش:
-  // اگر ویرایش از صفحه جستجو انجام شده،
-  // بدون نیاز به زدن دوباره «جستجو»،
-  // همان جستجو مجدداً از Supabase اجرا می‌شود.
-  // ==========================================================
+  if (source === "search") {
+    restoreSearchPage();
+  } else {
+    showPendingRecords(true);
+  }
+}
+
+// ============================================================
+// جایگزینی رکورد تازه در نتایج جستجو
+// ============================================================
+
+function updateLastSearchResult(updatedRecord) {
+  if (!updatedRecord) return;
+
+  const index =
+    lastSearchResults.findIndex(
+      (record) =>
+        String(record.id) ===
+        String(updatedRecord.id)
+    );
+
+  if (index !== -1) {
+    lastSearchResults[index] =
+      updatedRecord;
+  } else {
+    lastSearchResults.unshift(
+      updatedRecord
+    );
+  }
+}
+
+// ============================================================
+// انصراف از ویرایش
+// ============================================================
+
+function cancelEdit() {
+  editingRecordId = null;
+
+  // هیچ UPDATEای انجام نشده است.
+  // بنابراین اطلاعات دیتابیس دست‌نخورده می‌ماند.
 
   if (
-    source === "search" &&
-    lastSearchFilters
+    editingRecordSource ===
+    "search"
   ) {
-    await refreshSearchResultsAfterEdit();
-    return;
+    restoreSearchPage();
+  } else {
+    showPendingRecords(true);
   }
-
-  // اگر از صفحه اطلاعات ثبت‌شده آمده بود
-  showPendingRecords();
 }
 
 // ============================================================
-// تازه‌سازی خودکار نتایج جستجو بعد از ویرایش
-// ============================================================
-
-async function refreshSearchResultsAfterEdit() {
-  if (!lastSearchFilters) {
-    showSearch();
-    return;
-  }
-
-  showSearch(true);
-
-  const container =
-    document.getElementById(
-      "search-results"
-    );
-
-  if (!container) return;
-
-  container.innerHTML = `
-    <div class="loading-message">
-      در حال تازه‌سازی نتایج...
-    </div>
-  `;
-
-  const filters =
-    lastSearchFilters;
-
-  let query =
-    supabaseClient
-      .from(TABLE_NAME)
-      .select("*")
-      .order(
-        "created_at",
-        {
-          ascending: false,
-        }
-      )
-      .limit(
-        MAX_RECORDS_PER_QUERY
-      );
-
-  if (filters.name) {
-    query =
-      query.ilike(
-        "name",
-        `%${filters.name}%`
-      );
-  }
-
-  if (filters.lastname) {
-    query =
-      query.ilike(
-        "lastname",
-        `%${filters.lastname}%`
-      );
-  }
-
-  if (filters.piece) {
-    query =
-      query.eq(
-        "piece",
-        filters.piece
-      );
-  }
-
-  if (filters.row) {
-    query =
-      query.ilike(
-        "grave_row",
-        `%${filters.row}%`
-      );
-  }
-
-  if (filters.number) {
-    query =
-      query.ilike(
-        "grave_number",
-        `%${filters.number}%`
-      );
-  }
-
-  if (filters.status) {
-    query =
-      query.eq(
-        "stone_type",
-        filters.status
-      );
-  }
-
-  const { data, error } =
-    await runSupabaseQuery(
-      query
-    );
-
-  if (error) {
-    container.innerHTML = `
-      <div class="error-message">
-        تازه‌سازی نتایج انجام نشد.
-        <br><br>
-        ${escapeHtml(
-          error.message
-        )}
-      </div>
-    `;
-
-    return;
-  }
-
-  lastSearchResults =
-    data || [];
-
-  renderSearchResults(
-    lastSearchResults
-  );
-}
-
-// ============================================================
-// تأیید رکورد
+// تأیید
 // ============================================================
 
 async function approveRecord(id) {
@@ -3399,8 +2958,7 @@ async function approveRecord(id) {
       supabaseClient
         .from(TABLE_NAME)
         .update({
-          status:
-            STATUS.APPROVED,
+          status: STATUS.APPROVED,
         })
         .eq("id", id)
         .select()
@@ -3417,9 +2975,10 @@ async function approveRecord(id) {
     alert(
       "رکورد پیدا نشد یا اجازه تغییر آن وجود ندارد."
     );
-
     return;
   }
+
+  updateLastSearchResult(data);
 
   alert(
     "اطلاعات این شهید با موفقیت تأیید شد."
@@ -3456,16 +3015,19 @@ async function deleteRecord(id) {
 
   if (error) return;
 
-  if (
-    !data ||
-    data.length === 0
-  ) {
+  if (!data || data.length === 0) {
     alert(
       "رکورد حذف نشد یا اجازه حذف وجود ندارد."
     );
-
     return;
   }
+
+  lastSearchResults =
+    lastSearchResults.filter(
+      (record) =>
+        String(record.id) !==
+        String(id)
+    );
 
   alert(
     "رکورد با موفقیت حذف شد."
@@ -3475,7 +3037,7 @@ async function deleteRecord(id) {
 }
 
 // ============================================================
-// صفحه جستجو
+// جستجو
 // ============================================================
 
 function showSearch(
@@ -3505,7 +3067,6 @@ function showSearch(
         </div>
 
         <div class="form-group">
-
           <label for="search-name">
             نام
           </label>
@@ -3516,11 +3077,9 @@ function showSearch(
             autocomplete="off"
             placeholder="مثلاً اصغر یا ۳۳۳۳۳"
           >
-
         </div>
 
         <div class="form-group">
-
           <label for="search-lastname">
             نام خانوادگی
           </label>
@@ -3531,7 +3090,6 @@ function showSearch(
             autocomplete="off"
             placeholder="اختیاری"
           >
-
         </div>
 
         <div class="section-title">
@@ -3541,13 +3099,11 @@ function showSearch(
         <div class="form-row">
 
           <div class="form-group">
-
             <label for="search-piece">
               قطعه
             </label>
 
             <select id="search-piece">
-
               <option value="">
                 همه
               </option>
@@ -3558,13 +3114,10 @@ function showSearch(
                     ${toPersianDigits(p)}
                   </option>`
               ).join("")}
-
             </select>
-
           </div>
 
           <div class="form-group">
-
             <label for="search-row">
               ردیف
             </label>
@@ -3575,11 +3128,9 @@ function showSearch(
               autocomplete="off"
               placeholder="مثلاً ۲۴ مکرر"
             >
-
           </div>
 
           <div class="form-group">
-
             <label for="search-number">
               شماره
             </label>
@@ -3590,7 +3141,6 @@ function showSearch(
               autocomplete="off"
               placeholder="مثلاً ج"
             >
-
           </div>
 
         </div>
@@ -3666,9 +3216,7 @@ function showSearch(
       .addEventListener(
         "keydown",
         (event) => {
-          if (
-            event.key === "Enter"
-          ) {
+          if (event.key === "Enter") {
             event.preventDefault();
             performSearch();
           }
@@ -3683,38 +3231,32 @@ function showSearch(
     document.getElementById(
       "search-name"
     ).value =
-      lastSearchFilters.name ||
-      "";
+      lastSearchFilters.name || "";
 
     document.getElementById(
       "search-lastname"
     ).value =
-      lastSearchFilters.lastname ||
-      "";
+      lastSearchFilters.lastname || "";
 
     document.getElementById(
       "search-piece"
     ).value =
-      lastSearchFilters.piece ||
-      "";
+      lastSearchFilters.piece || "";
 
     document.getElementById(
       "search-row"
     ).value =
-      lastSearchFilters.row ||
-      "";
+      lastSearchFilters.row || "";
 
     document.getElementById(
       "search-number"
     ).value =
-      lastSearchFilters.number ||
-      "";
+      lastSearchFilters.number || "";
 
     document.getElementById(
       "search-status"
     ).value =
-      lastSearchFilters.status ||
-      "";
+      lastSearchFilters.status || "";
 
     renderSearchResults(
       lastSearchResults
@@ -3731,7 +3273,7 @@ function showSearch(
 }
 
 // ============================================================
-// جستجوی سرور
+// اجرای جستجو
 // ============================================================
 
 async function performSearch() {
@@ -3801,60 +3343,52 @@ async function performSearch() {
       .select("*")
       .order(
         "created_at",
-        {
-          ascending: false,
-        }
+        { ascending: false }
       )
       .limit(
         MAX_RECORDS_PER_QUERY
       );
 
   if (name) {
-    query =
-      query.ilike(
-        "name",
-        `%${name}%`
-      );
+    query = query.ilike(
+      "name",
+      `%${name}%`
+    );
   }
 
   if (lastname) {
-    query =
-      query.ilike(
-        "lastname",
-        `%${lastname}%`
-      );
+    query = query.ilike(
+      "lastname",
+      `%${lastname}%`
+    );
   }
 
   if (piece) {
-    query =
-      query.eq(
-        "piece",
-        piece
-      );
+    query = query.eq(
+      "piece",
+      piece
+    );
   }
 
   if (row) {
-    query =
-      query.ilike(
-        "grave_row",
-        `%${row}%`
-      );
+    query = query.ilike(
+      "grave_row",
+      `%${row}%`
+    );
   }
 
   if (number) {
-    query =
-      query.ilike(
-        "grave_number",
-        `%${number}%`
-      );
+    query = query.ilike(
+      "grave_number",
+      `%${number}%`
+    );
   }
 
   if (status) {
-    query =
-      query.eq(
-        "stone_type",
-        status
-      );
+    query = query.eq(
+      "stone_type",
+      status
+    );
   }
 
   const { data, error } =
@@ -3872,15 +3406,12 @@ async function performSearch() {
         )}
       </div>
     `;
-
     return;
   }
 
-  const results =
-    data || [];
+  const results = data || [];
 
-  lastSearchResults =
-    results;
+  lastSearchResults = results;
 
   renderSearchResults(
     results
@@ -3934,10 +3465,7 @@ function renderSearchResults(
           `
           : results
               .map(
-                (record) =>
-                  recordSummaryCard(
-                    record
-                  )
+                recordSummaryCard
               )
               .join("")
       }
@@ -3959,25 +3487,23 @@ function renderSearchResults(
     }
   }
 
-  results.forEach(
-    (record) => {
-      const card =
-        document.getElementById(
-          `record-summary-${record.id}`
-        );
+  results.forEach((record) => {
+    const card =
+      document.getElementById(
+        `record-summary-${record.id}`
+      );
 
-      if (card) {
-        card.addEventListener(
-          "click",
-          () =>
-            showRecordDetail(
-              record.id,
-              "search"
-            )
-        );
-      }
+    if (card) {
+      card.addEventListener(
+        "click",
+        () =>
+          showRecordDetail(
+            record.id,
+            "search"
+          )
+      );
     }
-  );
+  });
 }
 
 // ============================================================
@@ -3987,6 +3513,12 @@ function renderSearchResults(
 const EXCEL_DATE_COLUMN_HEADER =
   "تاریخ ثبت";
 
+const EXCEL_EDITED_COLUMN_HEADER =
+  "تاریخ آخرین ویرایش";
+
+const EXCEL_EDIT_NOTES_HEADER =
+  "توضیحات ویرایش";
+
 function exportSearchResultsToExcel() {
   if (
     !lastSearchResults ||
@@ -3995,7 +3527,6 @@ function exportSearchResultsToExcel() {
     alert(
       "رکوردی برای خروجی گرفتن وجود ندارد."
     );
-
     return;
   }
 
@@ -4004,10 +3535,8 @@ function exportSearchResultsToExcel() {
     "undefined"
   ) {
     alert(
-      "کتابخانه خروجی اکسل بارگذاری نشده است.\n\n" +
-      "لطفاً SheetJS را در index.html بارگذاری کنید."
+      "کتابخانه خروجی اکسل بارگذاری نشده است.\n\nلطفاً SheetJS را در index.html بارگذاری کنید."
     );
-
     return;
   }
 
@@ -4015,8 +3544,6 @@ function exportSearchResultsToExcel() {
     const exportData =
       lastSearchResults.map(
         (record) => ({
-          "شناسه": record.id || "",
-
           "نام":
             record.name || "",
 
@@ -4046,19 +3573,21 @@ function exportSearchResultsToExcel() {
           "توضیحات":
             record.notes || "",
 
-          "تاریخ ثبت":
+          [EXCEL_DATE_COLUMN_HEADER]:
             formatJalaliDateForExcel(
               getRecordCreatedAt(
                 record
               )
             ),
 
-          "آخرین ویرایش":
+          [EXCEL_EDITED_COLUMN_HEADER]:
             formatJalaliDateForExcel(
-              record.edited_at
+              getRecordEditedAt(
+                record
+              )
             ),
 
-          "توضیحات آخرین ویرایش":
+          [EXCEL_EDIT_NOTES_HEADER]:
             record.edit_notes || "",
         })
       );
@@ -4069,7 +3598,6 @@ function exportSearchResultsToExcel() {
       );
 
     worksheet["!cols"] = [
-      { wch: 16 },
       { wch: 18 },
       { wch: 24 },
       { wch: 10 },
@@ -4080,37 +3608,32 @@ function exportSearchResultsToExcel() {
       { wch: 18 },
       { wch: 35 },
       { wch: 18 },
-      { wch: 20 },
-      { wch: 40 },
+      { wch: 22 },
+      { wch: 35 },
     ];
-
-    // همه تاریخ‌ها به صورت Text
-    // تا Excel آنها را تبدیل نکند.
 
     const headers =
       Object.keys(
         exportData[0] || {}
       );
 
-    [
-      "تاریخ ثبت",
-      "آخرین ویرایش",
-    ].forEach(
-      (headerName) => {
-        const columnIndex =
+    const dateColumns = [
+      EXCEL_DATE_COLUMN_HEADER,
+      EXCEL_EDITED_COLUMN_HEADER,
+    ];
+
+    dateColumns.forEach(
+      (header) => {
+        const index =
           headers.indexOf(
-            headerName
+            header
           );
 
-        if (
-          columnIndex === -1
-        ) {
-          return;
-        }
+        if (index === -1) return;
 
         const columnLetter =
           XLSX.utils.encode_col(
-            columnIndex
+            index
           );
 
         for (
@@ -4123,9 +3646,7 @@ function exportSearchResultsToExcel() {
             `${columnLetter}${rowIndex}`;
 
           if (
-            worksheet[
-              cellAddress
-            ]
+            worksheet[cellAddress]
           ) {
             worksheet[
               cellAddress
@@ -4185,7 +3706,7 @@ function exportSearchResultsToExcel() {
 }
 
 // ============================================================
-// بازگشت به نتایج جستجو
+// بازگردانی نتایج جستجو
 // ============================================================
 
 function restoreSearchPage() {
@@ -4193,7 +3714,7 @@ function restoreSearchPage() {
 }
 
 // ============================================================
-// خطای اطلاعات ثبت‌شده
+// خطای رکوردها
 // ============================================================
 
 function showRecordsError(
