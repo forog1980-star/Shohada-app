@@ -2173,6 +2173,91 @@ function applyAppStyles() {
         }
 
 
+        /* ====================================================
+           ویرایش اطلاعات شهید
+           ==================================================== */
+
+        .edit-modal {
+
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.38);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+            z-index: 1000;
+
+        }
+
+        .edit-modal-card {
+
+            width: min(560px, 100%);
+            max-height: 92vh;
+            overflow-y: auto;
+            background: white;
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.18);
+            border: 1px solid var(--border);
+            box-sizing: border-box;
+
+        }
+
+        .edit-modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--green-dark);
+            margin-bottom: 16px;
+        }
+
+        .edit-modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            margin-top: 15px;
+        }
+
+        .edit-save-button {
+            border: none;
+            border-radius: 14px;
+            padding: 13px;
+            background: var(--green);
+            color: white;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .edit-cancel-button {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            background: white;
+            color: var(--text);
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .edited-badge {
+            background: #efe8ff;
+            color: #60439a;
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .record-badges {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+
         @media (max-width: 390px) {
 
             .stage-list {
@@ -3569,15 +3654,31 @@ function recordSummaryCard(
                 </div>
 
 
-                <span
-                    class="status-badge ${statusClass}"
-                >
+                <div class="record-badges">
 
-                    ${escapeHtml(
-                        status
-                    )}
+                    <span
+                        class="status-badge ${statusClass}"
+                    >
 
-                </span>
+                        ${escapeHtml(
+                            status
+                        )}
+
+                    </span>
+
+                    ${
+                        record.edited_at
+                            ?
+                            `
+                            <span class="edited-badge">
+                                ✎ ویرایش شده
+                            </span>
+                            `
+                            :
+                            ""
+                    }
+
+                </div>
 
             </div>
 
@@ -3992,7 +4093,76 @@ async function showRecordDetail(
                 }
 
 
+                ${
+                    data.edited_at
+                        ?
+                        `
+                        <div class="detail-row">
+
+                            <span>
+                                وضعیت ویرایش
+                            </span>
+
+                            <strong>
+                                <span class="edited-badge">
+                                    ✎ این اطلاعات قبلاً ویرایش شده است
+                                </span>
+                            </strong>
+
+                        </div>
+
+                        <div class="detail-row">
+
+                            <span>
+                                آخرین ویرایش
+                            </span>
+
+                            <strong>
+                                ${escapeHtml(
+                                    getJalaliDateTime(
+                                        data.edited_at
+                                    )
+                                )}
+                            </strong>
+
+                        </div>
+
+                        ${
+                            data.edit_notes
+                                ?
+                                `
+                                <div class="detail-row">
+
+                                    <span>
+                                        توضیحات ویرایش
+                                    </span>
+
+                                    <strong>
+                                        ${escapeHtml(
+                                            data.edit_notes
+                                        )}
+                                    </strong>
+
+                                </div>
+                                `
+                                :
+                                ""
+                        }
+                        `
+                        :
+                        ""
+                }
+
+
                 <div class="detail-actions">
+
+                    <button
+                        type="button"
+                        class="approve-button"
+                        id="edit-record"
+                    >
+                        ✎ ویرایش اطلاعات شهید
+                    </button>
 
                     ${
                         showManagementActions &&
@@ -4046,6 +4216,20 @@ async function showRecordDetail(
                 </div>
 
             `;
+
+
+        document
+            .getElementById(
+                "edit-record"
+            )
+            .addEventListener(
+                "click",
+                () =>
+                    openEditRecord(
+                        data,
+                        source
+                    )
+            );
 
 
         if (
@@ -4131,6 +4315,635 @@ async function showRecordDetail(
                 </div>
 
             `;
+
+    }
+
+}
+
+
+// ============================================================
+// پنجره ویرایش اطلاعات شهید
+// ============================================================
+
+function openEditRecord(
+    record,
+    source = "records"
+) {
+
+    const oldModal =
+        document.getElementById(
+            "edit-record-modal"
+        );
+
+    if (oldModal) {
+        oldModal.remove();
+    }
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+    modal.id =
+        "edit-record-modal";
+
+    modal.className =
+        "edit-modal";
+
+
+    modal.innerHTML = `
+
+        <div
+            class="edit-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-record-title"
+        >
+
+            <div
+                class="edit-modal-title"
+                id="edit-record-title"
+            >
+                ویرایش اطلاعات شهید
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="edit-name">
+                    نام
+                </label>
+
+                <input
+                    type="text"
+                    id="edit-name"
+                    value="${escapeHtml(record.name || "")}" 
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="edit-lastname">
+                    نام خانوادگی
+                </label>
+
+                <input
+                    type="text"
+                    id="edit-lastname"
+                    value="${escapeHtml(record.lastname || "")}" 
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <div class="section-title">
+                نوع عملیات سنگ
+            </div>
+
+            <div class="choice-grid">
+
+                <label class="choice-card">
+
+                    <input
+                        type="radio"
+                        name="edit-stone-type"
+                        value="ترمیمی"
+                        ${
+                            record.stone_type === "ترمیمی"
+                                ? "checked"
+                                : ""
+                        }
+                    >
+
+                    <span>
+                        ترمیمی
+                    </span>
+
+                </label>
+
+
+                <label class="choice-card">
+
+                    <input
+                        type="radio"
+                        name="edit-stone-type"
+                        value="تعویضی"
+                        ${
+                            record.stone_type === "تعویضی"
+                                ? "checked"
+                                : ""
+                        }
+                    >
+
+                    <span>
+                        تعویضی
+                    </span>
+
+                </label>
+
+            </div>
+
+
+            <div class="section-title">
+                محل مزار
+            </div>
+
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="edit-piece">
+                        قطعه
+                    </label>
+
+                    <select id="edit-piece">
+
+                        <option value="">
+                            انتخاب قطعه
+                        </option>
+
+                        ${
+                            PIECES.map(
+                                piece =>
+                                `
+                                <option
+                                    value="${piece}"
+                                    ${
+                                        String(record.piece || "") === String(piece)
+                                            ? "selected"
+                                            : ""
+                                    }
+                                >
+                                    ${toPersianDigits(piece)}
+                                </option>
+                                `
+                            ).join("")
+                        }
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="edit-row">
+                        ردیف
+                    </label>
+
+                    <input
+                        type="text"
+                        id="edit-row"
+                        value="${escapeHtml(record.grave_row || "")}" 
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="edit-number">
+                        شماره
+                    </label>
+
+                    <input
+                        type="text"
+                        id="edit-number"
+                        value="${escapeHtml(record.grave_number || "")}" 
+                        autocomplete="off"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="section-title">
+                مرحله فعلی کار
+            </div>
+
+            <div class="stage-list">
+
+                ${
+                    [
+                        ["ترمیمی", "ارسال به واحد مرمت"],
+                        ["ترمیمی", "سنگ مرمتی آماده"],
+                        ["ترمیمی", "نصب مرمتی شده"],
+                        ["تعویضی", "ارسال به واحد تعویض"],
+                        ["تعویضی", "سنگ تعویضی آماده"],
+                        ["تعویضی", "تعویضی نصب شده"]
+                    ].map(
+                        ([type, stage]) =>
+                        `
+                        <label class="stage-option">
+
+                            <input
+                                type="radio"
+                                name="edit-stage"
+                                value="${stage}"
+                                data-stone-type="${type}"
+                                ${
+                                    record.stage === stage
+                                        ? "checked"
+                                        : ""
+                                }
+                            >
+
+                            <span>
+                                ${stage}
+                            </span>
+
+                        </label>
+                        `
+                    ).join("")
+                }
+
+            </div>
+
+
+            <div class="section-title">
+                توضیحات فعلی
+            </div>
+
+            <div class="form-group">
+
+                <textarea
+                    id="edit-notes"
+                    rows="3"
+                    placeholder="توضیحات مربوط به اطلاعات شهید..."
+                >${escapeHtml(record.notes || "")}</textarea>
+
+            </div>
+
+
+            <div class="section-title">
+                توضیحات لازم برای این ویرایش
+            </div>
+
+            <div class="form-group">
+
+                <textarea
+                    id="edit-notes-new"
+                    rows="3"
+                    placeholder="مثلاً اصلاح شماره مزار طبق بررسی ناظر..."
+                >${escapeHtml(record.edit_notes || "")}</textarea>
+
+            </div>
+
+
+            <div class="edit-modal-actions">
+
+                <button
+                    type="button"
+                    class="edit-save-button"
+                    id="save-edit-record"
+                >
+                    ذخیره و ثبت ویرایش
+                </button>
+
+                <button
+                    type="button"
+                    class="edit-cancel-button"
+                    id="cancel-edit-record"
+                >
+                    انصراف
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    const stoneTypeInputs =
+        modal.querySelectorAll(
+            'input[name="edit-stone-type"]'
+        );
+
+    const stageInputs =
+        modal.querySelectorAll(
+            'input[name="edit-stage"]'
+        );
+
+
+    function syncEditStages() {
+
+        const selected =
+            modal.querySelector(
+                'input[name="edit-stone-type"]:checked'
+            );
+
+        const selectedType =
+            selected
+                ? selected.value
+                : "";
+
+        stageInputs.forEach(
+            input => {
+
+                const type =
+                    input.dataset.stoneType;
+
+                input.disabled =
+                    Boolean(
+                        selectedType &&
+                        type !== selectedType
+                    );
+
+                const label =
+                    input.closest(
+                        ".stage-option"
+                    );
+
+                if (label) {
+                    label.style.opacity =
+                        input.disabled
+                            ? ".45"
+                            : "1";
+                }
+
+            }
+        );
+
+        const checkedStage =
+            modal.querySelector(
+                'input[name="edit-stage"]:checked'
+            );
+
+        if (
+            checkedStage &&
+            selectedType &&
+            checkedStage.dataset.stoneType !== selectedType
+        ) {
+            checkedStage.checked = false;
+        }
+
+    }
+
+
+    stoneTypeInputs.forEach(
+        input =>
+            input.addEventListener(
+                "change",
+                syncEditStages
+            )
+    );
+
+    syncEditStages();
+
+
+    document
+        .getElementById(
+            "cancel-edit-record"
+        )
+        .addEventListener(
+            "click",
+            () => modal.remove()
+        );
+
+
+    document
+        .getElementById(
+            "save-edit-record"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                saveEditedRecord(
+                    record.id,
+                    source,
+                    modal
+                )
+        );
+
+
+    modal.addEventListener(
+        "click",
+        event => {
+            if (event.target === modal) {
+                modal.remove();
+            }
+        }
+    );
+
+}
+
+
+// ============================================================
+// ذخیره ویرایش
+// ============================================================
+
+async function saveEditedRecord(
+    id,
+    source,
+    modal
+) {
+
+    const name =
+        document
+            .getElementById("edit-name")
+            .value
+            .trim();
+
+    const lastname =
+        document
+            .getElementById("edit-lastname")
+            .value
+            .trim();
+
+    const piece =
+        document
+            .getElementById("edit-piece")
+            .value;
+
+    const row =
+        document
+            .getElementById("edit-row")
+            .value
+            .trim();
+
+    const number =
+        document
+            .getElementById("edit-number")
+            .value
+            .trim();
+
+    const stoneType =
+        document.querySelector(
+            'input[name="edit-stone-type"]:checked'
+        );
+
+    const stage =
+        document.querySelector(
+            'input[name="edit-stage"]:checked'
+        );
+
+    const notes =
+        document
+            .getElementById("edit-notes")
+            .value
+            .trim();
+
+    const editNotes =
+        document
+            .getElementById("edit-notes-new")
+            .value
+            .trim();
+
+
+    if (!name) {
+        alert("نام شهید را وارد کنید.");
+        return;
+    }
+
+    if (!lastname) {
+        alert("نام خانوادگی شهید را وارد کنید.");
+        return;
+    }
+
+    if (!stoneType) {
+        alert("نوع عملیات سنگ را مشخص کنید.");
+        return;
+    }
+
+    if (!piece) {
+        alert("قطعه را انتخاب کنید.");
+        return;
+    }
+
+    if (!row) {
+        alert("ردیف مزار را وارد کنید.");
+        return;
+    }
+
+    if (!number) {
+        alert("شماره مزار را وارد کنید.");
+        return;
+    }
+
+    if (!stage) {
+        alert("مرحله فعلی کار را مشخص کنید.");
+        return;
+    }
+
+    if (
+        !isValidStageForStoneType(
+            stoneType.value,
+            stage.value
+        )
+    ) {
+        alert(
+            "مرحله انتخاب‌شده با نوع عملیات سازگار نیست."
+        );
+        return;
+    }
+
+
+    const saveButton =
+        document.getElementById(
+            "save-edit-record"
+        );
+
+    saveButton.disabled = true;
+    saveButton.textContent =
+        "در حال ذخیره ویرایش...";
+
+
+    const editedAt =
+        new Date().toISOString();
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from("martyrs")
+            .update({
+
+                name: name,
+                lastname: lastname,
+                piece: piece,
+                grave_row: row,
+                grave_number: number,
+                stone_type: stoneType.value,
+                stage: stage.value,
+                notes: notes || null,
+                edit_notes: editNotes || null,
+                edited_at: editedAt
+
+            })
+            .eq(
+                "id",
+                id
+            )
+            .select("*")
+            .single();
+
+
+        if (error) {
+
+            console.error(
+                "Edit error:",
+                error
+            );
+
+            alert(
+                "ذخیره ویرایش انجام نشد.\n\n" +
+                error.message +
+                "\n\nاگر ستون‌های edited_at و edit_notes را در Supabase نساخته‌اید، ابتدا SQL اعلام‌شده را اجرا کنید."
+            );
+
+            saveButton.disabled = false;
+            saveButton.textContent =
+                "ذخیره و ثبت ویرایش";
+
+            return;
+        }
+
+
+        modal.remove();
+
+
+        alert(
+            "اطلاعات شهید با موفقیت ویرایش شد.\n\n" +
+            "تاریخ ویرایش: " +
+            getJalaliDateTime(
+                editedAt
+            )
+        );
+
+
+        await showRecordDetail(
+            data.id,
+            source
+        );
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+        alert(
+            "خطای غیرمنتظره هنگام ذخیره ویرایش."
+        );
+
+        saveButton.disabled = false;
+        saveButton.textContent =
+            "ذخیره و ثبت ویرایش";
 
     }
 
@@ -5107,6 +5920,19 @@ function exportSearchResultsToExcel() {
                     "توضیحات":
                         record.notes || "",
 
+                    "وضعیت ویرایش":
+                        record.edited_at
+                            ? "ویرایش شده"
+                            : "",
+
+                    "تاریخ آخرین ویرایش":
+                        formatJalaliDateForExcel(
+                            record.edited_at
+                        ),
+
+                    "توضیحات ویرایش":
+                        record.edit_notes || "",
+
                     "تاریخ ثبت":
                         formatJalaliDateForExcel(
                             record.created_at
@@ -5145,7 +5971,10 @@ function exportSearchResultsToExcel() {
             { wch: 28 },
             { wch: 18 },
             { wch: 35 },
-            { wch: 18 }
+            { wch: 18 },
+            { wch: 16 },
+            { wch: 20 },
+            { wch: 35 }
 
         ];
 
@@ -5159,6 +5988,17 @@ function exportSearchResultsToExcel() {
          * را می‌گیرد.
          */
 
+        const dateColumnIndex =
+            Object.keys(exportData[0] || {})
+                .indexOf("تاریخ ثبت");
+
+        const dateColumnLetter =
+            dateColumnIndex >= 0
+                ? XLSX.utils.encode_col(
+                    dateColumnIndex
+                )
+                : "J";
+
         for (
             let rowIndex = 2;
             rowIndex <= exportData.length + 1;
@@ -5166,7 +6006,7 @@ function exportSearchResultsToExcel() {
         ) {
 
             const cellAddress =
-                `J${rowIndex}`;
+                `${dateColumnLetter}${rowIndex}`;
 
             if (
                 worksheet[cellAddress]
