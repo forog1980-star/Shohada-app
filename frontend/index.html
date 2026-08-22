@@ -6,66 +6,15 @@
     <meta name="theme-color" content="#17633d">
     <meta name="description" content="سامانه مدیریت و پایش سنگ مزار گلزار شهدای تهران">
     <title>گلزار شهدای تهران | سامانه مدیریت و پایش سنگ مزار</title>
-
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            min-height: 100%;
-            background: #f4f7f5;
-        }
-
-        body {
-            overflow-x: hidden;
-        }
-    </style>
-
+    <style>html,body{margin:0;padding:0;min-height:100%;background:#f4f7f5}body{overflow-x:hidden}</style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-
-    <div class="app"></div>
-
-    <script src="master-loader.js?v=20260822-13"></script>
-
-    <!--
-      master-loader به صورت پویا app.js را بعد از DOMContentLoaded بارگذاری می‌کند.
-      بنابراین listener داخل app.js دیگر فرصت اجرا ندارد.
-      این پل، شروع برنامه را پس از پایان Loader انجام می‌دهد.
-    -->
-    <script>
-      (function waitForGolzarApp() {
-        let attempts = 0;
-        const timer = setInterval(function () {
-          attempts++;
-
-          if (window.__GOLZAR_MASTER_READY__ === true) {
-            clearInterval(timer);
-
-            try {
-              if (typeof window.initializeHistory === "function") {
-                window.initializeHistory();
-              }
-              if (typeof window.applyAppStyles === "function") {
-                window.applyAppStyles();
-              }
-              if (typeof window.showHome === "function") {
-                window.showHome();
-              }
-            } catch (error) {
-              console.error("GolzarStone app startup error:", error);
-            }
-            return;
-          }
-
-          if (attempts >= 300) {
-            clearInterval(timer);
-            console.error("GolzarStone app startup timeout.");
-          }
-        }, 100);
-      })();
-    </script>
-
+<div class="app"></div>
+<script src="master-loader.js?v=20260822-15"></script>
+<script>
+(function(){let a=0,t=setInterval(function(){a++;if(window.__GOLZAR_MASTER_READY__===true){clearInterval(t);try{if(typeof window.initializeHistory==="function")window.initializeHistory();if(typeof window.applyAppStyles==="function")window.applyAppStyles();if(typeof window.showHome==="function")window.showHome()}catch(e){console.error("GolzarStone app startup error:",e)}}if(a>=300){clearInterval(t);console.error("GolzarStone app startup timeout.")}},100)})();
+</script>
 </body>
 </html>
