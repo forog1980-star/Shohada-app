@@ -10,7 +10,7 @@ const MASTER_SUPABASE_URL =
     "https://bafrksgdcmglahyrppfy.supabase.co";
 
 const MASTER_SUPABASE_KEY =
-    "sb_publishable_O5CkSuivysXjF-8hu1IUCA_izu8hWiX";
+    "sb_publishable_O5CkSuivysXJ-8hu1IUCA_izu8hWiX";
 
 const MASTER_TABLE = "martyrs";
 const MASTER_EXCEL_URL = "../ExcelData/martyrs_master.xlsx";
@@ -75,7 +75,7 @@ function masterShowMessage(title, detail = "") {
 
 function masterLoadApp() {
     const script = document.createElement("script");
-    script.src = "app.js?v=20260822-3";
+    script.src = "app.js?v=20260822-4";
     script.onload = () => {
         window.__GOLZAR_MASTER_READY__ = true;
     };
@@ -99,6 +99,7 @@ function masterFindHeaderRow(rows) {
         id: ["شناسهبانک", "شناسه", "کدشهید", "id", "bankid", "شناسهشهید"],
         name: ["نام", "نامشهید", "firstname", "name"],
         lastname: ["نامخانوادگی", "نامخانوادگی شهید", "نامخانوادگی_شهید", "lastname", "family"],
+        father_name: ["نامپدر", "نامپدرشهید", "fathername", "father"],
         piece: ["قطعه", "قطعهشهید", "piece"],
         grave_row: ["ردیف", "ردیفمزار", "ردیفقبر", "graverow", "row"],
         grave_number: ["شماره", "شماره مزار", "شمارهقبر", "شمارهسنگ", "gravenumber", "number"],
@@ -187,10 +188,13 @@ async function masterReadExcel() {
 
         const name = masterCleanText(row[header.map.name]);
         const lastname = masterCleanText(row[header.map.lastname]);
+        const father_name = header.map.father_name !== undefined
+            ? masterCleanText(row[header.map.father_name])
+            : "";
         const piece = masterNormalizeLocation(row[header.map.piece]);
         const grave_row = masterNormalizeLocation(row[header.map.grave_row]);
         const grave_number = masterNormalizeLocation(row[header.map.grave_number]);
-        const id = header.map.id !== undefined
+        const excelId = header.map.id !== undefined
             ? masterNormalizeId(row[header.map.id])
             : null;
 
@@ -200,9 +204,13 @@ async function masterReadExcel() {
             continue;
         }
 
+        // مهم: id در جدول Supabase از نوع int8 و Identity است.
+        // بنابراین شناسه Excel را به ستون id ارسال نمی‌کنیم و اجازه می‌دهیم
+        // PostgreSQL برای هر رکورد id را خودکار تولید کند.
         const record = {
             name,
             lastname,
+            father_name: father_name || null,
             piece,
             grave_row,
             grave_number,
@@ -215,17 +223,11 @@ async function masterReadExcel() {
             edit_notes: null
         };
 
-        if (id !== null) record.id = id;
-
-        if (record.id !== undefined) {
-            recordsById.set(record.id, record);
-        } else {
-            records.push(record);
+        if (excelId !== null) {
+            record._excel_source_id = excelId;
         }
-    }
 
-    if (recordsById.size) {
-        records.push(...recordsById.values());
+        records.push(record);
     }
 
     if (!records.length) {
@@ -238,15 +240,26 @@ async function masterReadExcel() {
     };
 }
 
+function masterPrepareBatch(batch) {
+    return batch.map(record => {
+        const payload = { ...record };
+        // این فیلد فقط برای ردیابی داخلی است و در جدول martyrs ذخیره نمی‌شود.
+        delete payload._excel_source_id;
+        return payload;
+    });
+}
+
 async function masterImportToSupabase(client, records) {
     let imported = 0;
 
     for (let start = 0; start < records.length; start += MASTER_BATCH_SIZE) {
-        const batch = records.slice(start, start + MASTER_BATCH_SIZE);
+        const batch = masterPrepareBatch(
+            records.slice(start, start + MASTER_BATCH_SIZE)
+        );
 
         const { error } = await client
             .from(MASTER_TABLE)
-            .upsert(batch, { onConflict: "id" });
+            .insert(batch);
 
         if (error) {
             throw new Error(
@@ -284,9 +297,9 @@ async function startGolzarStone() {
 
         const finalCount = await masterGetTableCount(client);
 
-        if (finalCount < imported) {
+        if (finalCount !== imported) {
             throw new Error(
-                `انتقال ناقص به نظر می‌رسد. تعداد رکوردهای جدول: ${finalCount} — تعداد انتقال‌یافته: ${imported}`
+                `کنترل نهایی انتقال ناموفق بود. تعداد رکوردهای واردشده: ${imported} — تعداد رکوردهای جدول martyrs: ${finalCount}`
             );
         }
 
@@ -301,7 +314,7 @@ async function startGolzarStone() {
             "❌",
             "اتصال بانک اصلی انجام نشد.\n\n" +
             (error?.message || String(error)) +
-            "\n\nاطلاعات موجود در Supabase تغییر داده نشد مگر رکوردهایی که همین مرحله با موفقیت ثبت کرده باشد."
+            "\n\nبانک اصلی فقط در صورت موفقیت هر Batch تغییر می‌کند."
         );
     }
 }
