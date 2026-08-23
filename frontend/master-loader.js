@@ -18,20 +18,39 @@ function loadApp() {
     const fix = document.createElement("script");
     fix.src = "runtime-fix.js?v=20260823-01";
     fix.onload = () => {
-      // «گزارش‌های آماری» فعلاً فقط یک جایگاه غیرفعال است.
-      const stats = document.createElement("script");
-      stats.src = "stats-label.js?v=20260823-01";
-      stats.onload = () => {
-        if (typeof window.installStatsLabel === "function") {
-          window.installStatsLabel();
+      const stageFix = document.createElement("script");
+      stageFix.src = "stage-label-fix.js?v=20260823-02";
+      stageFix.onload = () => {
+        if (typeof window.installCanonicalStageLabels === "function") {
+          window.installCanonicalStageLabels();
         }
-        window.__GOLZAR_MASTER_READY__ = true;
+
+        const stats = document.createElement("script");
+        stats.src = "stats-label.js?v=20260823-02";
+        stats.onload = () => {
+          if (typeof window.installStatsLabel === "function") {
+            window.installStatsLabel();
+          }
+          window.__GOLZAR_MASTER_READY__ = true;
+        };
+        stats.onerror = () => {
+          console.error("GolzarStone stats-label.js failed to load.");
+          window.__GOLZAR_MASTER_READY__ = true;
+        };
+        document.body.appendChild(stats);
       };
-      stats.onerror = () => {
-        console.error("GolzarStone stats-label.js failed to load.");
-        window.__GOLZAR_MASTER_READY__ = true;
+      stageFix.onerror = () => {
+        console.error("GolzarStone stage-label-fix.js failed to load.");
+        const stats = document.createElement("script");
+        stats.src = "stats-label.js?v=20260823-02";
+        stats.onload = () => {
+          if (typeof window.installStatsLabel === "function") window.installStatsLabel();
+          window.__GOLZAR_MASTER_READY__ = true;
+        };
+        stats.onerror = () => { window.__GOLZAR_MASTER_READY__ = true; };
+        document.body.appendChild(stats);
       };
-      document.body.appendChild(stats);
+      document.body.appendChild(stageFix);
     };
     fix.onerror = () => {
       console.error("GolzarStone runtime-fix.js failed to load.");
