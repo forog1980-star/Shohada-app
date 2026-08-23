@@ -16,7 +16,7 @@ function loadApp() {
 
     // اصلاحات runtime بعد از app.js بارگذاری می‌شوند.
     const fix = document.createElement("script");
-    fix.src = "runtime-fix.js?v=20260822-18";
+    fix.src = "runtime-fix.js?v=20260823-19";
     fix.onload = () => {
       window.__GOLZAR_MASTER_READY__ = true;
     };
