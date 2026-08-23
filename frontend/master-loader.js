@@ -10,157 +10,66 @@
 function loadApp() {
   const script = document.createElement("script");
   script.src = "app.js?v=20260823-01";
-
   script.onload = () => {
     installExactSearch();
-
     const fix = document.createElement("script");
     fix.src = "runtime-fix.js?v=20260823-01";
     fix.onload = () => {
       const stageFix = document.createElement("script");
       stageFix.src = "stage-label-fix.js?v=20260823-02";
       stageFix.onload = () => {
-        if (typeof window.installCanonicalStageLabels === "function") {
-          window.installCanonicalStageLabels();
-        }
-
+        if (typeof window.installCanonicalStageLabels === "function") window.installCanonicalStageLabels();
         const stats = document.createElement("script");
-        stats.src = "stats-label.js?v=20260823-04";
+        stats.src = "stats-label.js?v=20260823-05";
         stats.onload = () => {
-          if (typeof window.installStatsLabel === "function") {
-            window.installStatsLabel();
-          }
+          if (typeof window.installStatsLabel === "function") window.installStatsLabel();
           window.__GOLZAR_MASTER_READY__ = true;
         };
-        stats.onerror = () => {
-          console.error("GolzarStone stats-label.js failed to load.");
-          window.__GOLZAR_MASTER_READY__ = true;
-        };
+        stats.onerror = () => { console.error("GolzarStone stats-label.js failed to load."); window.__GOLZAR_MASTER_READY__ = true; };
         document.body.appendChild(stats);
       };
       stageFix.onerror = () => {
         console.error("GolzarStone stage-label-fix.js failed to load.");
         const stats = document.createElement("script");
-        stats.src = "stats-label.js?v=20260823-04";
-        stats.onload = () => {
-          if (typeof window.installStatsLabel === "function") window.installStatsLabel();
-          window.__GOLZAR_MASTER_READY__ = true;
-        };
+        stats.src = "stats-label.js?v=20260823-05";
+        stats.onload = () => { if (typeof window.installStatsLabel === "function") window.installStatsLabel(); window.__GOLZAR_MASTER_READY__ = true; };
         stats.onerror = () => { window.__GOLZAR_MASTER_READY__ = true; };
         document.body.appendChild(stats);
       };
       document.body.appendChild(stageFix);
     };
-    fix.onerror = () => {
-      console.error("GolzarStone runtime-fix.js failed to load.");
-      window.__GOLZAR_MASTER_READY__ = true;
-    };
+    fix.onerror = () => { console.error("GolzarStone runtime-fix.js failed to load."); window.__GOLZAR_MASTER_READY__ = true; };
     document.body.appendChild(fix);
   };
-
-  script.onerror = () => {
-    document.body.innerHTML = '<div dir="rtl" style="padding:30px;font-family:Tahoma;text-align:center">❌ بارگذاری برنامه انجام نشد.</div>';
-  };
-
+  script.onerror = () => { document.body.innerHTML = '<div dir="rtl" style="padding:30px;font-family:Tahoma;text-align:center">❌ بارگذاری برنامه انجام نشد.</div>'; };
   document.body.appendChild(script);
 }
 
 function normalizeExactValue(value) {
   if (value === null || value === undefined) return "";
-  return String(value)
-    .trim()
-    .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-    .replace(/\.0$/, "");
+  return String(value).trim().replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\.0$/, "");
 }
 
 async function exactPerformSearch() {
   const get = id => document.getElementById(id);
-
-  const name = typeof normalizeSearchText === "function"
-    ? normalizeSearchText(get("search-name")?.value || "")
-    : (get("search-name")?.value || "").trim();
-
-  const lastname = typeof normalizeSearchText === "function"
-    ? normalizeSearchText(get("search-lastname")?.value || "")
-    : (get("search-lastname")?.value || "").trim();
-
-  const piece = normalizeExactValue(get("search-piece")?.value);
-  const row = normalizeExactValue(get("search-row")?.value);
-  const number = normalizeExactValue(get("search-number")?.value);
-  const stoneType = get("search-status")?.value || "";
-
-  if (typeof lastSearchFilters !== "undefined") {
-    lastSearchFilters = { name, lastname, piece, row, number, status: stoneType };
-  }
-
-  const container = get("search-results");
-  if (container) container.innerHTML = '<div class="loading-message">در حال جستجو...</div>';
-
-  const results = [];
-  const PAGE = 1000;
-  let from = 0;
-
+  const name = typeof normalizeSearchText === "function" ? normalizeSearchText(get("search-name")?.value || "") : (get("search-name")?.value || "").trim();
+  const lastname = typeof normalizeSearchText === "function" ? normalizeSearchText(get("search-lastname")?.value || "") : (get("search-lastname")?.value || "").trim();
+  const piece = normalizeExactValue(get("search-piece")?.value), row = normalizeExactValue(get("search-row")?.value), number = normalizeExactValue(get("search-number")?.value), stoneType = get("search-status")?.value || "";
+  if (typeof lastSearchFilters !== "undefined") lastSearchFilters = { name, lastname, piece, row, number, status: stoneType };
+  const container = get("search-results"); if (container) container.innerHTML = '<div class="loading-message">در حال جستجو...</div>';
+  const results = []; const PAGE = 1000; let from = 0;
   try {
     while (true) {
-      let query = supabaseClient
-        .from(TABLE_NAME)
-        .select("*")
-        .order("id", { ascending: true })
-        .range(from, from + PAGE - 1);
-
-      if (name) query = query.ilike("name", `%${name}%`);
-      if (lastname) query = query.ilike("lastname", `%${lastname}%`);
-      if (piece) query = query.eq("piece", piece);
-      if (row) query = query.eq("grave_row", row);
-      if (number) query = query.eq("grave_number", number);
-      if (stoneType) query = query.eq("stone_type", stoneType);
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const batch = data || [];
-      results.push(...batch);
-      if (batch.length < PAGE) break;
-      from += PAGE;
+      let query = supabaseClient.from(TABLE_NAME).select("*").order("id", { ascending: true }).range(from, from + PAGE - 1);
+      if (name) query = query.ilike("name", `%${name}%`); if (lastname) query = query.ilike("lastname", `%${lastname}%`); if (piece) query = query.eq("piece", piece); if (row) query = query.eq("grave_row", row); if (number) query = query.eq("grave_number", number); if (stoneType) query = query.eq("stone_type", stoneType);
+      const { data, error } = await query; if (error) throw error; const batch = data || []; results.push(...batch); if (batch.length < PAGE) break; from += PAGE;
     }
-
-    const unique = [];
-    const ids = new Set();
-    for (const record of results) {
-      const id = String(record.id);
-      if (ids.has(id)) continue;
-      ids.add(id);
-      unique.push(record);
-    }
-
-    if (typeof lastSearchResults !== "undefined") lastSearchResults = unique;
-    if (typeof renderSearchResults === "function") renderSearchResults(unique);
-  } catch (error) {
-    console.error("Exact search error:", error);
-    if (container) {
-      container.innerHTML = `<div class="error-message">جستجو انجام نشد.<br><br>${typeof escapeHtml === "function" ? escapeHtml(error.message || String(error)) : (error.message || String(error))}</div>`;
-    }
-  }
+    const unique = []; const ids = new Set(); for (const record of results) { const id = String(record.id); if (ids.has(id)) continue; ids.add(id); unique.push(record); }
+    if (typeof lastSearchResults !== "undefined") lastSearchResults = unique; if (typeof renderSearchResults === "function") renderSearchResults(unique);
+  } catch (error) { console.error("Exact search error:", error); if (container) container.innerHTML = `<div class="error-message">جستجو انجام نشد.<br><br>${typeof escapeHtml === "function" ? escapeHtml(error.message || String(error)) : (error.message || String(error))}</div>`; }
 }
-
 function installExactSearch() {
-  document.addEventListener("click", event => {
-    const button = event.target.closest?.("#search-button");
-    if (!button) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    exactPerformSearch();
-  }, true);
-
-  document.addEventListener("keydown", event => {
-    if (event.key !== "Enter") return;
-    const target = event.target;
-    if (!target?.matches?.("#search-name,#search-lastname,#search-piece,#search-row,#search-number")) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    exactPerformSearch();
-  }, true);
+  document.addEventListener("click", event => { const button = event.target.closest?.("#search-button"); if (!button) return; event.preventDefault(); event.stopImmediatePropagation(); exactPerformSearch(); }, true);
+  document.addEventListener("keydown", event => { if (event.key !== "Enter") return; const target = event.target; if (!target?.matches?.("#search-name,#search-lastname,#search-piece,#search-row,#search-number")) return; event.preventDefault(); event.stopImmediatePropagation(); exactPerformSearch(); }, true);
 }
-
 loadApp();
