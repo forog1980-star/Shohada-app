@@ -9,16 +9,29 @@
 
 function loadApp() {
   const script = document.createElement("script");
-  script.src = "app.js?v=20260822-18";
+  script.src = "app.js?v=20260823-01";
 
   script.onload = () => {
     installExactSearch();
 
     // اصلاحات runtime بعد از app.js بارگذاری می‌شوند.
     const fix = document.createElement("script");
-    fix.src = "runtime-fix.js?v=20260823-19";
+    fix.src = "runtime-fix.js?v=20260823-01";
     fix.onload = () => {
-      window.__GOLZAR_MASTER_READY__ = true;
+      // «گزارش‌های آماری» فعلاً فقط یک جایگاه غیرفعال است.
+      const stats = document.createElement("script");
+      stats.src = "stats-label.js?v=20260823-01";
+      stats.onload = () => {
+        if (typeof window.installStatsLabel === "function") {
+          window.installStatsLabel();
+        }
+        window.__GOLZAR_MASTER_READY__ = true;
+      };
+      stats.onerror = () => {
+        console.error("GolzarStone stats-label.js failed to load.");
+        window.__GOLZAR_MASTER_READY__ = true;
+      };
+      document.body.appendChild(stats);
     };
     fix.onerror = () => {
       console.error("GolzarStone runtime-fix.js failed to load.");
