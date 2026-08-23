@@ -7,28 +7,21 @@
     <meta name="description" content="سامانه مدیریت و پایش سنگ مزار گلزار شهدای تهران">
     <title>گلزار شهدای تهران | سامانه مدیریت و پایش سنگ مزار</title>
     <style>html,body{margin:0;padding:0;min-height:100%;background:#f4f7f5}body{overflow-x:hidden}</style>
-
-    <!-- کتابخانه‌ها قبل از app.js و با مسیر پشتیبان -->
     <script>
     (function () {
       function loadScript(primary, fallback, done) {
         var s = document.createElement("script");
         s.src = primary;
-        s.onload = done;
+        s.onload = function(){ done(); };
         s.onerror = function () {
-          console.warn("Primary CDN failed, trying fallback:", primary);
           var f = document.createElement("script");
           f.src = fallback;
-          f.onload = done;
-          f.onerror = function () {
-            console.error("Library failed to load:", primary, fallback);
-            done(new Error("Library load failed"));
-          };
+          f.onload = function(){ done(); };
+          f.onerror = function(){ console.error("Library failed to load:", primary, fallback); done(new Error("Library load failed")); };
           document.head.appendChild(f);
         };
         document.head.appendChild(s);
       }
-
       loadScript(
         "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js",
         "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
@@ -40,7 +33,7 @@
             function (xlsxError) {
               if (xlsxError) return;
               var ready = document.createElement("script");
-              ready.src = "master-loader.js?v=20260823-07";
+              ready.src = "master-loader.js?v=20260823-08";
               document.body.appendChild(ready);
             }
           );
@@ -60,19 +53,44 @@
     if(window.__GOLZAR_MASTER_READY__ === true){
       clearInterval(timer);
       try{
-        // initializeHistory عمداً از اینجا حذف شده است؛
-        // master/app مسیر تاریخچه را خودشان مدیریت می‌کنند.
         if(typeof window.applyAppStyles === "function") window.applyAppStyles();
         if(typeof window.showHome === "function") window.showHome();
         if(typeof window.installStatsLabel === "function") window.installStatsLabel();
         if(typeof window.installVersionLabel === "function") window.installVersionLabel();
+        installStatisticsBridge();
       }catch(e){ console.error("GolzarStone app startup error:",e); }
     }
-    if(attempts >= 300){
-      clearInterval(timer);
-      console.error("GolzarStone app startup timeout.");
-    }
+    if(attempts >= 300){ clearInterval(timer); console.error("GolzarStone app startup timeout."); }
   },100);
+
+  function installStatisticsBridge(){
+    if(window.__GOLZAR_STATISTICS_BRIDGE__) return;
+    document.addEventListener("click", function(e){
+      const el = e.target?.closest?.("button,a,[role='button'],div");
+      if(!el) return;
+      const text = (el.innerText || el.textContent || "").replace(/\s+/g," ").trim();
+      if(!text.includes("گزارش‌های آماری") || el.closest(".gs-head")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      const open = function(){
+        if(typeof window.showStatistics === "function"){
+          window.showStatistics();
+          return;
+        }
+        const s=document.createElement("script");
+        s.src="stats-label.js?v=20260823-08";
+        s.onload=function(){
+          if(typeof window.showStatistics === "function") window.showStatistics();
+          else console.error("GolzarStone: showStatistics is still unavailable after loading stats-label.js");
+        };
+        s.onerror=function(){console.error("GolzarStone: failed to load statistics dashboard");};
+        document.body.appendChild(s);
+      };
+      open();
+    }, true);
+    window.__GOLZAR_STATISTICS_BRIDGE__=true;
+  }
 })();
 </script>
 </body>
