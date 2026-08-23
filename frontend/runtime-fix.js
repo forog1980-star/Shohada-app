@@ -6,6 +6,7 @@
 // - دریافت همه رکوردها با pagination
 // - جزئیات بدون .single() برای جلوگیری از خطای coercion
 // - فهرست اطلاعات ثبت‌شده بدون سقف 200 رکورد
+// - بازگشت مستقل به صفحه اطلاعات ثبت‌شده و تأیید کارشناسی
 // ============================================================
 
 const GOLZAR_PAGE_SIZE = 1000;
@@ -267,3 +268,47 @@ async function loadPendingRecords() {
     showRecordsError(error.message || "خطای غیرمنتظره هنگام دریافت اطلاعات.");
   }
 }
+
+// ------------------------------------------------------------
+// بازگشت مستقل به صفحه «اطلاعات ثبت‌شده و تأیید کارشناسی»
+// ------------------------------------------------------------
+// این مسیر به history یا لینک وابسته نیست. اگر کارت/دکمه اصلی
+// به هر دلیل handler داخلی خود را از دست داده باشد، این handler
+// آن را مستقیم به showPendingRecords وصل می‌کند.
+// ------------------------------------------------------------
+
+function installPendingRecordsNavigation() {
+  if (window.__GOLZAR_PENDING_NAV_INSTALLED__) return;
+  window.__GOLZAR_PENDING_NAV_INSTALLED__ = true;
+
+  document.addEventListener("click", (event) => {
+    const target = event.target?.closest?.("a, button, [role=button], .card, .feature-card, .menu-item, div");
+    if (!target) return;
+
+    const text = (target.textContent || "").replace(/\s+/g, " ").trim();
+    const isPendingCard =
+      text.includes("اطلاعات ثبت") &&
+      (text.includes("تأیید") || text.includes("کارشناسی"));
+
+    if (!isPendingCard) return;
+    if (target.id === "pending-records" || target.dataset.golzarPendingNav === "1") return;
+
+    // فقط روی صفحه اصلی این fallback را فعال می‌کنیم تا روی
+    // دکمه‌های داخل صفحه جزئیات یا فهرست اثر نگذارد.
+    if (currentAppPage !== "home") return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    target.dataset.golzarPendingNav = "1";
+
+    try {
+      pushAppHistory("pending");
+      showPendingRecords(true);
+    } catch (error) {
+      console.error("Golzar pending navigation error:", error);
+    }
+  }, true);
+}
+
+installPendingRecordsNavigation();
