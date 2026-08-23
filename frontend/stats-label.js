@@ -1,108 +1,23 @@
-"use strict";
-
+// ============================================================
 // GolzarStone — آمار زنده
 // فقط خواندن داده‌های موجود martyrs؛ بدون افزودن ستون یا تغییر رکورد.
+// ============================================================
+"use strict";
 
 const GOLZAR_STATS_TOTAL = 26097;
-const GOLZAR_STATS_PIECES = [
-  ["17", 103], ["24", 6100], ["26", 4514], ["27", 3177],
-  ["28", 3523], ["29", 2743], ["40", 2948], ["53", 3092]
-];
-const GOLZAR_STATS_STAGES = {
-  "ترمیمی": ["طرح سنگ ارسال به واحد مرمت", "سنگ مرمتی آماده", "نصب سنگ مرمت شده"],
-  "تعویضی": ["طرح سنگ ارسال به واحد تعویض", "سنگ تعویضی آماده", "نصب سنگ تعویض شده"]
-};
-const GOLZAR_STATS_STAGE_ALIASES = {
-  "ارسال به واحد مرمت": "طرح سنگ ارسال به واحد مرمت",
-  "نصب مرمتی شده": "نصب سنگ مرمت شده",
-  "ارسال به واحد تعویض": "طرح سنگ ارسال به واحد تعویض",
-  "تعویضی نصب شده": "نصب سنگ تعویض شده"
-};
-
-function statsStage(v){ return GOLZAR_STATS_STAGE_ALIASES[String(v||"").trim()] || String(v||"").trim(); }
-function statsNum(v){ return typeof window.toPersianDigits === "function" ? window.toPersianDigits(v) : String(v); }
-function statsEsc(v){ return typeof window.escapeHtml === "function" ? window.escapeHtml(v) : String(v ?? ""); }
-function statsPct(v,total=GOLZAR_STATS_TOTAL){ return total ? (v/total)*100 : 0; }
-
-async function statsFetchAll(){
-  const out=[]; const size=1000; let from=0;
-  while(true){
-    const {data,error}=await window.supabaseClient.from(window.TABLE_NAME)
-      .select("id,piece,stone_type,stage,status").order("id",{ascending:true}).range(from,from+size-1);
-    if(error) throw error;
-    const batch=data||[]; out.push(...batch);
-    if(batch.length<size) break; from+=size;
-  }
-  const seen=new Set();
-  return out.filter(r=>{const k=String(r.id);if(seen.has(k))return false;seen.add(k);return true;});
-}
-
-function statsModel(rows){
-  const empty=t=>({total:0,completed:0,stages:Object.fromEntries(GOLZAR_STATS_STAGES[t].map(s=>[s,0]))});
-  const m={repair:empty("ترمیمی"),replacement:empty("تعویضی"),pieces:{}};
-  for(const [p,total] of GOLZAR_STATS_PIECES){
-    m.pieces[p]={total,repair:Object.fromEntries(GOLZAR_STATS_STAGES["ترمیمی"].map(s=>[s,0])),replacement:Object.fromEntries(GOLZAR_STATS_STAGES["تعویضی"].map(s=>[s,0]))};
-  }
-  for(const r of rows){
-    const type=r?.stone_type;if(type!=="ترمیمی"&&type!=="تعویضی")continue;
-    const stage=statsStage(r?.stage);const target=type==="ترمیمی"?m.repair:m.replacement;target.total++;
-    if(Object.prototype.hasOwnProperty.call(target.stages,stage))target.stages[stage]++;
-    if(stage===GOLZAR_STATS_STAGES[type][2])target.completed++;
-    const p=String(r?.piece??"").trim().replace(/\.0$/,"");if(!m.pieces[p])continue;
-    const pt=type==="ترمیمی"?m.pieces[p].repair:m.pieces[p].replacement;
-    if(Object.prototype.hasOwnProperty.call(pt,stage))pt[stage]++;
-  }
-  m.completed=m.repair.completed+m.replacement.completed;
-  m.remaining=Math.max(GOLZAR_STATS_TOTAL-m.completed,0);
-  m.tracked=m.repair.total+m.replacement.total;
-  return m;
-}
-
-function statsStyles(){
-  if(document.getElementById("golzar-statistics-styles"))return;
-  const s=document.createElement("style");s.id="golzar-statistics-styles";
-  s.textContent=`.gs-page{max-width:1100px;margin:auto;padding:12px;background:#f4f7f5}.gs-head{display:flex;align-items:center;gap:10px;background:linear-gradient(145deg,#17633d,#238b57);color:#fff;padding:15px}.gs-head h1{margin:0;font-size:24px}.gs-head p{margin:3px 0 0;font-size:13px}.gs-back{border:0;background:rgba(255,255,255,.16);color:#fff;padding:9px 12px;border-radius:9px;font-family:inherit}.gs-card{background:#fff;border:1px solid #dce6df;border-radius:14px;padding:14px;margin-bottom:12px}.gs-summary,.gs-grid,.gs-pieces{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.gs-pieces{grid-template-columns:repeat(2,1fr)}.gs-summary .gs-card{margin:0}.gs-summary strong{display:block;font-size:27px;margin:4px 0}.gs-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.gs-title h2{font-size:18px;margin:0}.gs-stage{border:1px solid #e4ebe6;border-radius:11px;padding:9px;background:#fbfdfc}.gs-stage>div{display:flex;justify-content:space-between;font-size:12px}.gs-stage b{font-size:18px}.gs-stage i{display:block;height:7px;background:#edf2ef;border-radius:99px;overflow:hidden;margin:7px 0 4px}.gs-stage em{display:block;height:100%;background:#238b57;border-radius:99px}.gs-stage small,.gs-note,.gs-footer-note{font-size:10px;color:#708078}.gs-piece h3{margin:0 0 8px}.gs-piece h4{font-size:12px;margin:8px 0 5px}.gs-piece .gs-stage{margin-bottom:5px}.gs-overall{display:flex;justify-content:space-between;align-items:center}.gs-overall strong{font-size:25px;display:block}.gs-total{background:#e8f5ed;border-radius:11px;padding:8px 14px;text-align:center}.gs-total strong{color:#17633d}.gs-total small{display:block;font-size:10px}.gs-lines{display:grid;gap:10px;margin-top:15px}.gs-line{display:grid;grid-template-columns:120px 1fr;gap:5px 10px;font-size:12px}.gs-line i{grid-column:1/-1;height:9px;background:#edf2ef;border-radius:99px;overflow:hidden}.gs-line em{display:block;height:100%;background:#238b57}.gs-footer-note{line-height:1.8;padding-bottom:20px}@media(max-width:700px){.gs-summary,.gs-grid,.gs-pieces{grid-template-columns:1fr}.gs-line{grid-template-columns:1fr auto}}`;
-  document.head.appendChild(s);
-}
-
+const GOLZAR_STATS_PIECES = [["17",103],["24",6100],["26",4514],["27",3177],["28",3523],["29",2743],["40",2948],["53",3092]];
+const GOLZAR_STATS_STAGES={"ترمیمی":["طرح سنگ ارسال به واحد مرمت","سنگ مرمتی آماده","نصب سنگ مرمت شده"],"تعویضی":["طرح سنگ ارسال به واحد تعویض","سنگ تعویضی آماده","نصب سنگ تعویض شده"]};
+const GOLZAR_STATS_STAGE_ALIASES={"ارسال به واحد مرمت":"طرح سنگ ارسال به واحد مرمت","نصب مرمتی شده":"نصب سنگ مرمت شده","ارسال به واحد تعویض":"طرح سنگ ارسال به واحد تعویض","تعویضی نصب شده":"نصب سنگ تعویض شده"};
+function statsStage(v){return GOLZAR_STATS_STAGE_ALIASES[String(v||"").trim()]||String(v||"").trim();}
+function statsNum(v){return typeof toPersianDigits==="function"?toPersianDigits(v):String(v);}
+function statsEsc(v){return typeof escapeHtml==="function"?escapeHtml(v):String(v??"");}
+function statsPct(v,t=GOLZAR_STATS_TOTAL){return t?(v/t)*100:0;}
+async function statsFetchAll(){const out=[],size=1000;let from=0;while(true){const {data,error}=await supabaseClient.from(TABLE_NAME).select("id,piece,stone_type,stage,status").order("id",{ascending:true}).range(from,from+size-1);if(error)throw error;const batch=data||[];out.push(...batch);if(batch.length<size)break;from+=size;}const seen=new Set();return out.filter(r=>{const k=String(r.id);if(seen.has(k))return false;seen.add(k);return true;});}
+function statsModel(rows){const empty=t=>({total:0,completed:0,stages:Object.fromEntries(GOLZAR_STATS_STAGES[t].map(s=>[s,0]))});const m={repair:empty("ترمیمی"),replacement:empty("تعویضی"),pieces:{}};for(const [p,total] of GOLZAR_STATS_PIECES)m.pieces[p]={total,repair:Object.fromEntries(GOLZAR_STATS_STAGES["ترمیمی"].map(s=>[s,0])),replacement:Object.fromEntries(GOLZAR_STATS_STAGES["تعویضی"].map(s=>[s,0]))};for(const r of rows){const type=r?.stone_type;if(type!=="ترمیمی"&&type!=="تعویضی")continue;const stage=statsStage(r?.stage),target=type==="ترمیمی"?m.repair:m.replacement;target.total++;if(Object.prototype.hasOwnProperty.call(target.stages,stage))target.stages[stage]++;if(stage===GOLZAR_STATS_STAGES[type][2])target.completed++;const p=String(r?.piece??"").trim().replace(/\.0$/,"");if(!m.pieces[p])continue;const pt=type==="ترمیمی"?m.pieces[p].repair:m.pieces[p].replacement;if(Object.prototype.hasOwnProperty.call(pt,stage))pt[stage]++;}m.completed=m.repair.completed+m.replacement.completed;m.remaining=Math.max(GOLZAR_STATS_TOTAL-m.completed,0);m.tracked=m.repair.total+m.replacement.total;return m;}
+function statsStyles(){if(document.getElementById("golzar-statistics-styles"))return;const s=document.createElement("style");s.id="golzar-statistics-styles";s.textContent=`.gs-page{max-width:1100px;margin:auto;padding:12px;background:#f4f7f5}.gs-head{display:flex;align-items:center;gap:10px;background:linear-gradient(145deg,#17633d,#238b57);color:#fff;padding:15px}.gs-head h1{margin:0;font-size:24px}.gs-head p{margin:3px 0;font-size:13px}.gs-back{border:0;background:rgba(255,255,255,.16);color:#fff;padding:9px 12px;border-radius:9px;font-family:inherit}.gs-card{background:#fff;border:1px solid #dce6df;border-radius:14px;padding:14px;margin-bottom:12px}.gs-summary,.gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.gs-pieces{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.gs-summary .gs-card{margin:0}.gs-summary strong{display:block;font-size:27px;margin:4px 0}.gs-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.gs-title h2{font-size:18px;margin:0}.gs-stage{border:1px solid #e4ebe6;border-radius:11px;padding:9px;background:#fbfdfc}.gs-stage>div{display:flex;justify-content:space-between;font-size:12px}.gs-stage b{font-size:18px}.gs-stage i{display:block;height:7px;background:#edf2ef;border-radius:99px;overflow:hidden;margin:7px 0 4px}.gs-stage em{display:block;height:100%;background:#238b57;border-radius:99px}.gs-stage small,.gs-note,.gs-footer-note{font-size:10px;color:#708078}.gs-piece h3{margin:0 0 8px}.gs-piece h4{font-size:12px;margin:8px 0 5px}.gs-piece .gs-stage{margin-bottom:5px}.gs-overall{display:flex;justify-content:space-between;align-items:center}.gs-overall strong{font-size:25px;display:block}.gs-total{background:#e8f5ed;border-radius:11px;padding:8px 14px;text-align:center}.gs-total strong{color:#17633d}.gs-total small{display:block;font-size:10px}.gs-lines{display:grid;gap:10px;margin-top:15px}.gs-line{display:grid;grid-template-columns:120px 1fr;gap:5px 10px;font-size:12px}.gs-line i{grid-column:1/-1;height:9px;background:#edf2ef;border-radius:99px;overflow:hidden}.gs-line em{display:block;height:100%;background:#238b57}.gs-footer-note{line-height:1.8;padding-bottom:20px}@media(max-width:700px){.gs-summary,.gs-grid,.gs-pieces{grid-template-columns:1fr}.gs-line{grid-template-columns:1fr auto}}`;
+document.head.appendChild(s);}
 function statsBar(title,value,total=GOLZAR_STATS_TOTAL){return `<div class="gs-stage"><div><span>${statsEsc(title)}</span><b>${statsNum(value)}</b></div><i><em style="width:${Math.min(statsPct(value,total),100).toFixed(2)}%"></em></i><small>${statsNum(value)} از ${statsNum(total)} — ${statsPct(value,GOLZAR_STATS_TOTAL).toFixed(1)}٪ از کل</small></div>`;}
-
-function statsRender(m){
-  const app=document.querySelector(".app");if(!app)return;
-  app.innerHTML=`<header class="gs-head"><button class="gs-back" id="gs-back">بازگشت</button><div><h1>گزارش‌های آماری</h1><p>وضعیت لحظه‌ای عملیات بهسازی سنگ مزار</p></div></header><main class="gs-page"><div class="gs-note">مبنای درصد کلی: ${statsNum(GOLZAR_STATS_TOTAL)} مزار در ۸ قطعه</div><section class="gs-card"><div class="gs-overall"><div><span>وضعیت کلی</span><strong>${statsNum(m.completed)} تکمیل‌شده</strong></div><div class="gs-total"><strong>${statsNum(GOLZAR_STATS_TOTAL)}</strong><small>کل مزارها</small></div></div><div class="gs-lines"><div class="gs-line"><span>ترمیم شده</span><strong>${statsNum(m.repair.completed)} — ${statsPct(m.repair.completed).toFixed(1)}٪</strong><i><em style="width:${Math.min(statsPct(m.repair.completed),100)}%"></em></i></div><div class="gs-line"><span>تعویض شده</span><strong>${statsNum(m.replacement.completed)} — ${statsPct(m.replacement.completed).toFixed(1)}٪</strong><i><em style="width:${Math.min(statsPct(m.replacement.completed),100)}%"></em></i></div><div class="gs-line"><span>باقی‌مانده از کل</span><strong>${statsNum(m.remaining)} — ${statsPct(m.remaining).toFixed(1)}٪</strong><i><em style="width:${Math.min(statsPct(m.remaining),100)}%"></em></i></div></div></section><div class="gs-summary"><section class="gs-card"><span>کل ترمیمی‌های ثبت‌شده</span><strong>${statsNum(m.repair.total)}</strong><small>تکمیل‌شده: ${statsNum(m.repair.completed)}</small></section><section class="gs-card"><span>کل تعویضی‌های ثبت‌شده</span><strong>${statsNum(m.replacement.total)}</strong><small>تکمیل‌شده: ${statsNum(m.replacement.completed)}</small></section><section class="gs-card"><span>رکوردهای عملیاتی</span><strong>${statsNum(m.tracked)}</strong><small>ترمیمی + تعویضی</small></section></div><section class="gs-card"><div class="gs-title"><h2>وضعیت ترمیمی</h2><span>${statsNum(m.repair.total)} رکورد</span></div><div class="gs-grid">${GOLZAR_STATS_STAGES["ترمیمی"].map(s=>statsBar(s,m.repair.stages[s])).join("")}</div></section><section class="gs-card"><div class="gs-title"><h2>وضعیت تعویضی</h2><span>${statsNum(m.replacement.total)} رکورد</span></div><div class="gs-grid">${GOLZAR_STATS_STAGES["تعویضی"].map(s=>statsBar(s,m.replacement.stages[s])).join("")}</div></section><section class="gs-card"><div class="gs-title"><h2>وضعیت عملیات به تفکیک قطعه</h2><span>۸ قطعه</span></div><div class="gs-pieces">${GOLZAR_STATS_PIECES.map(([p,total])=>{const x=m.pieces[p];return `<article class="gs-piece"><h3>قطعه ${statsNum(p)} — ${statsNum(total)} مزار</h3><h4>ترمیمی</h4>${GOLZAR_STATS_STAGES["ترمیمی"].map(s=>statsBar(s,x.repair[s],total)).join("")}<h4>تعویضی</h4>${GOLZAR_STATS_STAGES["تعویضی"].map(s=>statsBar(s,x.replacement[s],total)).join("")}</article>`}).join("")}</div></section><div class="gs-footer-note">این داشبورد فقط داده‌های موجود در بانک را می‌خواند و هیچ ستون یا رکوردی ایجاد یا تغییر نمی‌دهد.</div></main>`;
-  document.getElementById("gs-back")?.addEventListener("click",()=>{if(window.history.state?.page==="statistics")window.history.back();else if(typeof window.showHome==="function")window.showHome();});
-}
-
-async function showStatistics(){
-  statsStyles();const app=document.querySelector(".app");if(!app)return;
-  app.innerHTML='<main class="gs-page"><div class="loading-message">در حال محاسبه آمار لحظه‌ای...</div></main>';
-  try{statsRender(statsModel(await statsFetchAll()));}catch(e){console.error("GolzarStone statistics error:",e);app.innerHTML=`<main class="gs-page"><div class="error-message">دریافت آمار انجام نشد.<br><br>${statsEsc(e.message||String(e))}</div></main>`;}
-}
-
-function isStatsButton(el){
-  if(!el)return false;
-  const text=(el.innerText||el.textContent||"").replace(/\s+/g," ").trim();
-  return text.includes("گزارش‌های آماری");
-}
-
-function installStatsLabel(){
-  statsStyles();
-  if(window.__GOLZAR_STATS_CLICK_HANDLER__)return;
-  const handler=e=>{
-    const el=e.target?.closest?.("button,a,div");
-    if(!isStatsButton(el))return;
-    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-    if(typeof window.showStatistics!=="function")return;
-    window.history.pushState({golzarApp:true,page:"statistics"},"",window.location.href);
-    if(typeof window.currentAppPage!=="undefined")window.currentAppPage="statistics";
-    window.showStatistics();
-  };
-  document.addEventListener("click",handler,true);
-  window.__GOLZAR_STATS_CLICK_HANDLER__=true;
-  window.__GOLZAR_STATS_INSTALLED__=true;
-}
-
-window.showStatistics=showStatistics;
-window.installStatsLabel=installStatsLabel;
-
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",installStatsLabel);else installStatsLabel();
+function statsRender(m){const app=document.querySelector(".app");if(!app)return;app.innerHTML=`<header class="gs-head"><button class="gs-back" id="gs-back">بازگشت</button><div><h1>گزارش‌های آماری</h1><p>وضعیت لحظه‌ای عملیات بهسازی سنگ مزار</p></div></header><main class="gs-page"><div class="gs-note">مبنای درصد کلی: ${statsNum(GOLZAR_STATS_TOTAL)} مزار در ۸ قطعه</div><section class="gs-card"><div class="gs-overall"><div><span>وضعیت کلی</span><strong>${statsNum(m.completed)} تکمیل‌شده</strong></div><div class="gs-total"><strong>${statsNum(GOLZAR_STATS_TOTAL)}</strong><small>کل مزارها</small></div></div><div class="gs-lines"><div class="gs-line"><span>ترمیم شده</span><strong>${statsNum(m.repair.completed)} — ${statsPct(m.repair.completed).toFixed(1)}٪</strong><i><em style="width:${Math.min(statsPct(m.repair.completed),100)}%"></em></i></div><div class="gs-line"><span>تعویض شده</span><strong>${statsNum(m.replacement.completed)} — ${statsPct(m.replacement.completed).toFixed(1)}٪</strong><i><em style="width:${Math.min(statsPct(m.replacement.completed),100)}%"></em></i></div><div class="gs-line"><span>باقی‌مانده از کل</span><strong>${statsNum(m.remaining)} — ${statsPct(m.remaining).toFixed(1)}٪</strong><i><em style="width:${Math.min(statsPct(m.remaining),100)}%"></em></i></div></div></section><div class="gs-summary"><section class="gs-card"><span>کل ترمیمی‌های ثبت‌شده</span><strong>${statsNum(m.repair.total)}</strong><small>تکمیل‌شده: ${statsNum(m.repair.completed)}</small></section><section class="gs-card"><span>کل تعویضی‌های ثبت‌شده</span><strong>${statsNum(m.replacement.total)}</strong><small>تکمیل‌شده: ${statsNum(m.replacement.completed)}</small></section><section class="gs-card"><span>رکوردهای عملیاتی</span><strong>${statsNum(m.tracked)}</strong><small>ترمیمی + تعویضی</small></section></div><section class="gs-card"><div class="gs-title"><h2>وضعیت ترمیمی</h2><span>${statsNum(m.repair.total)} رکورد</span></div><div class="gs-grid">${GOLZAR_STATS_STAGES["ترمیمی"].map(s=>statsBar(s,m.repair.stages[s])).join("")}</div></section><section class="gs-card"><div class="gs-title"><h2>وضعیت تعویضی</h2><span>${statsNum(m.replacement.total)} رکورد</span></div><div class="gs-grid">${GOLZAR_STATS_STAGES["تعویضی"].map(s=>statsBar(s,m.replacement.stages[s])).join("")}</div></section><section class="gs-card"><div class="gs-title"><h2>وضعیت عملیات به تفکیک قطعه</h2><span>۸ قطعه</span></div><div class="gs-pieces">${GOLZAR_STATS_PIECES.map(([p,total])=>{const x=m.pieces[p];return `<article class="gs-piece"><h3>قطعه ${statsNum(p)} — ${statsNum(total)} مزار</h3><h4>ترمیمی</h4>${GOLZAR_STATS_STAGES["ترمیمی"].map(s=>statsBar(s,x.repair[s],total)).join("")}<h4>تعویضی</h4>${GOLZAR_STATS_STAGES["تعویضی"].map(s=>statsBar(s,x.replacement[s],total)).join("")}</article>`}).join("")}</div></section><div class="gs-footer-note">این داشبورد فقط داده‌های موجود در بانک را می‌خواند و هیچ ستون یا رکوردی ایجاد یا تغییر نمی‌دهد.</div></main>`;document.getElementById("gs-back")?.addEventListener("click",()=>typeof showHome==="function"?showHome():history.back());}
+async function showStatistics(){statsStyles();const app=document.querySelector(".app");if(!app)return;app.innerHTML='<main class="gs-page"><div class="loading-message">در حال محاسبه آمار لحظه‌ای...</div></main>';try{statsRender(statsModel(await statsFetchAll()));}catch(e){console.error("GolzarStone statistics error:",e);app.innerHTML=`<main class="gs-page"><div class="error-message">دریافت آمار انجام نشد.<br><br>${statsEsc(e.message||String(e))}</div></main>`;}}
+function installStatsLabel(){statsStyles();if(window.__GOLZAR_STATS_CLICK_HANDLER__)return;document.addEventListener("click",e=>{const el=e.target?.closest?.("button,a,[role='button'],div");if(!el)return;const text=(el.innerText||el.textContent||"").replace(/\s+/g," ").trim();if(!text.includes("گزارش‌های آماری")||el.closest(".gs-head"))return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(window.history?.pushState)window.history.pushState({golzarApp:true,page:"statistics"},"",window.location.href);showStatistics();},true);window.__GOLZAR_STATS_CLICK_HANDLER__=true;}
+window.showStatistics=showStatistics;window.installStatsLabel=installStatsLabel;installStatsLabel();
