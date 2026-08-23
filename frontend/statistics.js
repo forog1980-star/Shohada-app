@@ -145,10 +145,7 @@ function buildModel(rows) {
 
   model.tracked = model.repair.total + model.replacement.total;
   model.completed = model.repair.completed + model.replacement.completed;
-
-  // «باقی‌مانده عملیاتی» فقط از موارد عملیاتی ثبت‌شده محاسبه می‌شود.
   model.remaining = Math.max(model.tracked - model.completed, 0);
-
   return model;
 }
 
@@ -208,7 +205,6 @@ function render(model) {
   const app = document.getElementById("statistics-app");
   const total = STATS_CONFIG.totalGraves;
   const trackedPercent = percent(model.tracked, total);
-  const completedPercent = percent(model.completed, total);
   const operationalCompletedPercent = percent(model.completed, model.tracked);
   const operationalRemainingPercent = percent(model.remaining, model.tracked);
 
@@ -271,7 +267,6 @@ function render(model) {
           <h2>وضعیت ترمیمی</h2>
           <div class="stage-grid">${stageCards("ترمیمی", model.repair)}</div>
         </section>
-
         <section class="card">
           <h2>وضعیت تعویضی</h2>
           <div class="stage-grid">${stageCards("تعویضی", model.replacement)}</div>
@@ -279,9 +274,13 @@ function render(model) {
       </div>
 
       <section class="card">
+        <div class="table-caption">
+          <span>خلاصه آماری هر قطعه؛ درصد مرحله‌ای در این جدول نمایش داده نمی‌شود.</span>
+          <strong>۸ قطعه</strong>
+        </div>
         <h2>جدول آماری قطعات</h2>
-        <div class="table-wrap">
-          <table>
+        <div class="piece-table-wrap">
+          <table class="piece-table">
             <thead>
               <tr>
                 <th>قطعه</th>
@@ -306,27 +305,14 @@ function render(model) {
 
 async function start() {
   const app = document.getElementById("statistics-app");
-
   try {
-    if (!window.supabase?.createClient) {
-      throw new Error("کتابخانه اتصال به بانک بارگذاری نشده است.");
-    }
-
-    const client = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
-    );
-
+    if (!window.supabase?.createClient) throw new Error("کتابخانه اتصال به بانک بارگذاری نشده است.");
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const rows = await fetchAllRows(client);
     render(buildModel(rows));
   } catch (error) {
     console.error("Independent statistics error:", error);
-    app.innerHTML = `
-      <div class="error">
-        <strong>گزارش‌های آماری بارگذاری نشد.</strong><br>
-        ${esc(error.message || String(error))}<br><br>
-        این صفحه مستقل است و اطلاعات بانک را تغییر نمی‌دهد.
-      </div>`;
+    app.innerHTML = `<div class="error"><strong>گزارش‌های آماری بارگذاری نشد.</strong><br>${esc(error.message || String(error))}<br><br>این صفحه مستقل است و اطلاعات بانک را تغییر نمی‌دهد.</div>`;
   }
 }
 
