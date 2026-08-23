@@ -1,16 +1,27 @@
 "use strict";
 
-// فقط عنوان «تست اتصال» را به «گزارش‌های آماری» تبدیل می‌کند.
-// این دکمه عمداً هیچ لینک، تصویر یا عملکرد کلیکی ندارد.
+// فقط جایگزینی ظاهری «تست اتصال» با «گزارش‌های آماری».
+// هیچ لینک، تصویر یا عملکرد جدیدی اضافه نمی‌شود.
 function installStatsLabel() {
-  const button = document.getElementById("btn-test");
-  if (!button) return;
+  const candidates = Array.from(document.querySelectorAll("button, a, div"));
+  const target = candidates.find((el) => {
+    const strong = el.querySelector?.(".button-text strong");
+    return strong && strong.textContent.trim() === "تست اتصال";
+  });
 
-  const replacement = button.cloneNode(true);
+  if (!target) {
+    console.warn("GolzarStone: دکمه «تست اتصال» برای جایگزینی پیدا نشد.");
+    return;
+  }
+
+  const replacement = target.cloneNode(true);
   replacement.removeAttribute("id");
-  replacement.id = "btn-stats";
-  replacement.className = "menu-button menu-test";
+  replacement.removeAttribute("href");
   replacement.removeAttribute("onclick");
+  replacement.removeAttribute("role");
+  replacement.removeAttribute("tabindex");
+  replacement.style.cursor = "default";
+  replacement.className = target.className || "menu-button menu-test";
 
   const title = replacement.querySelector(".button-text strong");
   const subtitle = replacement.querySelector(".button-text small");
@@ -22,7 +33,13 @@ function installStatsLabel() {
   if (subtitle) subtitle.textContent = "گزارش‌ها و آمار سامانه";
   if (arrow) arrow.remove();
 
-  button.replaceWith(replacement);
+  // جلوگیری از هر عملکرد قبلی روی عنصر جایگزین.
+  replacement.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+
+  target.replaceWith(replacement);
 }
 
 window.installStatsLabel = installStatsLabel;
