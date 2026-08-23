@@ -14,7 +14,6 @@ function loadApp() {
   script.onload = () => {
     installExactSearch();
 
-    // اصلاحات runtime بعد از app.js بارگذاری می‌شوند.
     const fix = document.createElement("script");
     fix.src = "runtime-fix.js?v=20260823-01";
     fix.onload = () => {
@@ -26,7 +25,7 @@ function loadApp() {
         }
 
         const stats = document.createElement("script");
-        stats.src = "stats-label.js?v=20260823-03";
+        stats.src = "stats-label.js?v=20260823-04";
         stats.onload = () => {
           if (typeof window.installStatsLabel === "function") {
             window.installStatsLabel();
@@ -42,7 +41,7 @@ function loadApp() {
       stageFix.onerror = () => {
         console.error("GolzarStone stage-label-fix.js failed to load.");
         const stats = document.createElement("script");
-        stats.src = "stats-label.js?v=20260823-03";
+        stats.src = "stats-label.js?v=20260823-04";
         stats.onload = () => {
           if (typeof window.installStatsLabel === "function") window.installStatsLabel();
           window.__GOLZAR_MASTER_READY__ = true;
@@ -75,12 +74,6 @@ function normalizeExactValue(value) {
     .replace(/\.0$/, "");
 }
 
-// ------------------------------------------------------------
-// جستجوی دقیق
-// محل مزار Exact است.
-// هیچ فیلدی اجباری نیست؛ جستجوی خالی = کل بانک.
-// ------------------------------------------------------------
-
 async function exactPerformSearch() {
   const get = id => document.getElementById(id);
 
@@ -102,9 +95,7 @@ async function exactPerformSearch() {
   }
 
   const container = get("search-results");
-  if (container) {
-    container.innerHTML = '<div class="loading-message">در حال جستجو...</div>';
-  }
+  if (container) container.innerHTML = '<div class="loading-message">در حال جستجو...</div>';
 
   const results = [];
   const PAGE = 1000;
@@ -130,7 +121,6 @@ async function exactPerformSearch() {
 
       const batch = data || [];
       results.push(...batch);
-
       if (batch.length < PAGE) break;
       from += PAGE;
     }
@@ -144,22 +134,12 @@ async function exactPerformSearch() {
       unique.push(record);
     }
 
-    if (typeof lastSearchResults !== "undefined") {
-      lastSearchResults = unique;
-    }
-
-    if (typeof renderSearchResults === "function") {
-      renderSearchResults(unique);
-    }
+    if (typeof lastSearchResults !== "undefined") lastSearchResults = unique;
+    if (typeof renderSearchResults === "function") renderSearchResults(unique);
   } catch (error) {
     console.error("Exact search error:", error);
     if (container) {
-      container.innerHTML = `
-        <div class="error-message">
-          جستجو انجام نشد.<br><br>
-          ${typeof escapeHtml === "function" ? escapeHtml(error.message || String(error)) : (error.message || String(error))}
-        </div>
-      `;
+      container.innerHTML = `<div class="error-message">جستجو انجام نشد.<br><br>${typeof escapeHtml === "function" ? escapeHtml(error.message || String(error)) : (error.message || String(error))}</div>`;
     }
   }
 }
