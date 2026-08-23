@@ -132,22 +132,69 @@ async function showStatistics(){
 
 function installStatsLabel(){
   statsInjectStyles();
-  const replace=()=>{
-    const target=Array.from(document.querySelectorAll("button,a,div")).find(el=>el.querySelector?.(".button-text strong")?.textContent.trim()==="تست اتصال");
-    if(!target)return false;
-    if(target.dataset.golzarStatsButton==="1")return true;
-    const r=target.cloneNode(true); r.removeAttribute("id"); r.removeAttribute("href"); r.removeAttribute("onclick"); r.removeAttribute("role"); r.removeAttribute("tabindex"); r.dataset.golzarStatsButton="1"; r.style.cursor="pointer";
-    r.querySelector(".icon")?.replaceChildren(document.createTextNode("📊"));
-    const t=r.querySelector(".button-text strong"), sub=r.querySelector(".button-text small"); if(t)t.textContent="گزارش‌های آماری"; if(sub)sub.textContent="گزارش‌ها و آمار سامانه"; r.querySelector(".button-arrow")?.remove();
-    r.addEventListener("click",async e=>{e.preventDefault();e.stopImmediatePropagation();if(currentAppPage!=="home")return;window.history.pushState({golzarApp:true,page:"statistics"},"",window.location.href);currentAppPage="statistics";await showStatistics();},true);
-    target.replaceWith(r); return true;
+
+  const findStatsTarget = () => {
+    return Array.from(document.querySelectorAll("button,a,div")).find(el => {
+      const strong = el.querySelector?.(".button-text strong");
+      const text = strong?.textContent.trim();
+      return text === "تست اتصال" || text === "گزارش‌های آماری";
+    });
   };
+
+  const replace = () => {
+    const target = findStatsTarget();
+    if (!target) return false;
+    if (target.dataset.golzarStatsButton === "1") return true;
+
+    let button = target;
+    const strong = target.querySelector?.(".button-text strong");
+    const isOldTestButton = strong?.textContent.trim() === "تست اتصال";
+
+    if (isOldTestButton) {
+      button = target.cloneNode(true);
+      button.removeAttribute("id");
+      button.removeAttribute("href");
+      button.removeAttribute("onclick");
+      button.removeAttribute("role");
+      button.removeAttribute("tabindex");
+      target.replaceWith(button);
+    }
+
+    button.dataset.golzarStatsButton = "1";
+    button.style.cursor = "pointer";
+    button.querySelector(".icon")?.replaceChildren(document.createTextNode("📊"));
+
+    const t = button.querySelector(".button-text strong");
+    const sub = button.querySelector(".button-text small");
+    if (t) t.textContent = "گزارش‌های آماری";
+    if (sub) sub.textContent = "گزارش‌ها و آمار سامانه";
+    button.querySelector(".button-arrow")?.remove();
+
+    button.addEventListener("click", async e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (currentAppPage !== "home") return;
+      window.history.pushState({golzarApp:true,page:"statistics"},"",window.location.href);
+      currentAppPage = "statistics";
+      await showStatistics();
+    }, true);
+
+    return true;
+  };
+
   replace();
-  if(!window.__GOLZAR_STATS_OBSERVER__){const observer=new MutationObserver(replace);observer.observe(document.querySelector(".app")||document.body,{childList:true,subtree:true});window.__GOLZAR_STATS_OBSERVER__=observer;}
+  if (!window.__GOLZAR_STATS_OBSERVER__) {
+    const observer = new MutationObserver(replace);
+    observer.observe(document.querySelector(".app") || document.body, {childList:true,subtree:true});
+    window.__GOLZAR_STATS_OBSERVER__ = observer;
+  }
 }
 
 // app.js قد صفحه statistics را به home برگرداند؛ این listener آن state را تصحیح می‌کند.
-window.addEventListener("popstate",e=>{if(e.state?.golzarApp&&e.state.page==="statistics")showStatistics();});
+window.addEventListener("popstate", e => {
+  if (e.state?.golzarApp && e.state.page === "statistics") showStatistics();
+});
 
-window.installStatsLabel=installStatsLabel;
-window.showStatistics=showStatistics;
+// عمداً توابع آمار به window صادر می‌شوند تا loader و تست مرورگر بتوانند آن‌ها را ببینند.
+window.installStatsLabel = installStatsLabel;
+window.showStatistics = showStatistics;
