@@ -7,15 +7,73 @@
     <meta name="description" content="سامانه مدیریت و پایش سنگ مزار گلزار شهدای تهران">
     <title>گلزار شهدای تهران | سامانه مدیریت و پایش سنگ مزار</title>
     <style>html,body{margin:0;padding:0;min-height:100%;background:#f4f7f5}body{overflow-x:hidden}</style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- کتابخانه‌ها قبل از app.js و با مسیر پشتیبان -->
+    <script>
+    (function () {
+      function loadScript(primary, fallback, done) {
+        var s = document.createElement("script");
+        s.src = primary;
+        s.onload = done;
+        s.onerror = function () {
+          console.warn("Primary CDN failed, trying fallback:", primary);
+          var f = document.createElement("script");
+          f.src = fallback;
+          f.onload = done;
+          f.onerror = function () {
+            console.error("Library failed to load:", primary, fallback);
+            done(new Error("Library load failed"));
+          };
+          document.head.appendChild(f);
+        };
+        document.head.appendChild(s);
+      }
+
+      loadScript(
+        "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js",
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
+        function (supabaseError) {
+          if (supabaseError) return;
+          loadScript(
+            "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js",
+            "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+            function (xlsxError) {
+              if (xlsxError) return;
+              var ready = document.createElement("script");
+              ready.src = "master-loader.js?v=20260823-07";
+              document.body.appendChild(ready);
+            }
+          );
+        }
+      );
+    })();
+    </script>
 </head>
 <body>
 <div class="app"></div>
-<script src="master-loader.js?v=20260823-06"></script>
-<script src="version-label.js?v=20260823-02"></script>
+<script src="version-label.js?v=20260823-03"></script>
 <script>
-(function(){let a=0,t=setInterval(function(){a++;if(window.__GOLZAR_MASTER_READY__===true){clearInterval(t);try{if(typeof window.initializeHistory==="function")window.initializeHistory();if(typeof window.applyAppStyles==="function")window.applyAppStyles();if(typeof window.showHome==="function")window.showHome();if(typeof window.installStatsLabel==="function")window.installStatsLabel();if(typeof window.installVersionLabel==="function")window.installVersionLabel()}catch(e){console.error("GolzarStone app startup error:",e)}}if(a>=300){clearInterval(t);console.error("GolzarStone app startup timeout.")}},100)})();
+(function(){
+  let attempts = 0;
+  const timer = setInterval(function(){
+    attempts++;
+    if(window.__GOLZAR_MASTER_READY__ === true){
+      clearInterval(timer);
+      try{
+        // initializeHistory عمداً از اینجا حذف شده است؛
+        // master/app مسیر تاریخچه را خودشان مدیریت می‌کنند.
+        if(typeof window.applyAppStyles === "function") window.applyAppStyles();
+        if(typeof window.showHome === "function") window.showHome();
+        if(typeof window.installStatsLabel === "function") window.installStatsLabel();
+        if(typeof window.installVersionLabel === "function") window.installVersionLabel();
+      }catch(e){ console.error("GolzarStone app startup error:",e); }
+    }
+    if(attempts >= 300){
+      clearInterval(timer);
+      console.error("GolzarStone app startup timeout.");
+    }
+  },100);
+})();
 </script>
 </body>
 </html>
