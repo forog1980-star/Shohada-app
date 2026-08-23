@@ -26,7 +26,7 @@ function loadApp() {
         }
 
         const stats = document.createElement("script");
-        stats.src = "stats-label.js?v=20260823-02";
+        stats.src = "stats-label.js?v=20260823-03";
         stats.onload = () => {
           if (typeof window.installStatsLabel === "function") {
             window.installStatsLabel();
@@ -42,7 +42,7 @@ function loadApp() {
       stageFix.onerror = () => {
         console.error("GolzarStone stage-label-fix.js failed to load.");
         const stats = document.createElement("script");
-        stats.src = "stats-label.js?v=20260823-02";
+        stats.src = "stats-label.js?v=20260823-03";
         stats.onload = () => {
           if (typeof window.installStatsLabel === "function") window.installStatsLabel();
           window.__GOLZAR_MASTER_READY__ = true;
