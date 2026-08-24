@@ -53,11 +53,17 @@ function pct(value, total) {
 function barChart() {
   const max = Math.max(...STATS.pieces.map(p => p.requests));
   return `
+    <div class="chart-explanation">
+      <div class="chart-definition"><strong>این نمودار چه چیزی را نشان می‌دهد؟</strong><span>تعداد درخواست‌های کار عمرانی ثبت‌شده در هر قطعه. ارتفاع و عدد بالای هر ستون، تعداد درخواست همان قطعه را نشان می‌دهد؛ این اعداد «تعداد مزار» نیستند.</span></div>
+      <div class="chart-legend" aria-label="راهنمای رنگ نمودار">
+        ${STATS.pieces.map(p => `<span><i class="piece-color piece-${p.piece}"></i>قطعه ${fa(p.piece)}</span>`).join("")}
+      </div>
+    </div>
     <div class="bar-chart" aria-label="نمودار درخواست‌های کار عمرانی به تفکیک قطعه">
       ${STATS.pieces.map(p => {
         const height = (p.requests / max) * 100;
         return `
-          <div class="bar-item">
+          <div class="bar-item piece-${p.piece}">
             <strong>${fa(p.requests)}</strong>
             <div class="bar-column"><div class="bar-column-fill" style="height:${height.toFixed(2)}%"></div></div>
             <span>قطعه ${fa(p.piece)}</span>
