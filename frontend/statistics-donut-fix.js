@@ -6,9 +6,10 @@ function donutChart(){
   const total=STATS.trackedOperations;
   const cp=pct(done,total);
   const rp=100-cp;
+  const doneStop=cp.toFixed(3);
   return `<div class="donut-layout">
     <div class="donut-wrap donut-css" role="img" aria-label="نمودار دوناتی وضعیت عملیات: ${fa(cp.toFixed(1))} درصد انجام شده و ${fa(rp.toFixed(1))} درصد باقی مانده">
-      <div class="donut-css-chart" style="--done:${cp.toFixed(3)}%" aria-hidden="true"></div>
+      <div class="donut-css-chart" style="background:conic-gradient(#238b57 0 ${doneStop}%,#e3a64b ${doneStop}% 100%)" aria-hidden="true"></div>
       <div class="donut-center"><strong>${fa(cp.toFixed(1))}٪</strong><span>انجام‌شده</span></div>
     </div>
     <div class="donut-legend">
@@ -19,8 +20,6 @@ function donutChart(){
   </div>`;
 }
 
-// statistics.js also renders on DOMContentLoaded. This listener runs after it,
-// replacing only the donut section with the CSS version above.
 document.addEventListener("DOMContentLoaded",()=>{
   const heading=[...document.querySelectorAll("h2")].find(h=>h.textContent.trim()==="وضعیت عملیات عمرانی");
   if(!heading) return;
