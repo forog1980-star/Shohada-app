@@ -14,14 +14,22 @@ function loadApp() {
   script.onload = () => {
     const searchFix = document.createElement("script");
     searchFix.src = "search-pagination-fix.js?v=20260825-01";
-    searchFix.onload = () => loadExactSearch();
-    searchFix.onerror = () => loadExactSearch();
+    searchFix.onload = () => loadSearchExportFix();
+    searchFix.onerror = () => loadSearchExportFix();
     document.body.appendChild(searchFix);
   };
 
   script.onerror = () => {
     window.__GOLZAR_MASTER_READY__ = true;
   };
+  document.body.appendChild(script);
+}
+
+function loadSearchExportFix() {
+  const script = document.createElement("script");
+  script.src = "search-export-fix.js?v=20260825-01";
+  script.onload = () => loadExactSearch();
+  script.onerror = () => loadExactSearch();
   document.body.appendChild(script);
 }
 
