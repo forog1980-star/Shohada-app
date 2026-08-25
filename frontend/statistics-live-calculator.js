@@ -4,7 +4,9 @@
   const REPAIR_STAGES=["سنگ آماده ارسال به واحد مرمت","سنگ مرمتی آماده","نصب سنگ مرمت شده"];
   const REPLACEMENT_STAGES=["سنگ آماده ارسال به واحد تعویض","سنگ تعویضی آماده","سنگ تعویضی نصب شده"];
   const APPROVED="تأیید شده";
-  const BASELINE_MAX_ID=12507;
+  // این baseline شامل آخرین وضعیت واقعی آمار تا شناسه 12524 است.
+  // رکوردهای جدید از 12525 به بعد به‌صورت Delta اضافه/ویرایش/حذف می‌شوند.
+  const BASELINE_MAX_ID=12524;
   const seenLiveIds=new Set();
   function norm(v){return String(v??"").trim().replace(/ي/g,"ی").replace(/ى/g,"ی").replace(/ك/g,"ک");}
   function typeOf(r){return norm(r?.stone_type??r?.stoneType??r?.operation_type??r?.operationType);}
