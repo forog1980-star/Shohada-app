@@ -12,28 +12,11 @@ function loadApp() {
   script.src = "app.js?v=20260823-01";
 
   script.onload = () => {
-    installExactSearch();
-
-    const fix = document.createElement("script");
-    fix.src = "runtime-fix.js?v=20260823-01";
-    fix.onload = () => {
-      const stats = document.createElement("script");
-      stats.src = "stats-label.js?v=20260825-03";
-      stats.onload = () => {
-        if (typeof window.installStatsLabel === "function") {
-          window.installStatsLabel();
-        }
-        window.__GOLZAR_MASTER_READY__ = true;
-      };
-      stats.onerror = () => {
-        window.__GOLZAR_MASTER_READY__ = true;
-      };
-      document.body.appendChild(stats);
-    };
-    fix.onerror = () => {
-      window.__GOLZAR_MASTER_READY__ = true;
-    };
-    document.body.appendChild(fix);
+    const searchFix = document.createElement("script");
+    searchFix.src = "search-pagination-fix.js?v=20260825-01";
+    searchFix.onload = () => loadRuntimeFix();
+    searchFix.onerror = () => loadRuntimeFix();
+    document.body.appendChild(searchFix);
   };
 
   script.onerror = () => {
@@ -42,12 +25,27 @@ function loadApp() {
   document.body.appendChild(script);
 }
 
-function installExactSearch() {
-  const script = document.createElement("script");
-  script.src = "search-exact.js?v=20260823-01";
-  script.onload = () => loadApp();
-  script.onerror = () => loadApp();
-  document.body.appendChild(script);
+function loadRuntimeFix() {
+  const fix = document.createElement("script");
+  fix.src = "runtime-fix.js?v=20260823-01";
+  fix.onload = () => {
+    const stats = document.createElement("script");
+    stats.src = "stats-label.js?v=20260825-03";
+    stats.onload = () => {
+      if (typeof window.installStatsLabel === "function") {
+        window.installStatsLabel();
+      }
+      window.__GOLZAR_MASTER_READY__ = true;
+    };
+    stats.onerror = () => {
+      window.__GOLZAR_MASTER_READY__ = true;
+    };
+    document.body.appendChild(stats);
+  };
+  fix.onerror = () => {
+    window.__GOLZAR_MASTER_READY__ = true;
+  };
+  document.body.appendChild(fix);
 }
 
 document.addEventListener("DOMContentLoaded", loadApp);
