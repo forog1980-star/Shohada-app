@@ -4,8 +4,8 @@
 document.addEventListener("click", function(event){
   const button = event.target.closest?.("#back-home");
   if (!button) return;
-  if (window.currentAppPage === "new") return;
-  if (typeof goHomeFromNewRecord === "function" && typeof currentAppPage !== "undefined" && currentAppPage === "new") {
+  if (typeof currentAppPage === "undefined" || currentAppPage !== "new") return;
+  if (typeof goHomeFromNewRecord === "function") {
     event.preventDefault();
     event.stopImmediatePropagation();
     goHomeFromNewRecord();
