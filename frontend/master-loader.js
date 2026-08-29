@@ -46,7 +46,7 @@ function loadRuntimeFix() {
   fix.src = "runtime-fix.js?v=20260823-01";
   fix.onload = () => {
     const searchBackFix = document.createElement("script");
-    searchBackFix.src = "search-back-restore-fix.js?v=20260829-01";
+    searchBackFix.src = "search-back-restore-fix.js?v=20260829-02";
     document.body.appendChild(searchBackFix);
 
     const stats = document.createElement("script");
