@@ -86,5 +86,35 @@
     }
   };
 
+  // Delegated handlers survive innerHTML restoration. The original app
+  // attaches listeners directly to each generated card, but restored HTML
+  // creates fresh DOM nodes without those listeners.
+  document.addEventListener("click", function (event) {
+    const target = event.target;
+
+    const card = target?.closest?.(".record-card");
+    if (card && card.closest("#search-results")) {
+      const idPrefix = "record-summary-";
+      if (card.id && card.id.indexOf(idPrefix) === 0) {
+        const id = card.id.slice(idPrefix.length);
+        if (typeof window.showRecordDetail === "function") {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          window.showRecordDetail(id, "search");
+          return;
+        }
+      }
+    }
+
+    const exportButton = target?.closest?.("#export-search-results");
+    if (exportButton && exportButton.closest("#search-results")) {
+      if (typeof window.exportSearchResultsToExcel === "function") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.exportSearchResultsToExcel();
+      }
+    }
+  }, true);
+
   window.__GOLZAR_SEARCH_BACK_RESTORE_READY__ = true;
 })();
