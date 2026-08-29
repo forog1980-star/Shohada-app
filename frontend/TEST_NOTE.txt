@@ -1,0 +1,2 @@
+Search back restore fix verified with local JavaScript syntax check and behavioral unit test.
+No Supabase write performed.
