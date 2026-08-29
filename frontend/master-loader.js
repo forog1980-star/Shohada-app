@@ -39,21 +39,30 @@ function loadRuntimeFix() {
   fix.onload = () => {
     const stats = document.createElement("script");
     stats.src = "stats-label.js?v=20260825-03";
-    stats.onload = () => {
-      if (typeof window.installStatsLabel === "function") {
-        window.installStatsLabel();
-      }
-      window.__GOLZAR_MASTER_READY__ = true;
-    };
-    stats.onerror = () => {
-      window.__GOLZAR_MASTER_READY__ = true;
-    };
+    stats.onload = () => loadSearchBackRestoreFix(stats);
+    stats.onerror = () => loadSearchBackRestoreFix();
     document.body.appendChild(stats);
   };
-  fix.onerror = () => {
+  fix.onerror = () => loadSearchBackRestoreFix();
+  document.body.appendChild(fix);
+}
+
+function loadSearchBackRestoreFix() {
+  const script = document.createElement("script");
+  script.src = "search-back-restore-fix.js?v=20260829-01";
+  script.onload = () => {
+    if (typeof window.installStatsLabel === "function") {
+      window.installStatsLabel();
+    }
     window.__GOLZAR_MASTER_READY__ = true;
   };
-  document.body.appendChild(fix);
+  script.onerror = () => {
+    if (typeof window.installStatsLabel === "function") {
+      window.installStatsLabel();
+    }
+    window.__GOLZAR_MASTER_READY__ = true;
+  };
+  document.body.appendChild(script);
 }
 
 document.addEventListener("DOMContentLoaded", loadApp);
