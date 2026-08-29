@@ -1,0 +1,4 @@
+V2 PWA recovery marker — 2026-08-29
+Base branch: v2-pwa
+Recovery source commit: f40849f90e9bec9e21129319096abd2ccdbcc0a4
+Purpose: recovery point before search-back navigation fix.
