@@ -1,4 +1,0 @@
-Recovery Point for local V2 search navigation fix.
-Base branch: v2-local-next-2026-08-29
-Base commit: 9b84b3dfa5b446d4fc6bef6194baa365cdc8d2d1
-Purpose: preserve rollback point before delegated click fix.
