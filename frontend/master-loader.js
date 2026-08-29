@@ -9,7 +9,7 @@
 
 function loadApp() {
   const script = document.createElement("script");
-  script.src = "app.js?v=20260823-01";
+  script.src = "app.js?v=20260829-01";
 
   script.onload = () => {
     const searchFix = document.createElement("script");
@@ -28,14 +28,6 @@ function loadApp() {
 function loadSearchExportFix() {
   const script = document.createElement("script");
   script.src = "search-export-fix.js?v=20260825-01";
-  script.onload = () => loadExactSearch();
-  script.onerror = () => loadExactSearch();
-  document.body.appendChild(script);
-}
-
-function loadExactSearch() {
-  const script = document.createElement("script");
-  script.src = "search-exact.js?v=20260823-01";
   script.onload = () => loadRuntimeFix();
   script.onerror = () => loadRuntimeFix();
   document.body.appendChild(script);
@@ -43,7 +35,7 @@ function loadExactSearch() {
 
 function loadRuntimeFix() {
   const fix = document.createElement("script");
-  fix.src = "runtime-fix.js?v=20260823-01";
+  fix.src = "runtime-fix.js?v=20260829-01";
   fix.onload = () => {
     const stats = document.createElement("script");
     stats.src = "stats-label.js?v=20260825-03";
