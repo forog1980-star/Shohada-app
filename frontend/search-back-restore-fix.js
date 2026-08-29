@@ -32,8 +32,7 @@
 
   window.performSearch = async function performSearchWithRestoreCache(...args) {
     window.__GOLZAR_SEARCH_FILTERS__ = readFilters();
-    const result = await originalPerformSearch.apply(this, args);
-    return result;
+    return originalPerformSearch.apply(this, args);
   };
 
   window.restoreSearchPage = function restoreSearchPageWithResults() {
