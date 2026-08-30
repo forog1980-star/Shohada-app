@@ -1,0 +1,1 @@
+Recovery Point — before final PWA + search regression hardening. Branch starts from v2-pwa. No Supabase changes.
