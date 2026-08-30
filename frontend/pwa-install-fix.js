@@ -3,33 +3,39 @@
 // GolzarStone / PWA install helper
 // مستقل از هسته برنامه؛ هیچ دسترسی نوشتاری به Supabase ندارد.
 (function installPwaPromptHelper() {
-  const DISMISS_KEY = "golzarstone.pwa.install.dismissed.v1";
+  const INSTALL_STATE_KEY = "golzar_pwa_install_handled_v1";
   let deferredPrompt = null;
   let installButton = null;
-  let lastHomeState = null;
 
   function isStandalone() {
     return window.matchMedia?.("(display-mode: standalone)").matches ||
       window.navigator.standalone === true;
   }
 
-  function isHomePage() {
-    const state = window.history?.state;
-    return !state || state.golzarApp !== true || state.page === "home";
-  }
-
-  function wasDismissed() {
+  function isInstallHandled() {
     try {
-      return localStorage.getItem(DISMISS_KEY) === "1";
+      return localStorage.getItem(INSTALL_STATE_KEY) === "1";
     } catch (_) {
       return false;
     }
   }
 
-  function rememberDismissed() {
+  function markInstallHandled() {
     try {
-      localStorage.setItem(DISMISS_KEY, "1");
-    } catch (_) {}
+      localStorage.setItem(INSTALL_STATE_KEY, "1");
+    } catch (_) {
+      // Storage may be unavailable; installation state can still be detected
+      // through standalone mode or the appinstalled event.
+    }
+  }
+
+  function getCurrentPage() {
+    const page = window.history?.state?.page;
+    return typeof page === "string" ? page : "home";
+  }
+
+  function isHomePage() {
+    return getCurrentPage() === "home";
   }
 
   function removeButton() {
@@ -39,29 +45,17 @@
 
   function showInstallHelp() {
     alert(
-      "برای افزودن برنامه: در Chrome از منوی سه‌نقطه گزینه «افزودن به صفحه اصلی» را انتخاب کنید."
+      "برای نصب برنامه، در Chrome از منوی سه‌نقطه گزینه «افزودن به صفحه اصلی» را انتخاب کنید."
     );
   }
 
-  function canShow() {
-    return !isStandalone() && isHomePage() && !wasDismissed();
-  }
-
-  function syncVisibility() {
-    const home = isHomePage();
-    if (home === lastHomeState) return;
-    lastHomeState = home;
-
-    if (!canShow()) {
-      removeButton();
-      return;
-    }
-
-    createButton();
-  }
-
   function createButton() {
-    if (installButton || !canShow()) return;
+    if (
+      installButton ||
+      isStandalone() ||
+      isInstallHandled() ||
+      !isHomePage()
+    ) return;
 
     installButton = document.createElement("button");
     installButton.type = "button";
@@ -73,6 +67,7 @@
     installButton.style.zIndex = "2147483647";
     installButton.style.display = "flex";
     installButton.style.alignItems = "center";
+    installButton.style.justifyContent = "center";
     installButton.style.gap = "9px";
     installButton.style.padding = "9px 15px";
     installButton.style.border = "1px solid rgba(255,255,255,.32)";
@@ -102,9 +97,7 @@
     installButton.append(icon, label);
 
     installButton.addEventListener("click", async function () {
-      // The user has explicitly interacted with the install control.
-      // Do not show it again on subsequent app visits unless storage is cleared.
-      rememberDismissed();
+      markInstallHandled();
       removeButton();
 
       if (!deferredPrompt) {
@@ -126,6 +119,14 @@
     document.body.appendChild(installButton);
   }
 
+  function syncVisibility() {
+    if (isStandalone() || isInstallHandled() || !isHomePage()) {
+      removeButton();
+      return;
+    }
+    createButton();
+  }
+
   window.addEventListener("beforeinstallprompt", function (event) {
     event.preventDefault();
     deferredPrompt = event;
@@ -135,18 +136,36 @@
 
   window.addEventListener("appinstalled", function () {
     deferredPrompt = null;
-    rememberDismissed();
+    markInstallHandled();
     removeButton();
     window.__GOLZAR_PWA_INSTALLED__ = true;
   });
 
+  const originalPushState = window.history?.pushState;
+  const originalReplaceState = window.history?.replaceState;
+
+  if (typeof originalPushState === "function") {
+    window.history.pushState = function (...args) {
+      const result = originalPushState.apply(this, args);
+      window.setTimeout(syncVisibility, 0);
+      return result;
+    };
+  }
+
+  if (typeof originalReplaceState === "function") {
+    window.history.replaceState = function (...args) {
+      const result = originalReplaceState.apply(this, args);
+      window.setTimeout(syncVisibility, 0);
+      return result;
+    };
+  }
+
   window.addEventListener("popstate", function () {
-    syncVisibility();
+    window.setTimeout(syncVisibility, 0);
   });
 
   function boot() {
-    syncVisibility();
-    window.setInterval(syncVisibility, 400);
+    window.setTimeout(syncVisibility, 0);
   }
 
   if (document.readyState === "loading") {
