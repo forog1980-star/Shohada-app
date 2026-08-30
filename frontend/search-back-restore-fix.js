@@ -86,6 +86,18 @@
     }
   };
 
+  // Restore the cached search screen after the app handles browser/PWA Back.
+  // This stays outside app.js and only runs when history returns to search.
+  window.addEventListener("popstate", function (event) {
+    if (event.state?.golzarApp === true && event.state.page === "search") {
+      window.setTimeout(() => {
+        if (typeof window.restoreSearchPage === "function") {
+          window.restoreSearchPage();
+        }
+      }, 0);
+    }
+  });
+
   // Delegated handlers survive innerHTML restoration. The original app
   // attaches listeners directly to each generated card, but restored HTML
   // creates fresh DOM nodes without those listeners.
