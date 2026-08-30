@@ -1,0 +1,1 @@
+Recovery Point marker — PWA install UI work starts from v2-pwa current state. No Supabase changes.
