@@ -1,0 +1,1 @@
+Recovery Point — final V2 hardening starts here. Base: v2-pwa after verified PWA/search work. No Supabase changes.
