@@ -49,7 +49,7 @@ function loadRuntimeFix() {
 
 function loadSearchBackRestoreFix() {
   const script = document.createElement("script");
-  script.src = "search-back-restore-fix.js?v=20260829-02";
+  script.src = "search-back-restore-fix.js?v=20260829-03";
   script.onload = () => {
     if (typeof window.installStatsLabel === "function") {
       window.installStatsLabel();
