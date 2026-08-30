@@ -1,0 +1,1 @@
+Recovery Point — before combined PWA install visibility/persistence + search-back restore fix. Branch starts from v2-pwa current state. No Supabase changes.
