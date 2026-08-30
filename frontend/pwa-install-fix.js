@@ -16,38 +16,49 @@
     installButton = null;
   }
 
+  function showInstallHelp() {
+    alert(
+      "برای نصب برنامه: از منوی سه‌نقطه Chrome گزینه «افزودن به صفحه اصلی» را انتخاب کنید."
+    );
+  }
+
   function createButton() {
-    if (installButton || isStandalone() || !deferredPrompt) return;
+    if (installButton || isStandalone()) return;
 
     installButton = document.createElement("button");
     installButton.type = "button";
     installButton.textContent = "نصب برنامه";
     installButton.setAttribute("aria-label", "نصب برنامه گلزار شهدا");
     installButton.style.position = "fixed";
+    installButton.style.right = "12px";
     installButton.style.top = "12px";
-    installButton.style.left = "12px";
     installButton.style.zIndex = "2147483647";
-    installButton.style.padding = "9px 14px";
+    installButton.style.padding = "10px 16px";
     installButton.style.border = "0";
     installButton.style.borderRadius = "10px";
     installButton.style.fontFamily = "Tahoma, Arial, sans-serif";
     installButton.style.fontSize = "14px";
+    installButton.style.fontWeight = "700";
     installButton.style.cursor = "pointer";
     installButton.style.boxShadow = "0 3px 12px rgba(0,0,0,.15)";
     installButton.style.background = "#17633d";
     installButton.style.color = "#fff";
 
     installButton.addEventListener("click", async function () {
-      if (!deferredPrompt) return;
+      if (!deferredPrompt) {
+        showInstallHelp();
+        return;
+      }
+
       const promptEvent = deferredPrompt;
       deferredPrompt = null;
-      removeButton();
 
       try {
         await promptEvent.prompt();
         await promptEvent.userChoice;
       } catch (error) {
         console.warn("PWA install prompt failed:", error);
+        showInstallHelp();
       }
     });
 
@@ -58,7 +69,6 @@
     event.preventDefault();
     deferredPrompt = event;
     window.__GOLZAR_PWA_INSTALL_READY__ = true;
-    createButton();
   });
 
   window.addEventListener("appinstalled", function () {
@@ -66,6 +76,16 @@
     removeButton();
     window.__GOLZAR_PWA_INSTALLED__ = true;
   });
+
+  function boot() {
+    createButton();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
 
   window.__GOLZAR_PWA_INSTALL_HELPER_READY__ = true;
 })();
