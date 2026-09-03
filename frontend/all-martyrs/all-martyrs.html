@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="جستجوی مستقل کل شهدا و وضعیت مزارهای ثبت‌شده گلزار">
+  <title>جستجوی کل شهدا | گلزار شهدای تهران</title>
+  <link rel="stylesheet" href="all-martyrs.css?v=20260903-01">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <main class="all-martyrs-page">
+    <header class="all-martyrs-header">
+      <h1>جستجوی کل شهدا</h1>
+      <p>جستجو در اطلاعات شهدای داخل و خارج گلزار؛ شامل شهدای گمنام و رکوردهای غیرشهید (اموات)</p>
+    </header>
+
+    <section class="all-martyrs-panel">
+      <form id="all-martyrs-form" class="all-martyrs-form">
+        <input id="all-martyrs-query" type="search" autocomplete="off" placeholder="عبارت مورد جستجو را وارد کنید…">
+        <select id="all-martyrs-field" aria-label="فیلد جستجو">
+          <option value="all">جستجو در همه فیلدها</option>
+        </select>
+        <button type="submit">جستجو</button>
+      </form>
+      <div id="all-martyrs-status" class="all-martyrs-status">در حال آماده‌سازی داده‌ها…</div>
+      <div id="all-martyrs-error" class="all-martyrs-error" hidden></div>
+      <div id="all-martyrs-output"></div>
+    </section>
+  </main>
+
+  <script src="all-martyrs-normalizer.js?v=20260903-01"></script>
+  <script src="all-martyrs-data.js?v=20260903-01"></script>
+  <script src="all-martyrs-search.js?v=20260903-01"></script>
+  <script src="all-martyrs-ui.js?v=20260903-01"></script>
+  <script>
+    (async function () {
+      const form = document.getElementById("all-martyrs-form");
+      const query = document.getElementById("all-martyrs-query");
+      const field = document.getElementById("all-martyrs-field");
+      const status = document.getElementById("all-martyrs-status");
+      const output = document.getElementById("all-martyrs-output");
+      const error = document.getElementById("all-martyrs-error");
+      let records = [];
+
+      Object.entries(AllMartyrsSearch.FIELDS).forEach(([key, label]) => {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = label;
+        field.appendChild(option);
+      });
+
+      try {
+        if (!window.XLSX) throw new Error("کتابخانه Excel (XLSX) بارگذاری نشده است.");
+        const loaded = await AllMartyrsData.load();
+        records = loaded.records;
+        status.textContent = `داده‌ها آماده است: ${loaded.counts.total.toLocaleString("fa-IR")} رکورد در دو منبع.`;
+        AllMartyrsUI.render(output, [], 0);
+      } catch (e) {
+        console.error("All Martyrs Search load error:", e);
+        status.textContent = "بارگذاری داده‌ها ناموفق بود.";
+        error.hidden = false;
+        error.textContent = e.message || "خطای نامشخص در بارگذاری داده‌ها.";
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (!records.length) return;
+        const result = AllMartyrsSearch.search(records, { query: query.value, field: field.value });
+        AllMartyrsUI.render(output, result, result.length);
+      });
+    })();
+  </script>
+</body>
+</html>
