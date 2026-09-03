@@ -1,56 +1,57 @@
 "use strict";
 
 const AllMartyrsUI = (() => {
-  const TYPE_LABELS = {
-    martyr: "شهید",
-    unknown_martyr: "شهید گمنام",
-    non_martyr: "غیرشهید — اموات"
-  };
+  const TYPE_LABELS = { martyr: "شهید", unknown_martyr: "شهید گمنام", non_martyr: "غیرشهید — اموات" };
+  const MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
 
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+  function escapeHtml(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+  function faDigits(value) { return String(value ?? "").replace(/[0-9]/g, d => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]); }
+  function dateDisplay(date) {
+    if (!date) return "—";
+    const d = date.day || "", m = date.month || "", y = date.year || "";
+    return [d, m, y].filter(Boolean).map(faDigits).join(" / ") || "—";
   }
-
+  function pieceLabel(record) {
+    if (record.source === "outside") return "قطعات عمومی بهشت زهرا";
+    return record.grave_piece ? `قطعه ${faDigits(record.grave_piece)}` : "—";
+  }
+  function graveHtml(record) {
+    return `<div class="all-martyrs-grave"><strong>مزار شهید</strong><span>${escapeHtml(pieceLabel(record))}</span><span>ردیف ${escapeHtml(faDigits(record.grave_row || "—"))}</span><span>شماره ${escapeHtml(faDigits(record.grave_number || "—"))}</span></div>`;
+  }
   function card(record) {
     const fullName = [record.first_name, record.last_name].filter(Boolean).join(" ") || TYPE_LABELS[record.record_type];
-    const father = record.father_name || "—";
-    const birth = record.birth_date.display || "—";
-    const death = record.death_date.display || "—";
-    const location = [record.grave_piece, record.grave_row, record.grave_number].filter(Boolean).join(" / ") || "—";
-
     return `<article class="all-martyrs-card" data-record-id="${escapeHtml(record.id)}">
-      <div class="all-martyrs-card-head">
-        <h3>${escapeHtml(fullName)}</h3>
-        <span class="all-martyrs-type all-martyrs-type-${escapeHtml(record.record_type)}">${escapeHtml(TYPE_LABELS[record.record_type])}</span>
-      </div>
+      <div class="all-martyrs-card-head"><div><small class="all-martyrs-kicker">${escapeHtml(TYPE_LABELS[record.record_type])}</small><h3>${escapeHtml(fullName)}</h3></div><span class="all-martyrs-source">${record.source === "outside" ? "عمومی" : "گلزار"}</span></div>
       <div class="all-martyrs-grid">
-        <div><span>نام پدر</span><strong>${escapeHtml(father)}</strong></div>
+        <div><span>نام پدر</span><strong>${escapeHtml(record.father_name || "—")}</strong></div>
         <div><span>جنسیت</span><strong>${escapeHtml(record.gender || "—")}</strong></div>
-        <div><span>تولد</span><strong>${escapeHtml(birth)}</strong></div>
-        <div><span>شهادت</span><strong>${escapeHtml(death)}</strong></div>
-        <div><span>سن</span><strong>${escapeHtml(record.age_display || "—")}</strong></div>
+        <div><span>تولد</span><strong>${escapeHtml(dateDisplay(record.birth_date))}</strong></div>
+        <div><span>شهادت</span><strong>${escapeHtml(dateDisplay(record.death_date))}</strong></div>
+        <div><span>سن</span><strong>${escapeHtml(faDigits(record.age_display || "—"))}</strong></div>
         <div><span>عملیات / دسته‌بندی</span><strong>${escapeHtml(record.martyrdom_category || "—")}</strong></div>
-        <div><span>محل شهادت</span><strong>${escapeHtml(record.martyrdom_location || "—")}</strong></div>
-        <div><span>مزار</span><strong>${escapeHtml(location)}</strong></div>
       </div>
+      ${graveHtml(record)}
+      <button type="button" class="all-martyrs-detail-button" data-action="detail" data-record-id="${escapeHtml(record.id)}">مشاهده اطلاعات کامل ←</button>
     </article>`;
   }
-
-  function render(container, records, total) {
-    container.innerHTML = `
-      <div class="all-martyrs-result-summary">
-        <strong>تعداد کل نتایج: ${Number(total).toLocaleString("fa-IR")}</strong>
-        <span>نمایش فعلی: ${Number(records.length).toLocaleString("fa-IR")}</span>
-      </div>
-      <div class="all-martyrs-results">
-        ${records.length ? records.map(card).join("") : '<div class="all-martyrs-empty">نتیجه‌ای پیدا نشد.</div>'}
-      </div>`;
+  function render(container, records, total, options = {}) {
+    const canExport = options.canExport !== false;
+    container.innerHTML = `<div class="all-martyrs-result-summary"><div><strong>نتایج جستجو</strong><span>${faDigits(Number(total).toLocaleString("en-US"))} مورد</span></div>${canExport && records.length ? '<button type="button" class="all-martyrs-export" data-action="export">📥 خروجی Excel</button>' : ""}</div><div class="all-martyrs-results">${records.length ? records.map(card).join("") : '<div class="all-martyrs-empty">نتیجه‌ای پیدا نشد.</div>'}</div>`;
   }
-
-  return { render, card, TYPE_LABELS };
+  function detail(container, record) {
+    const fullName = [record.first_name, record.last_name].filter(Boolean).join(" ") || TYPE_LABELS[record.record_type];
+    container.innerHTML = `<section class="all-martyrs-detail"><div class="all-martyrs-detail-head"><div><small>${escapeHtml(TYPE_LABELS[record.record_type])}</small><h2>${escapeHtml(fullName)}</h2></div><span>${escapeHtml(record.source === "outside" ? "قطعات عمومی بهشت زهرا" : "اطلاعات گلزار")}</span></div><div class="all-martyrs-detail-grid">
+      <div><label>نام پدر</label><strong>${escapeHtml(record.father_name || "—")}</strong></div><div><label>جنسیت</label><strong>${escapeHtml(record.gender || "—")}</strong></div>
+      <div><label>تاریخ تولد</label><strong>${escapeHtml(dateDisplay(record.birth_date))}</strong></div><div><label>تاریخ شهادت</label><strong>${escapeHtml(dateDisplay(record.death_date))}</strong></div>
+      <div><label>سن</label><strong>${escapeHtml(faDigits(record.age_display || "—"))}</strong></div><div><label>عملیات / دسته‌بندی شهادت</label><strong>${escapeHtml(record.martyrdom_category || "—")}</strong></div>
+      <div><label>منطقه / محل شهادت</label><strong>${escapeHtml(record.martyrdom_location || "—")}</strong></div><div class="detail-grave">${graveHtml(record)}</div>
+      ${record.description ? `<div class="detail-description"><label>توضیحات</label><p>${escapeHtml(record.description)}</p></div>` : ""}
+    </div><div class="all-martyrs-detail-actions"><button type="button" class="all-martyrs-back" data-action="back">↩ بازگشت به نتایج</button><button type="button" class="all-martyrs-edit" data-action="edit" data-record-id="${escapeHtml(record.id)}">✏️ ویرایش اطلاعات</button></div></section>`;
+  }
+  function edit(container, record) {
+    const fullName = [record.first_name, record.last_name].filter(Boolean).join(" ");
+    const input = (key, label, value, type = "text") => `<label><span>${label}</span><input data-edit-field="${key}" type="${type}" value="${escapeHtml(value)}"></label>`;
+    container.innerHTML = `<section class="all-martyrs-detail"><div class="all-martyrs-detail-head"><div><small>ویرایش اطلاعات</small><h2>${escapeHtml(fullName || TYPE_LABELS[record.record_type])}</h2></div></div><p class="all-martyrs-edit-note">ویرایش در این مرحله فقط در نشست جاری مرورگر نگه‌داری می‌شود؛ منبع Excel و Supabase بدون اجازه شما تغییر نمی‌کند.</p><div class="all-martyrs-edit-grid">${input("first_name", "نام", record.first_name)}${input("last_name", "نام خانوادگی", record.last_name)}${input("father_name", "نام پدر", record.father_name)}${input("gender", "جنسیت", record.gender)}${input("birth_day", "روز تولد", record.birth_date.day)}${input("birth_month", "ماه تولد", record.birth_date.month)}${input("birth_year", "سال تولد", record.birth_date.year)}${input("death_day", "روز شهادت", record.death_date.day)}${input("death_month", "ماه شهادت", record.death_date.month)}${input("death_year", "سال شهادت", record.death_date.year)}${input("martyrdom_category", "عملیات / دسته‌بندی", record.martyrdom_category)}${input("martyrdom_location", "منطقه / محل شهادت", record.martyrdom_location)}${input("grave_piece", "قطعه", record.grave_piece)}${input("grave_row", "ردیف", record.grave_row)}${input("grave_number", "شماره مزار", record.grave_number)}</div><div class="all-martyrs-detail-actions"><button type="button" class="all-martyrs-back" data-action="back">انصراف و بازگشت</button><button type="button" class="all-martyrs-edit" data-action="save-edit" data-record-id="${escapeHtml(record.id)}">ذخیره موقت</button></div></section>`;
+  }
+  return { render, card, detail, edit, TYPE_LABELS, MONTHS, faDigits };
 })();
