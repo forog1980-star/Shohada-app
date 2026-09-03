@@ -23,7 +23,7 @@ const AllMartyrsSearch = (() => {
   const MONTH_OPTIONS = AllMartyrsNormalizer.MONTHS.map((name, index) => ({ value: String(index + 1), label: name }));
   const PIECE_OPTIONS = [
     { value: "", label: "همه قطعات" },
-    ...[17, 24, 26, 27, 28, 29, 40, 53].map(n => ({ value: String(n), label: `قطعه ${n}` })),
+    ...Array.from({ length: 37 }, (_, index) => 17 + index).map(n => ({ value: String(n), label: `قطعه ${n}` })),
     { value: "outside", label: "قطعات عمومی بهشت زهرا" }
   ];
 
