@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="جستجوی مستقل کل شهدا و وضعیت مزارهای ثبت‌شده گلزار">
   <title>جستجوی کل شهدا | گلزار شهدای تهران</title>
-  <link rel="stylesheet" href="all-martyrs.css?v=20260903-01">
+  <link rel="stylesheet" href="all-martyrs.css?v=20260903-02">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -18,55 +18,57 @@
     <section class="all-martyrs-panel">
       <form id="all-martyrs-form" class="all-martyrs-form">
         <input id="all-martyrs-query" type="search" autocomplete="off" placeholder="عبارت مورد جستجو را وارد کنید…">
-        <select id="all-martyrs-field" aria-label="فیلد جستجو">
-          <option value="all">جستجو در همه فیلدها</option>
-        </select>
+        <select id="all-martyrs-field" aria-label="فیلد جستجو"><option value="all">جستجو در همه فیلدها</option></select>
         <button type="submit">جستجو</button>
       </form>
+
+      <div class="all-martyrs-combined">
+        <div class="all-martyrs-combined-head"><strong>جستجوی ترکیبی</strong><button id="all-martyrs-add-filter" type="button">+ افزودن شرط</button></div>
+        <div id="all-martyrs-filters"></div>
+      </div>
+
       <div id="all-martyrs-status" class="all-martyrs-status">در حال آماده‌سازی داده‌ها…</div>
       <div id="all-martyrs-error" class="all-martyrs-error" hidden></div>
       <div id="all-martyrs-output"></div>
     </section>
   </main>
 
-  <script src="all-martyrs-normalizer.js?v=20260903-01"></script>
-  <script src="all-martyrs-data.js?v=20260903-01"></script>
-  <script src="all-martyrs-search.js?v=20260903-01"></script>
-  <script src="all-martyrs-ui.js?v=20260903-01"></script>
+  <script src="all-martyrs-normalizer.js?v=20260903-02"></script>
+  <script src="all-martyrs-data.js?v=20260903-02"></script>
+  <script src="all-martyrs-search.js?v=20260903-02"></script>
+  <script src="all-martyrs-ui.js?v=20260903-02"></script>
   <script>
     (async function () {
-      const form = document.getElementById("all-martyrs-form");
-      const query = document.getElementById("all-martyrs-query");
-      const field = document.getElementById("all-martyrs-field");
-      const status = document.getElementById("all-martyrs-status");
-      const output = document.getElementById("all-martyrs-output");
-      const error = document.getElementById("all-martyrs-error");
+      const form = document.getElementById("all-martyrs-form"), query = document.getElementById("all-martyrs-query"), field = document.getElementById("all-martyrs-field");
+      const filtersBox = document.getElementById("all-martyrs-filters"), addFilter = document.getElementById("all-martyrs-add-filter");
+      const status = document.getElementById("all-martyrs-status"), output = document.getElementById("all-martyrs-output"), error = document.getElementById("all-martyrs-error");
       let records = [];
 
-      Object.entries(AllMartyrsSearch.FIELDS).forEach(([key, label]) => {
-        const option = document.createElement("option");
-        option.value = key;
-        option.textContent = label;
-        field.appendChild(option);
-      });
+      Object.entries(AllMartyrsSearch.FIELDS).forEach(([key, label]) => { const option = document.createElement("option"); option.value = key; option.textContent = label; field.appendChild(option); });
+
+      function addFilterRow() {
+        const row = document.createElement("div"); row.className = "all-martyrs-filter-row";
+        row.innerHTML = `<select aria-label="فیلد شرط">${Object.entries(AllMartyrsSearch.FIELDS).map(([key,label]) => `<option value="${key}">${label}</option>`).join("")}</select><input type="text" aria-label="مقدار شرط" placeholder="مقدار…"><button type="button">حذف</button>`;
+        row.querySelector("button").addEventListener("click", () => row.remove()); filtersBox.appendChild(row);
+      }
+      addFilter.addEventListener("click", addFilterRow);
+
+      function readFilters() {
+        const filters = {};
+        filtersBox.querySelectorAll(".all-martyrs-filter-row").forEach(row => { const key = row.querySelector("select").value, val = row.querySelector("input").value; if (val.trim()) filters[key] = val; });
+        return filters;
+      }
 
       try {
         if (!window.XLSX) throw new Error("کتابخانه Excel (XLSX) بارگذاری نشده است.");
-        const loaded = await AllMartyrsData.load();
-        records = loaded.records;
+        const loaded = await AllMartyrsData.load(); records = loaded.records;
         status.textContent = `داده‌ها آماده است: ${loaded.counts.total.toLocaleString("fa-IR")} رکورد در دو منبع.`;
         AllMartyrsUI.render(output, [], 0);
-      } catch (e) {
-        console.error("All Martyrs Search load error:", e);
-        status.textContent = "بارگذاری داده‌ها ناموفق بود.";
-        error.hidden = false;
-        error.textContent = e.message || "خطای نامشخص در بارگذاری داده‌ها.";
-      }
+      } catch (e) { console.error("All Martyrs Search load error:", e); status.textContent = "بارگذاری داده‌ها ناموفق بود."; error.hidden = false; error.textContent = e.message || "خطای نامشخص در بارگذاری داده‌ها."; }
 
       form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        if (!records.length) return;
-        const result = AllMartyrsSearch.search(records, { query: query.value, field: field.value });
+        event.preventDefault(); if (!records.length) return;
+        const result = AllMartyrsSearch.search(records, { query: query.value, field: field.value, filters: readFilters() });
         AllMartyrsUI.render(output, result, result.length);
       });
     })();
