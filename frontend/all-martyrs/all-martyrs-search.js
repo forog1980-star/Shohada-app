@@ -53,11 +53,17 @@ const AllMartyrsSearch = (() => {
     return AllMartyrsNormalizer.clean(fieldValue(record, field)).includes(q);
   }
 
+  function matchesAllWords(record, query) {
+    const searchable = AllMartyrsNormalizer.searchableText(record);
+    const words = AllMartyrsNormalizer.clean(query).split(/\s+/).filter(Boolean);
+    return words.length > 0 && words.every(word => searchable.includes(word));
+  }
+
   function search(records, { query = "", field = "all", filters = {} } = {}) {
     const q = AllMartyrsNormalizer.clean(query);
     let result = records;
     if (q) {
-      if (field === "all") result = result.filter(record => AllMartyrsNormalizer.searchableText(record).includes(q));
+      if (field === "all") result = result.filter(record => matchesAllWords(record, q));
       else if (FIELDS[field]) result = result.filter(record => matchesField(record, field, q));
     }
     for (const [key, filterValue] of Object.entries(filters)) {
