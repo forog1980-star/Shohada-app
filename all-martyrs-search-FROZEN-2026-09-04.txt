@@ -1,0 +1,5 @@
+Frozen release marker for the independent All Martyrs Search layer.
+
+Final commit: 80b4f47e588e508ee02d43ac7b67d91efbc63f24
+Version: 2.0.2
+Architecture: independent layer; no merge into main.
