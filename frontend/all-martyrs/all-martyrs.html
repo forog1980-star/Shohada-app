@@ -2,22 +2,22 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name="description" content="سامانه مستقل جستجو و مدیریت اطلاعات شهدا"><title>سامانه شهدا | گلزار شهدای تهران</title>
-  <link rel="stylesheet" href="all-martyrs.css?v=20260903-07">
+  <link rel="stylesheet" href="all-martyrs.css?v=20260904-01">
 </head>
 <body><main class="all-martyrs-page all-martyrs-landing">
   <header class="all-martyrs-header">
-    <a class="all-martyrs-back-home" href="../index.html">بازگشت به صفحه اصلی</a>
+    <a class="all-martyrs-back-home" href="../index.html" style="position:absolute;right:0;top:10px;padding:9px 15px;border:1px solid #d6c7b9;border-radius:10px;background:#fff;color:#7b4a22;font-weight:700;">بازگشت</a>
     <h1>سامانه اطلاعات شهدا</h1>
     <p>لطفاً بخش موردنظر خود را انتخاب کنید</p>
   </header>
   <section class="all-martyrs-panel all-martyrs-landing-panel">
     <div class="all-martyrs-main-actions">
       <a class="all-martyrs-main-action search" href="all-martyrs-search.html"><span class="action-icon">⌕</span><span><strong>جستجوی کل شهدا</strong><small>جستجو در اطلاعات شهدای داخل و خارج گلزار</small></span><span class="action-arrow">‹</span></a>
-      <button class="all-martyrs-main-action bulk" type="button" data-entry="bulk"><span class="action-icon">▦</span><span><strong>ورود اطلاعات شهدا به‌صورت جمعی</strong><small>ثبت و ورود گروهی اطلاعات</small></span><span class="action-arrow">‹</span></button>
-      <button class="all-martyrs-main-action single" type="button" data-entry="single"><span class="action-icon">＋</span><span><strong>ورود اطلاعات شهید به‌صورت تکی</strong><small>ثبت اطلاعات یک شهید</small></span><span class="action-arrow">‹</span></button>
+      <button class="all-martyrs-main-action single" type="button" data-entry="single"><span class="action-icon">＋</span><span><strong>افزودن نام تکی</strong><small>افزودن یک نام به اطلاعات شهدا</small></span><span class="action-arrow">‹</span></button>
+      <button class="all-martyrs-main-action bulk" type="button" data-entry="bulk"><span class="action-icon">▦</span><span><strong>افزودن نام گروهی</strong><small>افزودن گروهی اطلاعات شهدا</small></span><span class="action-arrow">‹</span></button>
     </div>
   </section>
 </main>
 <script>
-document.querySelectorAll("[data-entry]").forEach(button=>button.addEventListener("click",()=>alert(button.dataset.entry==="single"?"ورود تکی اطلاعات شهدا در مرحله بعدی فعال می‌شود.":"ورود جمعی اطلاعات شهدا در مرحله بعدی فعال می‌شود.")));
+document.querySelectorAll("[data-entry]").forEach(button=>button.addEventListener("click",()=>alert(button.dataset.entry==="single"?"افزودن نام تکی در مرحله بعدی فعال می‌شود.":"افزودن نام گروهی در مرحله بعدی فعال می‌شود.")));
 </script></body></html>
