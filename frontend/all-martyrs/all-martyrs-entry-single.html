@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="ورود تکی اطلاعات شهید">
   <title>افزودن نام تکی | گلزار شهدای تهران</title>
-  <link rel="stylesheet" href="all-martyrs.css?v=20260905-01">
+  <link rel="stylesheet" href="all-martyrs.css?v=20260905-02">
 </head>
 <body>
 <main class="all-martyrs-page entry-page" id="top">
@@ -63,10 +63,13 @@
 <button class="back-to-top" type="button" aria-label="بازگشت به بالای صفحه" title="بازگشت به بالا">↑</button>
 <script>
 (function(){
-  const form=document.getElementById("single-entry-form"),status=document.getElementById("entry-status");
+  const form=document.getElementById("single-entry-form"),status=document.getElementById("entry-status"),topButton=document.querySelector(".back-to-top");
   form.addEventListener("submit",function(e){e.preventDefault();const required=["first_name","last_name","father_name"],missing=required.filter(id=>!document.getElementById(id).value.trim());if(missing.length){status.textContent="لطفاً نام، نام خانوادگی و نام پدر را تکمیل کنید.";return;}status.textContent="کنترل اولیه فرم با موفقیت انجام شد؛ اطلاعات هنوز ذخیره نشده است.";});
   form.addEventListener("reset",function(){setTimeout(()=>status.textContent="",0)});
-  document.querySelector(".back-to-top").addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+  const updateTopVisibility=()=>topButton.classList.toggle("is-visible",window.scrollY>420);
+  window.addEventListener("scroll",updateTopVisibility,{passive:true});
+  updateTopVisibility();
+  topButton.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
 })();
 </script>
 </body>
