@@ -16,9 +16,6 @@
     style.id = "all-martyrs-home-style";
     style.textContent = `
       .modular-home{direction:rtl;display:grid;gap:18px;margin:4px 0 18px}
-      .modular-home-toolbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:2px}
-      .modular-home-toolbar button{border:1px solid #d7dfdb;background:#fff;border-radius:10px;padding:9px 15px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.04)}
-      .modular-home-refresh{color:#17633d}
       .modular-home-main-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
       .modular-home-main-action{display:flex;align-items:center;gap:14px;min-height:108px;border:1px solid #d6e2dc;border-radius:18px;background:#fff;padding:18px;text-align:right;font:inherit;cursor:pointer;color:#234238;box-shadow:0 7px 22px rgba(23,99,61,.07);transition:transform .15s ease,box-shadow .15s ease}
       .modular-home-main-action:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(23,99,61,.11)}
@@ -87,16 +84,6 @@
 
     const wrapper = document.createElement("div");
     wrapper.className = "modular-home";
-    const toolbar = document.createElement("div");
-    toolbar.className = "modular-home-toolbar";
-    const refresh = document.createElement("button");
-    refresh.type = "button";
-    refresh.className = "modular-home-refresh";
-    refresh.textContent = "تازه‌سازی";
-    refresh.addEventListener("click", () => window.location.reload());
-    toolbar.appendChild(refresh);
-    wrapper.appendChild(toolbar);
-
     const mainActions = document.createElement("div");
     mainActions.className = "modular-home-main-actions";
 
