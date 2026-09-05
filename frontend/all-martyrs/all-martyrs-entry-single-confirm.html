@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تأیید ثبت اولیه | گلزار شهدای تهران</title>
+  <link rel="stylesheet" href="all-martyrs.css?v=20260905-03">
+  <link rel="stylesheet" href="all-martyrs-entry-single.css?v=20260905-03">
+</head>
+<body>
+<main class="all-martyrs-page entry-page single-entry-page" id="top">
+  <header class="all-martyrs-header">
+    <a class="all-martyrs-back-home all-martyrs-back-right" href="all-martyrs-entry-single.html">بازگشت</a>
+    <div class="entry-header-badge">مرحله دوم</div>
+    <h1>تأیید ثبت اولیه</h1>
+    <p>اطلاعات واردشده را یک‌بار دیگر بررسی کنید.</p>
+  </header>
+  <section class="all-martyrs-panel entry-panel">
+    <div class="entry-intro"><div><strong>بازبینی اطلاعات</strong><span>این صفحه برای کنترل اطلاعات قبل از ثبت نهایی طراحی شده است.</span></div><span class="entry-draft-badge">در انتظار تأیید</span></div>
+    <div id="confirm-content"></div>
+    <div class="entry-actions"><button class="entry-secondary" type="button" id="edit-button">ویرایش اطلاعات</button><button class="entry-primary" type="button" id="final-button">تأیید و ثبت نهایی</button></div>
+    <div id="confirm-status" class="entry-status" aria-live="polite"></div>
+    <div class="entry-notice">فعلاً هیچ ثبت نهایی در پایگاه داده انجام نمی‌شود. این مرحله فقط مسیر «ثبت اولیه → تأیید» را آماده می‌کند؛ اتصال به پایگاه داده مستقل بعد از تأیید طراحی انجام خواهد شد.</div>
+  </section>
+</main>
+<button class="back-to-top" type="button" aria-label="بازگشت به بالای صفحه" title="بازگشت به بالا">↑</button>
+<script>
+(function(){
+  const raw=sessionStorage.getItem('golzar_single_entry_pending');
+  const content=document.getElementById('confirm-content'),status=document.getElementById('confirm-status');
+  const topButton=document.querySelector('.back-to-top');
+  if(!raw){content.innerHTML='<div class="entry-empty-confirm">اطلاعات ثبت اولیه پیدا نشد. لطفاً به فرم ثبت نام تکی برگردید.</div>';document.getElementById('final-button').disabled=true;return;}
+  const d=JSON.parse(raw);
+  const item=(label,key)=>`<div class="confirm-item"><span>${label}</span><strong>${d[key]||'—'}</strong></div>`;
+  content.innerHTML=`<div class="confirm-grid">${item('نام','first_name')}${item('نام خانوادگی','last_name')}${item('نام پدر','father_name')}${item('جنسیت','gender')}${item('تاریخ تولد','birth_day')}${item('ماه تولد','birth_month')}${item('سال تولد','birth_year')}${item('تاریخ شهادت','death_day')}${item('ماه شهادت','death_month')}${item('سال شهادت','death_year')}${item('سن محاسبه‌شده','age')}${item('عملیات','martyrdom_operation')}${item('منطقه / محل شهادت','martyrdom_location')}${item('قطعه مزار','grave_piece')}${item('ردیف مزار','grave_row')}${item('شماره مزار','grave_number')}<div class="confirm-item confirm-wide"><span>توضیحات</span><strong>${d.notes||'—'}</strong></div></div>`;
+  document.getElementById('edit-button').onclick=()=>window.location.href='all-martyrs-entry-single.html';
+  document.getElementById('final-button').onclick=()=>{status.textContent='تأیید نهایی فعلاً در حالت طراحی است و هنوز به پایگاه داده متصل نشده است.';status.className='entry-status is-success';};
+  const update=()=>topButton.classList.toggle('is-visible',window.scrollY>420);window.addEventListener('scroll',update,{passive:true});update();topButton.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+})();
+</script>
+</body>
+</html>
