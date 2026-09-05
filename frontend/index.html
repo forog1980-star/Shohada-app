@@ -17,9 +17,44 @@
 <script src="master-loader.js?v=20260823-04"></script>
 <script src="version-label.js?v=20260904-01"></script>
 <script src="pwa-bootstrap.js"></script>
-<script src="all-martyrs-home.js?v=20260904-01"></script>
 <script>
-(function(){let a=0,t=setInterval(function(){a++;if(window.__GOLZAR_MASTER_READY__===true){clearInterval(t);try{if(typeof window.initializeHistory==="function")window.initializeHistory();if(typeof window.applyAppStyles==="function")window.applyAppStyles();if(typeof window.showHome==="function")window.showHome();if(typeof window.installStatsLabel==="function")window.installStatsLabel();if(typeof window.installVersionLabel==="function")window.installVersionLabel()}catch(e){console.error("GolzarStone app startup error:",e)}}if(a>=300){clearInterval(t);console.error("GolzarStone app startup timeout.")}},100)})();
+(function(){
+  let attempts=0;
+  const launcherSrc="all-martyrs-home.js?v=20260904-01";
+  const loadLauncher=function(onReady){
+    if(window.__ALL_MARTYRS_HOME_LOADED__===true){onReady();return;}
+    const existing=document.querySelector('script[data-all-martyrs-home="true"]');
+    if(existing){
+      existing.addEventListener("load",onReady,{once:true});
+      existing.addEventListener("error",onReady,{once:true});
+      return;
+    }
+    const script=document.createElement("script");
+    script.src=launcherSrc;
+    script.dataset.allMartyrsHome="true";
+    script.onload=()=>{window.__ALL_MARTYRS_HOME_LOADED__=true;onReady();};
+    script.onerror=()=>{console.error("GolzarStone launcher load failed:",launcherSrc);onReady();};
+    document.body.appendChild(script);
+  };
+  const start=function(){
+    if(window.__GOLZAR_MASTER_READY__!==true){
+      attempts++;
+      if(attempts<300){setTimeout(start,100);return;}
+      console.error("GolzarStone app startup timeout.");
+      return;
+    }
+    loadLauncher(function(){
+      try{
+        if(typeof window.initializeHistory==="function")window.initializeHistory();
+        if(typeof window.applyAppStyles==="function")window.applyAppStyles();
+        if(typeof window.showHome==="function")window.showHome();
+        if(typeof window.installStatsLabel==="function")window.installStatsLabel();
+        if(typeof window.installVersionLabel==="function")window.installVersionLabel();
+      }catch(e){console.error("GolzarStone app startup error:",e)}
+    });
+  };
+  start();
+})();
 </script>
 </body>
 </html>
