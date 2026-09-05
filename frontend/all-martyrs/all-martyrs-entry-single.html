@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="ورود تکی اطلاعات شهید">
+  <title>افزودن نام تکی | گلزار شهدای تهران</title>
+  <link rel="stylesheet" href="all-martyrs.css?v=20260905-01">
+</head>
+<body>
+<main class="all-martyrs-page entry-page" id="top">
+  <header class="all-martyrs-header">
+    <a class="all-martyrs-back-home all-martyrs-back-right" href="all-martyrs.html">بازگشت</a>
+    <h1>افزودن نام تکی</h1>
+    <p>ثبت اطلاعات یک شهید با کنترل اولیه فرم</p>
+  </header>
+  <section class="all-martyrs-panel entry-panel">
+    <form id="single-entry-form" novalidate>
+      <section class="entry-section">
+        <h2 class="entry-section-title">مشخصات فردی</h2>
+        <div class="entry-grid">
+          <div class="entry-field"><label for="first_name">نام *</label><input id="first_name" required></div>
+          <div class="entry-field"><label for="last_name">نام خانوادگی *</label><input id="last_name" required></div>
+          <div class="entry-field"><label for="father_name">نام پدر *</label><input id="father_name" required></div>
+          <div class="entry-field"><label for="gender">جنسیت</label><select id="gender"><option value="">انتخاب کنید</option><option>مرد</option><option>زن</option></select></div>
+          <div class="entry-field"><label for="birth_day">روز تولد</label><input id="birth_day" inputmode="numeric"></div>
+          <div class="entry-field"><label for="birth_month">ماه تولد</label><input id="birth_month" inputmode="numeric"></div>
+          <div class="entry-field"><label for="birth_year">سال تولد</label><input id="birth_year" inputmode="numeric"></div>
+          <div class="entry-field"><label for="death_day">روز شهادت</label><input id="death_day" inputmode="numeric"></div>
+          <div class="entry-field"><label for="death_month">ماه شهادت</label><input id="death_month" inputmode="numeric"></div>
+          <div class="entry-field"><label for="death_year">سال شهادت</label><input id="death_year" inputmode="numeric"></div>
+          <div class="entry-field"><label for="age">سن</label><input id="age" inputmode="numeric"></div>
+        </div>
+      </section>
+
+      <section class="entry-section">
+        <h2 class="entry-section-title">اطلاعات شهادت</h2>
+        <div class="entry-grid">
+          <div class="entry-field wide"><label for="martyrdom_category">عملیات / دسته‌بندی شهادت</label><input id="martyrdom_category"></div>
+          <div class="entry-field wide"><label for="martyrdom_location">منطقه / محل شهادت</label><input id="martyrdom_location"></div>
+        </div>
+      </section>
+
+      <section class="entry-section">
+        <h2 class="entry-section-title">مشخصات مزار</h2>
+        <div class="entry-grid">
+          <div class="entry-field"><label for="grave_piece">قطعه مزار</label><input id="grave_piece"></div>
+          <div class="entry-field"><label for="grave_row">ردیف مزار</label><input id="grave_row"></div>
+          <div class="entry-field"><label for="grave_number">شماره مزار</label><input id="grave_number"></div>
+          <div class="entry-field full"><label for="notes">توضیحات</label><textarea id="notes" placeholder="توضیحات تکمیلی، در صورت نیاز…"></textarea></div>
+        </div>
+      </section>
+
+      <div class="entry-actions">
+        <button class="entry-primary" type="submit">بررسی اطلاعات</button>
+        <button class="entry-secondary" type="reset">پاک کردن فرم</button>
+      </div>
+      <div id="entry-status" class="entry-status" aria-live="polite"></div>
+      <div class="entry-notice">این مرحله فقط طراحی و کنترل اولیه فرم است. تا زمان اتصال رسمی این ماژول به پایگاه داده مستقل «کل شهدا»، هیچ رکوردی در Supabase یا داده اصلی ذخیره نمی‌شود.</div>
+    </form>
+  </section>
+</main>
+<button class="back-to-top" type="button" aria-label="بازگشت به بالای صفحه" title="بازگشت به بالا">↑</button>
+<script>
+(function(){
+  const form=document.getElementById("single-entry-form"),status=document.getElementById("entry-status");
+  form.addEventListener("submit",function(e){e.preventDefault();const required=["first_name","last_name","father_name"],missing=required.filter(id=>!document.getElementById(id).value.trim());if(missing.length){status.textContent="لطفاً نام، نام خانوادگی و نام پدر را تکمیل کنید.";return;}status.textContent="کنترل اولیه فرم با موفقیت انجام شد؛ اطلاعات هنوز ذخیره نشده است.";});
+  form.addEventListener("reset",function(){setTimeout(()=>status.textContent="",0)});
+  document.querySelector(".back-to-top").addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+})();
+</script>
+</body>
+</html>
