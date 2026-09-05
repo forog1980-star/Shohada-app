@@ -8,8 +8,8 @@
   const toInt=id=>{const raw=value(id); if(!/^\d+$/.test(raw))return null; const n=Number(raw); return Number.isInteger(n)?n:null};
 
   const dateRules={
-    birth_day:{min:1,max:31}, birth_month:{min:1,max:12}, birth_year:{min:1300,max:1405},
-    death_day:{min:1,max:31}, death_month:{min:1,max:12}, death_year:{min:1300,max:1405}
+    birth_day:{min:1,max:31}, birth_month:{min:1,max:12}, birth_year:{min:1300,max:1450},
+    death_day:{min:1,max:31}, death_month:{min:1,max:12}, death_year:{min:1300,max:1450}
   };
 
   function calculateAge(){
