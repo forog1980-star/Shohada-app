@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="ثبت تکی اطلاعات شهید">
+  <meta name="description" content="ثبت اولیه اطلاعات یک شهید">
   <title>افزودن نام تکی | گلزار شهدای تهران</title>
   <link rel="stylesheet" href="all-martyrs.css?v=20260905-03">
-  <link rel="stylesheet" href="all-martyrs-entry-single.css?v=20260905-01">
+  <link rel="stylesheet" href="all-martyrs-entry-single.css?v=20260905-02">
 </head>
 <body>
 <main class="all-martyrs-page entry-page single-entry-page" id="top">
@@ -14,82 +14,40 @@
     <a class="all-martyrs-back-home all-martyrs-back-right" href="all-martyrs.html">بازگشت</a>
     <div class="entry-header-badge">ثبت اطلاعات شهید</div>
     <h1>افزودن نام تکی</h1>
-    <p>ثبت اطلاعات یک شهید و کنترل اولیه پیش از ذخیره‌سازی</p>
+    <p>ثبت اولیه اطلاعات یک شهید و ارسال برای تأیید</p>
   </header>
-
   <section class="all-martyrs-panel entry-panel">
-    <div class="entry-intro">
-      <div>
-        <strong>فرم ثبت نام تکی</strong>
-        <span>اطلاعات را با دقت وارد کنید. موارد ستاره‌دار الزامی هستند.</span>
-      </div>
-      <span class="entry-draft-badge">مرحله طراحی و کنترل اولیه</span>
-    </div>
-
+    <div class="entry-intro"><div><strong>فرم ثبت نام تکی</strong><span>اطلاعات را با دقت وارد کنید. موارد ستاره‌دار الزامی هستند.</span></div><span class="entry-draft-badge">ثبت اولیه ← تأیید نهایی</span></div>
     <form id="single-entry-form" novalidate>
-      <section class="entry-section">
-        <div class="entry-section-heading">
-          <span class="entry-section-number">۱</span>
-          <div><h2 class="entry-section-title">مشخصات اصلی شهید</h2><p>اطلاعات هویتی پایه را وارد کنید.</p></div>
-        </div>
-        <div class="entry-grid">
-          <div class="entry-field required-field"><label for="first_name">نام <b>*</b></label><input id="first_name" autocomplete="given-name" required></div>
-          <div class="entry-field required-field"><label for="last_name">نام خانوادگی <b>*</b></label><input id="last_name" autocomplete="family-name" required></div>
-          <div class="entry-field required-field"><label for="father_name">نام پدر <b>*</b></label><input id="father_name" required></div>
-          <div class="entry-field"><label for="gender">جنسیت</label><select id="gender"><option value="">انتخاب کنید</option><option>مرد</option><option>زن</option></select></div>
-        </div>
-      </section>
-
-      <section class="entry-section">
-        <div class="entry-section-heading">
-          <span class="entry-section-number">۲</span>
-          <div><h2 class="entry-section-title">تاریخ‌های تولد و شهادت</h2><p>در صورت وجود اطلاعات، تاریخ‌ها و سن را وارد کنید.</p></div>
-        </div>
-        <div class="entry-date-groups">
-          <div class="entry-date-group"><h3>تاریخ تولد</h3><div class="entry-grid entry-grid-date"><div class="entry-field"><label for="birth_day">روز</label><input id="birth_day" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="birth_month">ماه</label><input id="birth_month" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="birth_year">سال</label><input id="birth_year" inputmode="numeric" maxlength="4"></div></div></div>
-          <div class="entry-date-group"><h3>تاریخ شهادت</h3><div class="entry-grid entry-grid-date"><div class="entry-field"><label for="death_day">روز</label><input id="death_day" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="death_month">ماه</label><input id="death_month" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="death_year">سال</label><input id="death_year" inputmode="numeric" maxlength="4"></div></div></div>
-          <div class="entry-field entry-age-field"><label for="age">سن</label><input id="age" inputmode="numeric" maxlength="3"></div>
-        </div>
-      </section>
-
-      <section class="entry-section">
-        <div class="entry-section-heading"><span class="entry-section-number">۳</span><div><h2 class="entry-section-title">اطلاعات شهادت</h2><p>اطلاعات مرتبط با عملیات و محل شهادت را وارد کنید.</p></div></div>
-        <div class="entry-grid">
-          <div class="entry-field wide"><label for="martyrdom_operation">عملیات</label><input id="martyrdom_operation"></div>
-          <div class="entry-field wide"><label for="martyrdom_category">دسته‌بندی شهادت</label><input id="martyrdom_category"></div>
-          <div class="entry-field full"><label for="martyrdom_location">منطقه / محل شهادت</label><input id="martyrdom_location"></div>
-        </div>
-      </section>
-
-      <section class="entry-section">
-        <div class="entry-section-heading"><span class="entry-section-number">۴</span><div><h2 class="entry-section-title">مشخصات مزار</h2><p>محل مزار را مطابق اطلاعات موجود ثبت کنید.</p></div></div>
-        <div class="entry-grid entry-grave-grid">
-          <div class="entry-field"><label for="grave_piece">قطعه مزار</label><input id="grave_piece" inputmode="numeric"></div>
-          <div class="entry-field"><label for="grave_row">ردیف مزار</label><input id="grave_row" inputmode="numeric"></div>
-          <div class="entry-field"><label for="grave_number">شماره مزار</label><input id="grave_number" inputmode="numeric"></div>
-        </div>
-      </section>
-
-      <section class="entry-section entry-notes-section">
-        <div class="entry-section-heading"><span class="entry-section-number">۵</span><div><h2 class="entry-section-title">توضیحات</h2><p>در صورت نیاز، توضیحات تکمیلی را درج کنید.</p></div></div>
-        <div class="entry-field full"><label for="notes">توضیحات تکمیلی</label><textarea id="notes" placeholder="توضیحات تکمیلی، در صورت نیاز…"></textarea></div>
-      </section>
-
-      <div class="entry-required-note"><b>*</b> تکمیل نام، نام خانوادگی و نام پدر برای بررسی اولیه الزامی است.</div>
-      <div class="entry-actions"><button class="entry-primary" type="submit">بررسی اطلاعات</button><button class="entry-secondary" type="reset">پاک کردن فرم</button></div>
+      <section class="entry-section"><div class="entry-section-heading"><span class="entry-section-number">۱</span><div><h2 class="entry-section-title">مشخصات اصلی شهید</h2><p>اطلاعات هویتی پایه را وارد کنید.</p></div></div><div class="entry-grid">
+        <div class="entry-field required-field"><label for="first_name">نام <b>*</b></label><input id="first_name" autocomplete="given-name" required></div>
+        <div class="entry-field required-field"><label for="last_name">نام خانوادگی <b>*</b></label><input id="last_name" autocomplete="family-name" required></div>
+        <div class="entry-field required-field"><label for="father_name">نام پدر <b>*</b></label><input id="father_name" required></div>
+        <div class="entry-field"><label for="gender">جنسیت</label><select id="gender"><option value="">انتخاب کنید</option><option>مرد</option><option>زن</option></select></div>
+      </div></section>
+      <section class="entry-section"><div class="entry-section-heading"><span class="entry-section-number">۲</span><div><h2 class="entry-section-title">تاریخ‌های تولد و شهادت</h2><p>تاریخ‌ها را در صورت وجود وارد کنید؛ سن توسط سیستم محاسبه می‌شود.</p></div></div><div class="entry-date-groups">
+        <div class="entry-date-group"><h3>تاریخ تولد</h3><div class="entry-grid entry-grid-date"><div class="entry-field"><label for="birth_day">روز</label><input id="birth_day" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="birth_month">ماه</label><input id="birth_month" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="birth_year">سال</label><input id="birth_year" inputmode="numeric" maxlength="4"></div></div></div>
+        <div class="entry-date-group"><h3>تاریخ شهادت</h3><div class="entry-grid entry-grid-date"><div class="entry-field"><label for="death_day">روز</label><input id="death_day" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="death_month">ماه</label><input id="death_month" inputmode="numeric" maxlength="2"></div><div class="entry-field"><label for="death_year">سال</label><input id="death_year" inputmode="numeric" maxlength="4"></div></div></div>
+        <div class="entry-field entry-age-field"><label for="age">سن</label><input id="age" inputmode="numeric" readonly aria-readonly="true" placeholder="محاسبه خودکار"></div>
+      </div></section>
+      <section class="entry-section"><div class="entry-section-heading"><span class="entry-section-number">۳</span><div><h2 class="entry-section-title">اطلاعات شهادت</h2><p>اطلاعات مرتبط با عملیات و محل شهادت را وارد کنید.</p></div></div><div class="entry-grid">
+        <div class="entry-field wide"><label for="martyrdom_operation">عملیات</label><input id="martyrdom_operation"></div>
+        <div class="entry-field full"><label for="martyrdom_location">منطقه / محل شهادت</label><input id="martyrdom_location"></div>
+      </div></section>
+      <section class="entry-section"><div class="entry-section-heading"><span class="entry-section-number">۴</span><div><h2 class="entry-section-title">مشخصات مزار <b class="entry-required-mark">*</b></h2><p>هر سه مشخصه مزار برای ثبت اولیه الزامی است.</p></div></div><div class="entry-grid entry-grave-grid">
+        <div class="entry-field required-field"><label for="grave_piece">قطعه مزار <b>*</b></label><input id="grave_piece" inputmode="numeric" required></div>
+        <div class="entry-field required-field"><label for="grave_row">ردیف مزار <b>*</b></label><input id="grave_row" inputmode="numeric" required></div>
+        <div class="entry-field required-field"><label for="grave_number">شماره مزار <b>*</b></label><input id="grave_number" inputmode="numeric" required></div>
+      </div></section>
+      <section class="entry-section entry-notes-section"><div class="entry-section-heading"><span class="entry-section-number">۵</span><div><h2 class="entry-section-title">توضیحات</h2><p>در صورت نیاز، توضیحات تکمیلی را درج کنید.</p></div></div><div class="entry-field full"><label for="notes">توضیحات تکمیلی</label><textarea id="notes" placeholder="توضیحات تکمیلی، در صورت نیاز…"></textarea></div></section>
+      <div class="entry-required-note"><b>*</b> نام، نام خانوادگی، نام پدر و مشخصات کامل مزار برای ثبت اولیه الزامی است.</div>
+      <div class="entry-actions"><button class="entry-primary" type="submit">ثبت اولیه اطلاعات</button><button class="entry-secondary" type="reset">پاک کردن فرم</button></div>
       <div id="entry-status" class="entry-status" aria-live="polite"></div>
-      <div class="entry-notice">این مرحله فقط طراحی و کنترل اولیه فرم است. تا زمان اتصال رسمی این ماژول به پایگاه داده مستقل «کل شهدا»، هیچ رکوردی در Supabase یا داده اصلی ذخیره نمی‌شود.</div>
+      <div class="entry-notice">پس از ثبت اولیه، اطلاعات برای بررسی و تأیید نمایش داده می‌شود. در این مرحله هیچ رکوردی در Supabase یا داده اصلی ذخیره نمی‌شود.</div>
     </form>
   </section>
 </main>
 <button class="back-to-top" type="button" aria-label="بازگشت به بالای صفحه" title="بازگشت به بالا">↑</button>
-<script>
-(function(){
-  const form=document.getElementById("single-entry-form"),status=document.getElementById("entry-status"),topButton=document.querySelector(".back-to-top");
-  form.addEventListener("submit",function(e){e.preventDefault();const required=["first_name","last_name","father_name"],missing=required.filter(id=>!document.getElementById(id).value.trim());if(missing.length){status.textContent="لطفاً نام، نام خانوادگی و نام پدر را تکمیل کنید.";status.className="entry-status is-error";document.getElementById(missing[0]).focus();return;}status.textContent="کنترل اولیه فرم با موفقیت انجام شد؛ اطلاعات هنوز ذخیره نشده است.";status.className="entry-status is-success";});
-  form.addEventListener("reset",function(){setTimeout(function(){status.textContent="";status.className="entry-status";},0)});
-  const updateTopVisibility=()=>topButton.classList.toggle("is-visible",window.scrollY>420);window.addEventListener("scroll",updateTopVisibility,{passive:true});updateTopVisibility();topButton.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
-})();
-</script>
+<script src="all-martyrs-entry-single.js?v=20260905-01"></script>
 </body>
 </html>
