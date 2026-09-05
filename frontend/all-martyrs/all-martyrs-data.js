@@ -2,6 +2,7 @@
 
 const AllMartyrsData = (() => {
   const SOURCE = "https://raw.githubusercontent.com/forog1980-star/Shohada-app/data/all-martyrs-20260904/data/all-martyrs/golzar_martyrs.xlsx";
+  const LOAD_TIMEOUT_MS = 30000;
 
   const SHEETS = {
     golzar: "golzar_martyrs",
@@ -9,15 +10,32 @@ const AllMartyrsData = (() => {
   };
 
   async function readWorkbook(url) {
-    const response = await fetch(`${url}?v=20260904-01`, {
-      cache: "no-store"
-    });
-    if (!response.ok) {
-      throw new Error(`خطا در دریافت فایل داده (${response.status})`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
+    try {
+      const response = await fetch(`${url}?v=20260905-01`, {
+        cache: "no-store",
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        throw new Error(`خطا در دریافت فایل داده (${response.status})`);
+      }
+      const buffer = await response.arrayBuffer();
+      if (!buffer.byteLength) {
+        throw new Error("فایل داده خالی دریافت شد.");
+      }
+      if (typeof XLSX === "undefined") {
+        throw new Error("کتابخانه Excel (XLSX) بارگذاری نشده است.");
+      }
+      return XLSX.read(buffer, { type: "array", cellDates: false });
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        throw new Error("دریافت فایل اطلاعات شهدا بیش از ۳۰ ثانیه طول کشید. اتصال اینترنت یا دسترسی به GitHub را بررسی کنید.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
     }
-    const buffer = await response.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
-    return workbook;
   }
 
   function readSheet(workbook, sheetName) {
