@@ -5,19 +5,47 @@
   const age=document.getElementById('age');
   const topButton=document.querySelector('.back-to-top');
   const value=id=>document.getElementById(id).value.trim();
-  const toInt=id=>{const n=Number(value(id));return Number.isInteger(n)?n:null};
+  const toInt=id=>{const raw=value(id); if(!/^\d+$/.test(raw))return null; const n=Number(raw); return Number.isInteger(n)?n:null};
+
+  const dateRules={
+    birth_day:{min:1,max:31}, birth_month:{min:1,max:12}, birth_year:{min:1300,max:1405},
+    death_day:{min:1,max:31}, death_month:{min:1,max:12}, death_year:{min:1300,max:1405}
+  };
 
   function calculateAge(){
     const by=toInt('birth_year'), dy=toInt('death_year');
-    if(by && dy && dy>=by){
+    if(by!==null && dy!==null && dy>=by){
       age.value=String(dy-by);
       return;
     }
     age.value='';
   }
-  ['birth_year','death_year','birth_day','death_day','birth_month','death_month'].forEach(id=>{
-    document.getElementById(id).addEventListener('input',calculateAge);
-  });
+
+  function validateDateFields(){
+    for(const [id,rule] of Object.entries(dateRules)){
+      const raw=value(id);
+      if(raw==='')continue;
+      if(!/^\d+$/.test(raw))return `فیلد «${document.querySelector(`label[for="${id}"]`).textContent}» فقط باید عدد باشد.`;
+      const n=Number(raw);
+      if(n<rule.min || n>rule.max)return `مقدار «${document.querySelector(`label[for="${id}"]`).textContent}» باید بین ${rule.min} و ${rule.max} باشد.`;
+    }
+
+    const by=toInt('birth_year'), dy=toInt('death_year');
+    if(by!==null && dy!==null && dy<by)return 'سال شهادت نمی‌تواند قبل از سال تولد باشد.';
+
+    return '';
+  }
+
+  function sanitizeDateInput(id,maxLength){
+    const el=document.getElementById(id);
+    el.addEventListener('input',function(){
+      this.value=this.value.replace(/\D/g,'').slice(0,maxLength);
+      calculateAge();
+    });
+  }
+
+  sanitizeDateInput('birth_day',2);sanitizeDateInput('birth_month',2);sanitizeDateInput('birth_year',4);
+  sanitizeDateInput('death_day',2);sanitizeDateInput('death_month',2);sanitizeDateInput('death_year',4);
 
   form.addEventListener('submit',function(e){
     e.preventDefault();
@@ -29,6 +57,19 @@
       document.getElementById(missing[0]).focus();
       return;
     }
+
+    const dateError=validateDateFields();
+    if(dateError){
+      status.textContent=dateError;
+      status.className='entry-status is-error';
+      const firstInvalid=Object.keys(dateRules).find(id=>{
+        const raw=value(id); if(raw==='')return false; const rule=dateRules[id]; const n=Number(raw); return !/^\d+$/.test(raw)||n<rule.min||n>rule.max;
+      });
+      if(firstInvalid)document.getElementById(firstInvalid).focus();
+      else document.getElementById('death_year').focus();
+      return;
+    }
+
     calculateAge();
     const payload={
       first_name:value('first_name'),last_name:value('last_name'),father_name:value('father_name'),gender:value('gender'),
