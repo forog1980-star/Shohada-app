@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="ورود گروهی اطلاعات شهدا">
+  <title>افزودن نام گروهی | گلزار شهدای تهران</title>
+  <link rel="stylesheet" href="all-martyrs.css?v=20260905-01">
+  <script src="./vendor/xlsx.full.min.js"></script>
+</head>
+<body>
+<main class="all-martyrs-page entry-page" id="top">
+  <header class="all-martyrs-header">
+    <a class="all-martyrs-back-home all-martyrs-back-right" href="all-martyrs.html">بازگشت</a>
+    <h1>افزودن نام گروهی</h1>
+    <p>آماده‌سازی و بررسی فایل Excel قبل از ورود اطلاعات</p>
+  </header>
+  <section class="all-martyrs-panel entry-panel">
+    <section class="entry-section">
+      <h2 class="entry-section-title">۱. انتخاب فایل</h2>
+      <div class="bulk-drop">
+        <strong>فایل Excel را انتخاب کنید</strong>
+        <small>فرمت‌های پیشنهادی: XLSX یا XLS — ابتدا فایل بررسی می‌شود و سپس نتیجه به شما نمایش داده خواهد شد.</small>
+        <div class="bulk-file"><input id="bulk-file" type="file" accept=".xlsx,.xls"></div>
+      </div>
+    </section>
+
+    <section class="entry-section">
+      <h2 class="entry-section-title">۲. کنترل ساختار</h2>
+      <div class="bulk-rules">
+        <div class="bulk-rule"><strong>کلید هویتی:</strong> نام + نام خانوادگی + نام پدر</div>
+        <div class="bulk-rule"><strong>موقعیت مزار:</strong> قطعه + ردیف + شماره</div>
+        <div class="bulk-rule"><strong>کنترل اولیه:</strong> ردیف‌های خالی و ستون‌های ضروری مشخص می‌شوند.</div>
+        <div class="bulk-rule"><strong>مرحله فعلی:</strong> فقط پیش‌نمایش و اعتبارسنجی؛ ورود به پایگاه داده هنوز فعال نیست.</div>
+      </div>
+      <div id="bulk-summary" class="bulk-summary"></div>
+      <div id="bulk-status" class="entry-status" aria-live="polite"></div>
+    </section>
+
+    <section class="entry-section">
+      <h2 class="entry-section-title">۳. پیش‌نمایش</h2>
+      <div id="bulk-preview" class="bulk-preview"><div class="all-martyrs-empty">پس از انتخاب فایل، چند ردیف اول برای کنترل نمایش داده می‌شود.</div></div>
+    </section>
+
+    <div class="entry-actions">
+      <button id="bulk-check" class="entry-primary" type="button">بررسی فایل</button>
+      <button id="bulk-clear" class="entry-secondary" type="button">پاک کردن</button>
+    </div>
+    <div class="entry-notice">این مرحله برای طراحی و کنترل اولیه ورود گروهی است. فایل شما به پایگاه داده اصلی یا Supabase ارسال نمی‌شود و قبل از فعال‌سازی ذخیره‌سازی، قواعد نهایی تطبیق و تأیید باید جداگانه تعیین و تست شوند.</div>
+  </section>
+</main>
+<button class="back-to-top" type="button" aria-label="بازگشت به بالای صفحه" title="بازگشت به بالا">↑</button>
+<script>
+(function(){
+  const fileInput=document.getElementById("bulk-file"),check=document.getElementById("bulk-check"),clear=document.getElementById("bulk-clear"),preview=document.getElementById("bulk-preview"),summary=document.getElementById("bulk-summary"),status=document.getElementById("bulk-status");
+  let selectedFile=null;
+  fileInput.addEventListener("change",()=>{selectedFile=fileInput.files[0]||null;status.textContent=selectedFile?`فایل انتخاب شد: ${selectedFile.name}`:"";preview.innerHTML='<div class="all-martyrs-empty">برای مشاهده پیش‌نمایش، «بررسی فایل» را بزنید.</div>';summary.innerHTML=""});
+  function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+  check.addEventListener("click",async()=>{if(!selectedFile){status.textContent="ابتدا یک فایل Excel انتخاب کنید.";return;}if(!window.XLSX){status.textContent="کتابخانه Excel (XLSX) بارگذاری نشده است.";return;}status.textContent="در حال بررسی فایل…";try{const buffer=await selectedFile.arrayBuffer(),book=XLSX.read(buffer,{type:"array"}),sheetName=book.SheetNames[0];if(!sheetName)throw new Error("فایل فاقد Sheet است.");const rows=XLSX.utils.sheet_to_json(book.Sheets[sheetName],{header:1,defval:""}),headers=(rows[0]||[]).map(v=>String(v).trim()),data=rows.slice(1),blank=data.filter(row=>row.every(v=>String(v??"").trim()==="")).length,nonBlank=data.length-blank,displayRows=data.filter(row=>row.some(v=>String(v??"").trim()!=="")).slice(0,10);summary.innerHTML=`<span class="bulk-chip">Sheet: ${escapeHtml(sheetName)}</span><span class="bulk-chip">تعداد ردیف: ${nonBlank.toLocaleString("fa-IR")}</span><span class="bulk-chip">ردیف خالی: ${blank.toLocaleString("fa-IR")}</span>`;if(!headers.length){preview.innerHTML='<div class="all-martyrs-empty">ستون عنوان پیدا نشد.</div>';status.textContent="ساختار فایل نیاز به بررسی دارد.";return;}preview.innerHTML=`<table><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${displayRows.map(row=>`<tr>${headers.map((_,i)=>`<td>${escapeHtml(row[i])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;status.textContent=`فایل خوانده شد؛ ${displayRows.length.toLocaleString("fa-IR")} ردیف اول برای پیش‌نمایش نمایش داده شد. ذخیره‌سازی انجام نشده است.`}catch(error){console.error(error);status.textContent=error.message||"خطا در خواندن فایل.";preview.innerHTML='<div class="all-martyrs-empty">امکان خواندن فایل وجود نداشت.</div>'}});
+  clear.addEventListener("click",()=>{fileInput.value="";selectedFile=null;summary.innerHTML="";status.textContent="";preview.innerHTML='<div class="all-martyrs-empty">پس از انتخاب فایل، چند ردیف اول برای کنترل نمایش داده می‌شود.</div>'});
+  document.querySelector(".back-to-top").addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+})();
+</script>
+</body>
+</html>
