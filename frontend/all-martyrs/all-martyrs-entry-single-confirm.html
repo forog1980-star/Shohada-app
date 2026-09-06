@@ -72,14 +72,14 @@
         notes:d.notes||null,
         status:'pending'
       };
-      const {data,error}=await client.from('new_martyr_registrations').insert(payload).select('id,status,created_at,age').single();
+      const {error}=await client.from('new_martyr_registrations').insert(payload);
       if(error) throw error;
       sessionStorage.removeItem('golzar_single_entry_pending');
-      status.textContent=`ثبت نهایی با موفقیت انجام شد. کد ثبت: ${data.id}`;
+      status.textContent='ثبت نهایی با موفقیت انجام شد و اطلاعات برای بررسی کارشناسی ثبت گردید.';
       status.className='entry-status is-success';
     }catch(error){
       console.error('[Golzar] single registration failed',error);
-      status.textContent='ثبت نهایی انجام نشد. اگر این اولین اجرای اتصال است، فعال بودن ورود موقت امن Supabase را بررسی کنید.';
+      status.textContent='ثبت نهایی انجام نشد. لطفاً دوباره تلاش کنید؛ در صورت تداوم خطا، جزئیات خطای فنی را بررسی می‌کنیم.';
       status.className='entry-status is-error';
       finalButton.disabled=false;
     }
