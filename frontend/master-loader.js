@@ -9,20 +9,35 @@
 
 function loadApp() {
   const script = document.createElement("script");
-  script.src = "app.js?v=20260823-01";
+  script.src = "app.js?v=20260906-final-01";
 
-  script.onload = () => {
-    const searchFix = document.createElement("script");
-    searchFix.src = "search-pagination-fix.js?v=20260825-01";
-    searchFix.onload = () => loadSearchExportFix();
-    searchFix.onerror = () => loadSearchExportFix();
-    document.body.appendChild(searchFix);
-  };
-
-  script.onerror = () => {
-    window.__GOLZAR_MASTER_READY__ = true;
-  };
+  script.onload = () => loadFinalQAFix();
+  script.onerror = () => loadFinalQAFix();
   document.body.appendChild(script);
+}
+
+function loadFinalQAFix() {
+  const fix = document.createElement("script");
+  fix.src = "final-qa-fix-2026-09-06.js?v=20260906-final-01";
+  fix.onload = () => loadNavigationFix();
+  fix.onerror = () => loadNavigationFix();
+  document.body.appendChild(fix);
+}
+
+function loadNavigationFix() {
+  const navigation = document.createElement("script");
+  navigation.src = "navigation-fix.js?v=20260906-final-01";
+  navigation.onload = () => loadSearchFixes();
+  navigation.onerror = () => loadSearchFixes();
+  document.body.appendChild(navigation);
+}
+
+function loadSearchFixes() {
+  const searchFix = document.createElement("script");
+  searchFix.src = "search-pagination-fix.js?v=20260825-01";
+  searchFix.onload = () => loadSearchExportFix();
+  searchFix.onerror = () => loadSearchExportFix();
+  document.body.appendChild(searchFix);
 }
 
 function loadSearchExportFix() {
@@ -44,15 +59,17 @@ function loadExactSearch() {
 function loadRuntimeFix() {
   const fix = document.createElement("script");
   fix.src = "runtime-fix.js?v=20260823-01";
-  fix.onload = () => {
-    const searchBackFix = document.createElement("script");
-    searchBackFix.src = "search-back-restore-fix.js?v=20260906-01";
-    searchBackFix.onload = () => loadStatsLabel();
-    searchBackFix.onerror = () => loadStatsLabel();
-    document.body.appendChild(searchBackFix);
-  };
-  fix.onerror = () => loadStatsLabel();
+  fix.onload = () => loadSearchBackFix();
+  fix.onerror = () => loadSearchBackFix();
   document.body.appendChild(fix);
+}
+
+function loadSearchBackFix() {
+  const searchBackFix = document.createElement("script");
+  searchBackFix.src = "search-back-restore-fix.js?v=20260906-01";
+  searchBackFix.onload = () => loadStatsLabel();
+  searchBackFix.onerror = () => loadStatsLabel();
+  document.body.appendChild(searchBackFix);
 }
 
 function loadStatsLabel() {
