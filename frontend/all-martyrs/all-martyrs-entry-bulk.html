@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="ورود گروهی اطلاعات شهدا">
   <title>افزودن نام گروهی | گلزار شهدای تهران</title>
-  <link rel="stylesheet" href="all-martyrs.css?v=20260906-01">
+  <link rel="stylesheet" href="all-martyrs.css?v=20260906-02">
   <script src="./vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -16,7 +16,6 @@
     <h1>افزودن نام گروهی</h1>
     <p>بارگذاری، کنترل و ثبت گروهی اطلاعات برای بررسی کارشناسی</p>
   </header>
-
   <section class="all-martyrs-panel entry-panel">
     <section class="entry-section">
       <h2 class="entry-section-title">۱. انتخاب فایل</h2>
@@ -26,30 +25,26 @@
         <div class="bulk-file"><input id="bulk-file" type="file" accept=".xlsx,.xls"></div>
       </div>
     </section>
-
     <section class="entry-section">
       <h2 class="entry-section-title">۲. کنترل فایل</h2>
       <div class="bulk-rules">
         <div class="bulk-rule"><strong>خطای مانع ثبت:</strong> قطعه، ردیف یا شماره مزار نباید خالی باشد.</div>
-        <div class="bulk-rule"><strong>هشدار قابل ثبت:</strong> اطلاعات هویتی یا تاریخ‌های ناقص مانع ثبت نیستند.</div>
+        <div class="bulk-rule"><strong>هشدار قابل ثبت:</strong> اطلاعات هویتی، تاریخ‌های ناقص یا مقادیر تاریخی نامعتبر مانع ثبت نیستند.</div>
         <div class="bulk-rule"><strong>تطبیق:</strong> نام + نام خانوادگی + نام پدر و موقعیت مزار برای تشخیص تکراری/مشابه کنترل می‌شوند.</div>
         <div class="bulk-rule"><strong>آینده‌نگر:</strong> وجود ستون‌های اضافی باعث خطا نمی‌شود و برای توسعه‌های بعدی قابل نگاشت است.</div>
       </div>
       <div id="bulk-summary" class="bulk-summary"></div>
       <div id="bulk-status" class="entry-status" aria-live="polite"></div>
     </section>
-
     <section class="entry-section">
       <h2 class="entry-section-title">۳. نتیجه بررسی</h2>
       <div id="bulk-result" class="bulk-result"></div>
       <div id="bulk-issues" class="bulk-issues"></div>
     </section>
-
     <section class="entry-section">
       <h2 class="entry-section-title">۴. پیش‌نمایش</h2>
       <div id="bulk-preview" class="bulk-preview"><div class="all-martyrs-empty">پس از انتخاب فایل، چند ردیف اول برای کنترل نمایش داده می‌شود.</div></div>
     </section>
-
     <div class="entry-actions">
       <button id="bulk-check" class="entry-primary" type="button">بررسی فایل</button>
       <button id="bulk-save" class="entry-primary" type="button" disabled>ثبت برای بررسی کارشناسی</button>
@@ -60,15 +55,12 @@
   </section>
 </main>
 <button class="back-to-top" type="button" aria-label="بازگشت به بالای صفحه" title="بازگشت به بالا">↑</button>
-
 <script>
 (function(){
   'use strict';
-
   const SUPABASE_URL='https://bafrksgdcmglahyrppfy.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY='sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX';
   const client=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-
   const fileInput=document.getElementById('bulk-file');
   const check=document.getElementById('bulk-check');
   const save=document.getElementById('bulk-save');
@@ -80,62 +72,31 @@
   const issues=document.getElementById('bulk-issues');
   const confirmBox=document.getElementById('bulk-confirm');
   const topButton=document.querySelector('.back-to-top');
-
-  const HEADER_MAP={
-    'نام':'name','نام خانوادگی':'family','نام پدر':'father_name','جنسیت':'gender',
-    'روز ولادت':'birth_day','ماه ولادت':'birth_month','سال ولادت':'birth_year',
-    'روز شهادت':'death_day','ماه شهادت':'death_month','سال شهادت':'death_year',
-    'سن':'age','عملیات':'operation','منطقه شهادت':'martyrdom_area',
-    'قطعه مزار':'piece','ردیف مزار':'grave_row','شماره مزار':'grave_number'
-  };
+  const HEADER_MAP={'نام':'name','نام خانوادگی':'family','نام پدر':'father_name','جنسیت':'gender','روز ولادت':'birth_day','ماه ولادت':'birth_month','سال ولادت':'birth_year','روز شهادت':'death_day','ماه شهادت':'death_month','سال شهادت':'death_year','سن':'age','عملیات':'operation','منطقه شهادت':'martyrdom_area','قطعه مزار':'piece','ردیف مزار':'grave_row','شماره مزار':'grave_number'};
   const REQUIRED_HEADERS=['قطعه مزار','ردیف مزار','شماره مزار'];
-  const OPTIONAL_HEADERS=['نام','نام خانوادگی','نام پدر','جنسیت','روز ولادت','ماه ولادت','سال ولادت','روز شهادت','ماه شهادت','سال شهادت','سن','عملیات','منطقه شهادت'];
-
-  let selectedFile=null;
-  let analysis=null;
-  let previousFileFingerprint=null;
-  let duplicateConfirmPending=false;
-
-  function escapeHtml(value){
-    return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
+  let selectedFile=null,analysis=null,previousFileFingerprint=null;
+  function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function clean(value){return String(value??'').trim();}
   function norm(value){return clean(value).replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200d]/g,'').replace(/\s+/g,' ').toLowerCase();}
-  function numberOrNull(value){
-    const s=clean(value).replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
-    if(!s)return null;
-    const n=Number(s);
-    return Number.isFinite(n)?n:null;
-  }
+  function numberOrNull(value){const s=clean(value).replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));if(!s)return null;const n=Number(s);return Number.isFinite(n)?n:null;}
   function fingerprint(file){return `${file.name}|${file.size}|${file.lastModified}`;}
   function locationKey(row){return [norm(row.piece),norm(row.grave_row),norm(row.grave_number)].join('|');}
   function identityKey(row){return [norm(row.name),norm(row.family),norm(row.father_name)].join('|');}
-  function isBlankRow(row){return Object.values(row).every(v=>clean(v)==='');}
   function addIssue(list,type,row,message,field){list.push({type,row,message,field:field||''});}
-  function datePartError(value,min,max,label){
-    const n=numberOrNull(value);
-    if(clean(value)==='')return null;
-    if(n===null||n<min||n>max)return `${label} نامعتبر است`;
-    return null;
-  }
+  function datePartError(value,min,max,label){const n=numberOrNull(value);if(clean(value)==='')return null;if(n===null||n<min||n>max)return `${label} نامعتبر است`;return null;}
 
   function analyzeRows(headers,data,masterRows){
     const missingRequired=REQUIRED_HEADERS.filter(h=>!headers.includes(h));
     if(missingRequired.length)return {fatal:`ستون‌های اجباری فایل پیدا نشدند: ${missingRequired.join('، ')}`,records:[],issues:[],warnings:[],valid:[],fatalFile:true};
-
     const records=[],issues=[],warnings=[],valid=[];
     const seenIdentity=new Map(),seenLocation=new Map();
     const masterIdentity=new Set(),masterLocation=new Set();
     (masterRows||[]).forEach(r=>{masterIdentity.add([norm(r.name),norm(r.lastname),norm(r.father_name)].join('|'));masterLocation.add([norm(r.piece),norm(r.grave_row),norm(r.grave_number)].join('|'));});
-
     data.forEach((raw,index)=>{
       const rowNumber=index+2;
       if(raw.every(v=>clean(v)===''))return;
-      const r={};
-      headers.forEach((h,i)=>{const key=HEADER_MAP[h];if(key)r[key]=clean(raw[i]);});
-      r.excel_row=rowNumber;
-      const rowIssues=[]; const rowWarnings=[];
-
+      const r={};headers.forEach((h,i)=>{const key=HEADER_MAP[h];if(key)r[key]=clean(raw[i]);});r.excel_row=rowNumber;
+      const rowIssues=[],rowWarnings=[];
       if(!r.piece)addIssue(rowIssues,'error',rowNumber,'قطعه مزار خالی است','piece');
       if(!r.grave_row)addIssue(rowIssues,'error',rowNumber,'ردیف مزار خالی است','grave_row');
       if(!r.grave_number)addIssue(rowIssues,'error',rowNumber,'شماره مزار خالی است','grave_number');
@@ -144,167 +105,92 @@
       const birthMonthErr=datePartError(r.birth_month,1,12,'ماه ولادت');
       const deathDayErr=datePartError(r.death_day,1,31,'روز شهادت');
       const deathMonthErr=datePartError(r.death_month,1,12,'ماه شهادت');
-      if(birthDayErr)addIssue(rowIssues,'error',rowNumber,birthDayErr,'birth_day');
-      if(birthMonthErr)addIssue(rowIssues,'error',rowNumber,birthMonthErr,'birth_month');
-      if(deathDayErr)addIssue(rowIssues,'error',rowNumber,deathDayErr,'death_day');
-      if(deathMonthErr)addIssue(rowIssues,'error',rowNumber,deathMonthErr,'death_month');
+      if(birthDayErr)addIssue(rowWarnings,'warning',rowNumber,birthDayErr,'birth_day');
+      if(birthMonthErr)addIssue(rowWarnings,'warning',rowNumber,birthMonthErr,'birth_month');
+      if(deathDayErr)addIssue(rowWarnings,'warning',rowNumber,deathDayErr,'death_day');
+      if(deathMonthErr)addIssue(rowWarnings,'warning',rowNumber,deathMonthErr,'death_month');
       const by=numberOrNull(r.birth_year),dy=numberOrNull(r.death_year);
-      if(r.birth_year && (by===null||by<1))addIssue(rowIssues,'error',rowNumber,'سال ولادت نامعتبر است','birth_year');
-      if(r.death_year && (dy===null||dy<1))addIssue(rowIssues,'error',rowNumber,'سال شهادت نامعتبر است','death_year');
-      if(by!==null&&dy!==null&&dy<by)addIssue(rowIssues,'error',rowNumber,'سال شهادت قبل از سال ولادت است','death_year');
+      if(r.birth_year && (by===null||by<1))addIssue(rowWarnings,'warning',rowNumber,'سال ولادت نامعتبر است','birth_year');
+      if(r.death_year && (dy===null||dy<1))addIssue(rowWarnings,'warning',rowNumber,'سال شهادت نامعتبر است','death_year');
+      if(by!==null&&dy!==null&&dy<by)addIssue(rowWarnings,'warning',rowNumber,'سال شهادت قبل از سال ولادت است','death_year');
 
-      if(!r.name && !r.family)addIssue(rowWarnings,'warning',rowNumber,'نام و نام خانوادگی مشخص نشده؛ تعیین وضعیت: خالی / شهید گمنام / اموات','name');
-      else if(!r.name || !r.family)addIssue(rowWarnings,'warning',rowNumber,'نام یا نام خانوادگی ناقص است؛ لطفاً وضعیت رکورد را بررسی کنید','name');
+      if(!r.name&&!r.family)addIssue(rowWarnings,'warning',rowNumber,'نام و نام خانوادگی مشخص نشده؛ تعیین وضعیت: خالی / شهید گمنام / اموات','name');
+      else if(!r.name||!r.family)addIssue(rowWarnings,'warning',rowNumber,'نام یا نام خانوادگی ناقص است؛ لطفاً وضعیت رکورد را بررسی کنید','name');
       if(!r.father_name)addIssue(rowWarnings,'warning',rowNumber,'نام پدر وارد نشده است','father_name');
-      if((r.birth_day||r.birth_month||r.birth_year) && !(r.birth_day&&r.birth_month&&r.birth_year))addIssue(rowWarnings,'warning',rowNumber,'تاریخ ولادت ناقص است','birth_year');
-      if((r.death_day||r.death_month||r.death_year) && !(r.death_day&&r.death_month&&r.death_year))addIssue(rowWarnings,'warning',rowNumber,'تاریخ شهادت ناقص است','death_year');
+      if((r.birth_day||r.birth_month||r.birth_year)&&!(r.birth_day&&r.birth_month&&r.birth_year))addIssue(rowWarnings,'warning',rowNumber,'تاریخ ولادت ناقص است','birth_year');
+      if((r.death_day||r.death_month||r.death_year)&&!(r.death_day&&r.death_month&&r.death_year))addIssue(rowWarnings,'warning',rowNumber,'تاریخ شهادت ناقص است','death_year');
       if(!r.death_day&&!r.death_month&&!r.death_year)addIssue(rowWarnings,'warning',rowNumber,'تاریخ شهادت وارد نشده است','death_year');
 
       const ik=identityKey(r),lk=locationKey(r);
-      if(seenIdentity.has(ik) && ik!=='||')addIssue(rowWarnings,'duplicate',rowNumber,`کلید هویتی با ردیف ${seenIdentity.get(ik)} تکراری است`,'identity');
-      else if(ik!=='||')seenIdentity.set(ik,rowNumber);
-      if(lk!=='|||' && seenLocation.has(lk))addIssue(rowWarnings,'duplicate',rowNumber,`آدرس مزار با ردیف ${seenLocation.get(lk)} تکراری است`,'location');
-      else if(lk!=='|||')seenLocation.set(lk,rowNumber);
-      if(ik!=='||' && masterIdentity.has(ik))addIssue(rowWarnings,'duplicate',rowNumber,'رکورد مشابه از نظر نام و نام خانوادگی و نام پدر در بانک موجود است','identity');
-      if(lk!=='|||' && masterLocation.has(lk))addIssue(rowWarnings,'duplicate',rowNumber,'آدرس مزار مشابه در بانک اصلی موجود است','location');
+      if(seenIdentity.has(ik)&&ik!=='||')addIssue(rowWarnings,'duplicate',rowNumber,`کلید هویتی با ردیف ${seenIdentity.get(ik)} تکراری است`,'identity');else if(ik!=='||')seenIdentity.set(ik,rowNumber);
+      if(lk!=='|||'&&seenLocation.has(lk))addIssue(rowWarnings,'duplicate',rowNumber,`آدرس مزار با ردیف ${seenLocation.get(lk)} تکراری است`,'location');else if(lk!=='|||')seenLocation.set(lk,rowNumber);
+      if(ik!=='||'&&masterIdentity.has(ik))addIssue(rowWarnings,'duplicate',rowNumber,'رکورد مشابه از نظر نام و نام خانوادگی و نام پدر در بانک موجود است','identity');
+      if(lk!=='|||'&&masterLocation.has(lk))addIssue(rowWarnings,'duplicate',rowNumber,'آدرس مزار مشابه در بانک اصلی موجود است','location');
 
-      const record={...r, name:r.name||'', family:r.family||'', father_name:r.father_name||'', warnings:rowWarnings};
-      records.push(record);
-      if(rowIssues.length)rowIssues.forEach(x=>issues.push(x));
-      rowWarnings.forEach(x=>warnings.push(x));
-      if(!rowIssues.length)valid.push(record);
+      const record={...r,name:r.name||'',family:r.family||'',father_name:r.father_name||'',warnings:rowWarnings};
+      records.push(record);rowIssues.forEach(x=>issues.push(x));rowWarnings.forEach(x=>warnings.push(x));if(!rowIssues.length)valid.push(record);
     });
     return {records,issues,warnings,valid,fatalFile:false};
   }
 
   async function loadMasterRows(){
     if(!client)return [];
-    try{
-      const {data,error}=await client.from('martyrs').select('name,lastname,father_name,piece,grave_row,grave_number').limit(10000);
-      if(error){console.warn('[Golzar] master comparison unavailable',error);return [];} return data||[];
-    }catch(e){console.warn('[Golzar] master comparison failed',e);return []}
+    try{const {data,error}=await client.from('martyrs').select('name,lastname,father_name,piece,grave_row,grave_number').limit(10000);if(error){console.warn('[Golzar] master comparison unavailable',error);return [];}return data||[];}catch(e){console.warn('[Golzar] master comparison failed',e);return []}
   }
 
   function renderResult(headers,nonBlank,blank,unknownHeaders){
     if(!analysis)return;
-    const errors=analysis.issues.length;
     const warningRows=new Set(analysis.warnings.filter(x=>x.type==='warning').map(x=>x.row));
     const duplicateRows=new Set(analysis.warnings.filter(x=>x.type==='duplicate').map(x=>x.row));
     const validCount=analysis.valid.length;
-    result.innerHTML=`<div class="bulk-summary-grid">
-      <div class="bulk-stat"><strong>${nonBlank.toLocaleString('fa-IR')}</strong><span>کل رکورد</span></div>
-      <div class="bulk-stat"><strong>${validCount.toLocaleString('fa-IR')}</strong><span>قابل ثبت</span></div>
-      <div class="bulk-stat"><strong>${warningRows.size.toLocaleString('fa-IR')}</strong><span>هشدار اطلاعات ناقص</span></div>
-      <div class="bulk-stat"><strong>${duplicateRows.size.toLocaleString('fa-IR')}</strong><span>تکراری/مشابه</span></div>
-      <div class="bulk-stat"><strong>${new Set(analysis.issues.map(x=>x.row)).size.toLocaleString('fa-IR')}</strong><span>خطای مانع ثبت</span></div>
-    </div>
-    <div class="bulk-meta">${blank?`<span class="bulk-chip">ردیف خالی: ${blank.toLocaleString('fa-IR')}</span>`:''}<span class="bulk-chip">ستون‌ها: ${headers.length}</span>${unknownHeaders.length?`<span class="bulk-chip">ستون اضافی: ${unknownHeaders.length}</span>`:''}</div>`;
-
+    result.innerHTML=`<div class="bulk-summary-grid"><div class="bulk-stat"><strong>${nonBlank.toLocaleString('fa-IR')}</strong><span>کل رکورد</span></div><div class="bulk-stat"><strong>${validCount.toLocaleString('fa-IR')}</strong><span>قابل ثبت</span></div><div class="bulk-stat"><strong>${warningRows.size.toLocaleString('fa-IR')}</strong><span>هشدار اطلاعات ناقص</span></div><div class="bulk-stat"><strong>${duplicateRows.size.toLocaleString('fa-IR')}</strong><span>تکراری/مشابه</span></div><div class="bulk-stat"><strong>${new Set(analysis.issues.map(x=>x.row)).size.toLocaleString('fa-IR')}</strong><span>خطای مانع ثبت</span></div></div><div class="bulk-meta">${blank?`<span class="bulk-chip">ردیف خالی: ${blank.toLocaleString('fa-IR')}</span>`:''}<span class="bulk-chip">ستون‌ها: ${headers.length}</span>${unknownHeaders.length?`<span class="bulk-chip">ستون اضافی: ${unknownHeaders.length}</span>`:''}</div>`;
     const allIssues=[...analysis.issues,...analysis.warnings.filter(x=>x.type==='warning'||x.type==='duplicate')];
-    if(allIssues.length){
-      issues.innerHTML=`<div class="bulk-issue-title">جزئیات موارد نیازمند توجه</div><div class="bulk-issue-list">${allIssues.slice(0,200).map(x=>`<div class="bulk-issue ${x.type==='error'?'is-error':'is-warning'}"><strong>ردیف ${x.row}</strong><span>${escapeHtml(x.message)}</span></div>`).join('')}</div>${allIssues.length>200?`<div class="bulk-issue-more">نمایش ${allIssues.length.toLocaleString('fa-IR')} مورد در گزارش؛ برای نمایش کامل در آینده صفحه‌بندی اضافه می‌شود.</div>`:''}`;
-    }else issues.innerHTML='<div class="bulk-ok">✓ هیچ خطای ساختاری یا هشدار اطلاعاتی شناسایی نشد.</div>';
+    if(allIssues.length){issues.innerHTML=`<div class="bulk-issue-title">جزئیات موارد نیازمند توجه</div><div class="bulk-issue-list">${allIssues.slice(0,200).map(x=>`<div class="bulk-issue ${x.type==='error'?'is-error':'is-warning'}"><strong>ردیف ${x.row}</strong><span>${escapeHtml(x.message)}</span></div>`).join('')}</div>${allIssues.length>200?`<div class="bulk-issue-more">نمایش ${allIssues.length.toLocaleString('fa-IR')} مورد در گزارش؛ برای نمایش کامل در آینده صفحه‌بندی اضافه می‌شود.</div>`:''}`;}else issues.innerHTML='<div class="bulk-ok">✓ هیچ خطای ساختاری یا هشدار اطلاعاتی شناسایی نشد.</div>';
     save.disabled=validCount===0;
   }
 
-  function renderPreview(headers,rows){
-    const displayRows=rows.slice(0,10);
-    preview.innerHTML=`<div class="bulk-preview-note">نمایش ۱۰ ردیف اول برای کنترل سریع؛ موارد خطادار و هشدارها در بخش «نتیجه بررسی» مشخص شده‌اند.</div><div class="bulk-table-wrap"><table><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${displayRows.map(row=>`<tr>${headers.map((_,i)=>`<td>${escapeHtml(row[i])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-  }
+  function renderPreview(headers,rows){const displayRows=rows.slice(0,10);preview.innerHTML=`<div class="bulk-preview-note">نمایش ۱۰ ردیف اول برای کنترل سریع؛ موارد خطادار و هشدارها در بخش «نتیجه بررسی» مشخص شده‌اند.</div><div class="bulk-table-wrap"><table><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${displayRows.map(row=>`<tr>${headers.map((_,i)=>`<td>${escapeHtml(row[i])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;}
 
-  function resetAll(){
-    fileInput.value=''; selectedFile=null; analysis=null; previousFileFingerprint=null; duplicateConfirmPending=false;
-    summary.innerHTML=''; status.textContent=''; result.innerHTML=''; issues.innerHTML=''; confirmBox.hidden=true; confirmBox.innerHTML=''; save.disabled=true;
-    preview.innerHTML='<div class="all-martyrs-empty">پس از انتخاب فایل، چند ردیف اول برای کنترل نمایش داده می‌شود.</div>';
-    check.disabled=false;
-  }
+  function resetAll(){fileInput.value='';selectedFile=null;analysis=null;previousFileFingerprint=null;summary.innerHTML='';status.textContent='';result.innerHTML='';issues.innerHTML='';confirmBox.hidden=true;confirmBox.innerHTML='';save.disabled=true;preview.innerHTML='<div class="all-martyrs-empty">پس از انتخاب فایل، چند ردیف اول برای کنترل نمایش داده می‌شود.</div>';check.disabled=false;}
 
-  fileInput.addEventListener('change',()=>{
-    const file=fileInput.files[0]||null;
-    if(!file){resetAll();return;}
-    const fp=fingerprint(file);
-    if(previousFileFingerprint===fp){
-      const ok=window.confirm(`فایل «${file.name}» قبلاً در همین نشست بررسی شده است. آیا می‌خواهید دوباره بارگذاری و بررسی شود؟`);
-      if(!ok){fileInput.value='';return;}
-    }
-    selectedFile=file; previousFileFingerprint=fp; analysis=null; save.disabled=true; result.innerHTML=''; issues.innerHTML=''; confirmBox.hidden=true;
-    status.textContent=`فایل انتخاب شد: ${file.name}`;
-    preview.innerHTML='<div class="all-martyrs-empty">برای مشاهده پیش‌نمایش، «بررسی فایل» را بزنید.</div>';
-  });
+  fileInput.addEventListener('change',()=>{const file=fileInput.files[0]||null;if(!file){resetAll();return;}const fp=fingerprint(file);if(previousFileFingerprint===fp){const ok=window.confirm(`فایل «${file.name}» قبلاً در همین نشست بررسی شده است. آیا می‌خواهید دوباره بارگذاری و بررسی شود؟`);if(!ok){fileInput.value='';return;}}selectedFile=file;previousFileFingerprint=fp;analysis=null;save.disabled=true;result.innerHTML='';issues.innerHTML='';confirmBox.hidden=true;status.textContent=`فایل انتخاب شد: ${file.name}`;preview.innerHTML='<div class="all-martyrs-empty">برای مشاهده پیش‌نمایش، «بررسی فایل» را بزنید.</div>';});
 
   check.addEventListener('click',async()=>{
     if(!selectedFile){status.textContent='ابتدا یک فایل Excel انتخاب کنید.';return;}
     if(!window.XLSX){status.textContent='کتابخانه Excel (XLSX) بارگذاری نشده است.';return}
-    check.disabled=true; save.disabled=true; status.textContent='در حال خواندن و کنترل فایل…'; result.innerHTML=''; issues.innerHTML='';
+    check.disabled=true;save.disabled=true;status.textContent='در حال خواندن و کنترل فایل…';result.innerHTML='';issues.innerHTML='';
     try{
-      const buffer=await selectedFile.arrayBuffer();
-      const book=XLSX.read(buffer,{type:'array'});
-      const sheetName=book.SheetNames[0];
-      if(!sheetName)throw new Error('فایل فاقد Sheet است.');
-      const rows=XLSX.utils.sheet_to_json(book.Sheets[sheetName],{header:1,defval:''});
-      const headers=(rows[0]||[]).map(v=>clean(v));
-      const data=rows.slice(1);
-      const blank=data.filter(row=>row.every(v=>clean(v)==='')).length;
-      const nonBlank=data.length-blank;
-      const unknown=headers.filter(h=>h && !HEADER_MAP[h]);
-      const master=await loadMasterRows();
-      analysis=analyzeRows(headers,data.filter(row=>!row.every(v=>clean(v)==='')),master);
+      const buffer=await selectedFile.arrayBuffer();const book=XLSX.read(buffer,{type:'array'});const sheetName=book.SheetNames[0];if(!sheetName)throw new Error('فایل فاقد Sheet است.');
+      const rows=XLSX.utils.sheet_to_json(book.Sheets[sheetName],{header:1,defval:''});const headers=(rows[0]||[]).map(v=>clean(v));const data=rows.slice(1);const blank=data.filter(row=>row.every(v=>clean(v)==='')).length;const nonBlank=data.length-blank;const unknown=headers.filter(h=>h&&!HEADER_MAP[h]);
+      const master=await loadMasterRows();analysis=analyzeRows(headers,data.filter(row=>!row.every(v=>clean(v)==='')),master);
       summary.innerHTML=`<span class="bulk-chip">Sheet: ${escapeHtml(sheetName)}</span><span class="bulk-chip">تعداد رکورد: ${nonBlank.toLocaleString('fa-IR')}</span><span class="bulk-chip">ردیف خالی: ${blank.toLocaleString('fa-IR')}</span><span class="bulk-chip">ستون: ${headers.length}</span>`;
       if(analysis.fatalFile){preview.innerHTML=`<div class="bulk-error">${escapeHtml(analysis.fatal)}</div>`;status.textContent='ساختار فایل قابل ثبت نیست؛ ستون‌های اجباری را اصلاح کنید.';save.disabled=true;check.disabled=false;return;}
-      renderResult(headers,nonBlank,blank,unknown);
-      renderPreview(headers,data.filter(row=>!row.every(v=>clean(v)==='')));
-      const errorRows=new Set(analysis.issues.map(x=>x.row)).size;
-      const warningRows=new Set(analysis.warnings.filter(x=>x.type==='warning').map(x=>x.row)).size;
-      status.textContent=`فایل خوانده شد؛ ${nonBlank.toLocaleString('fa-IR')} رکورد بررسی شد. ${errorRows.toLocaleString('fa-IR')} رکورد خطای مانع ثبت و ${warningRows.toLocaleString('fa-IR')} رکورد دارای هشدار اطلاعاتی است.`;
-      check.disabled=false;
-    }catch(error){
-      console.error('[Golzar] bulk analysis failed',error);status.textContent=error.message||'خطا در خواندن یا بررسی فایل.';preview.innerHTML='<div class="bulk-error">امکان خواندن یا بررسی فایل وجود نداشت.</div>';check.disabled=false;
-    }
+      renderResult(headers,nonBlank,blank,unknown);renderPreview(headers,data.filter(row=>!row.every(v=>clean(v)==='')));
+      const errorRows=new Set(analysis.issues.map(x=>x.row)).size;const warningRows=new Set(analysis.warnings.filter(x=>x.type==='warning').map(x=>x.row)).size;
+      status.textContent=`فایل خوانده شد؛ ${nonBlank.toLocaleString('fa-IR')} رکورد بررسی شد. ${errorRows.toLocaleString('fa-IR')} رکورد خطای مانع ثبت و ${warningRows.toLocaleString('fa-IR')} رکورد دارای هشدار اطلاعاتی است.`;check.disabled=false;
+    }catch(error){console.error('[Golzar] bulk analysis failed',error);status.textContent=error.message||'خطا در خواندن یا بررسی فایل.';preview.innerHTML='<div class="bulk-error">امکان خواندن یا بررسی فایل وجود نداشت.</div>';check.disabled=false;}
   });
 
   save.addEventListener('click',async()=>{
     if(!analysis||!analysis.valid.length)return;
     const warningRows=new Set(analysis.warnings.filter(x=>x.type==='warning'||x.type==='duplicate').map(x=>x.row));
-    const text=`${analysis.valid.length.toLocaleString('fa-IR')} رکورد آماده ثبت است.${warningRows.size?`\n${warningRows.size.toLocaleString('fa-IR')} رکورد دارای هشدار هستند و با این حال قابل ثبت‌اند.`:''}\n\nآیا اطلاعات برای بررسی کارشناسی ثبت شود؟`;
+    const text=`${analysis.valid.length.toLocaleString('fa-IR')} رکورد آماده ثبت است.\n${warningRows.size?`${warningRows.size.toLocaleString('fa-IR')} رکورد دارای هشدار هستند و با این حال قابل ثبت‌اند.\n`:''}\nآیا اطلاعات برای بررسی کارشناسی ثبت شود؟`;
     if(!window.confirm(text))return;
-    save.disabled=true; check.disabled=true; status.textContent='در حال اتصال امن و ثبت گروهی اطلاعات…';
+    save.disabled=true;check.disabled=true;status.textContent='در حال اتصال امن و ثبت گروهی اطلاعات…';
     try{
       if(!client)throw new Error('اتصال Supabase در دسترس نیست.');
       let {data:sessionData}=await client.auth.getSession();
-      if(!sessionData.session){
-        const {data,error}=await client.auth.signInAnonymously();
-        if(error)throw error;
-        sessionData={session:data.session};
-      }
+      if(!sessionData.session){const {data,error}=await client.auth.signInAnonymously();if(error)throw error;sessionData={session:data.session};}
       if(!sessionData.session)throw new Error('نشست احراز هویت ایجاد نشد.');
-      const payload=analysis.valid.map(r=>({
-        name:r.name||'', name_readable:r.name||'', family:r.family||'', father_name:r.father_name||'',
-        gender:r.gender||null,
-        birth_day:numberOrNull(r.birth_day), birth_month:numberOrNull(r.birth_month), birth_year:numberOrNull(r.birth_year),
-        death_day:numberOrNull(r.death_day), death_month:numberOrNull(r.death_month), death_year:numberOrNull(r.death_year),
-        operation:r.operation||null, martyrdom_area:r.martyrdom_area||null,
-        piece:r.piece, grave_row:r.grave_row, grave_number:r.grave_number,
-        notes:r.warnings?.length?`ثبت گروهی — هشدار ردیف Excel ${r.excel_row}: ${r.warnings.map(w=>w.message).join(' | ')}`:null,
-        status:'pending'
-      }));
-      const {error}=await client.from('new_martyr_registrations').insert(payload);
-      if(error)throw error;
-      const warningCount=warningRows.size;
-      confirmBox.hidden=false;
-      confirmBox.innerHTML=`<div class="bulk-success"><strong>✓ ثبت گروهی با موفقیت انجام شد</strong><span>${payload.length.toLocaleString('fa-IR')} رکورد برای بررسی کارشناسی ثبت شد.</span>${warningCount?`<span>${warningCount.toLocaleString('fa-IR')} رکورد همراه با هشدار اطلاعاتی ثبت شدند و قابل اصلاح در مرحله کارشناسی هستند.</span>`:''}<div class="bulk-success-actions"><button type="button" id="bulk-new-file" class="entry-secondary">بارگذاری فایل جدید</button><a class="entry-primary bulk-link-button" href="all-martyrs.html">بازگشت به صفحه شهدا</a></div></div>`;
-      document.getElementById('bulk-new-file').onclick=resetAll;
-      status.textContent='ثبت انجام شد؛ اطلاعات وارد جدول اصلی شهدا نشده است.';
-    }catch(error){
-      console.error('[Golzar] bulk registration failed',error);
-      status.textContent='ثبت گروهی انجام نشد. هیچ پیام موفقیتی نمایش داده نمی‌شود تا وضعیت ثبت روشن باشد.';
-      save.disabled=false; check.disabled=false;
-    }
+      const payload=analysis.valid.map(r=>({name:r.name||'',name_readable:r.name||'',family:r.family||'',father_name:r.father_name||'',gender:r.gender||null,birth_day:numberOrNull(r.birth_day),birth_month:numberOrNull(r.birth_month),birth_year:numberOrNull(r.birth_year),death_day:numberOrNull(r.death_day),death_month:numberOrNull(r.death_month),death_year:numberOrNull(r.death_year),operation:r.operation||null,martyrdom_area:r.martyrdom_area||null,piece:r.piece,grave_row:r.grave_row,grave_number:r.grave_number,notes:r.warnings?.length?`ثبت گروهی — هشدار ردیف Excel ${r.excel_row}: ${r.warnings.map(w=>w.message).join(' | ')}`:null,status:'pending'}));
+      const {error}=await client.from('new_martyr_registrations').insert(payload);if(error)throw error;
+      const warningCount=warningRows.size;confirmBox.hidden=false;confirmBox.innerHTML=`<div class="bulk-success"><strong>✓ ثبت گروهی با موفقیت انجام شد</strong><span>${payload.length.toLocaleString('fa-IR')} رکورد برای بررسی کارشناسی ثبت شد.</span>${warningCount?`<span>${warningCount.toLocaleString('fa-IR')} رکورد همراه با هشدار اطلاعاتی ثبت شدند و قابل اصلاح در مرحله کارشناسی هستند.</span>`:''}<div class="bulk-success-actions"><button type="button" id="bulk-new-file" class="entry-secondary">بارگذاری فایل جدید</button><a class="entry-primary bulk-link-button" href="all-martyrs.html">بازگشت به صفحه شهدا</a></div></div>`;
+      document.getElementById('bulk-new-file').onclick=resetAll;status.textContent='ثبت انجام شد؛ اطلاعات وارد جدول اصلی شهدا نشده است.';
+    }catch(error){console.error('[Golzar] bulk registration failed',error);status.textContent='ثبت گروهی انجام نشد. هیچ پیام موفقیتی نمایش داده نمی‌شود تا وضعیت ثبت روشن باشد.';save.disabled=false;check.disabled=false;}
   });
 
   clear.addEventListener('click',()=>{if(selectedFile||analysis){const ok=window.confirm('فایل انتخاب‌شده و نتیجه بررسی فعلی پاک شود؟');if(!ok)return;}resetAll();});
-  const updateTopVisibility=()=>topButton.classList.toggle('is-visible',window.scrollY>420);
-  window.addEventListener('scroll',updateTopVisibility,{passive:true}); updateTopVisibility();
-  topButton.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+  const updateTopVisibility=()=>topButton.classList.toggle('is-visible',window.scrollY>420);window.addEventListener('scroll',updateTopVisibility,{passive:true});updateTopVisibility();topButton.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 })();
 </script>
 </body>
