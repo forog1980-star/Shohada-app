@@ -46,26 +46,28 @@ function loadRuntimeFix() {
   fix.src = "runtime-fix.js?v=20260823-01";
   fix.onload = () => {
     const searchBackFix = document.createElement("script");
-    searchBackFix.src = "search-back-restore-fix.js?v=20260829-01";
+    searchBackFix.src = "search-back-restore-fix.js?v=20260906-01";
+    searchBackFix.onload = () => loadStatsLabel();
+    searchBackFix.onerror = () => loadStatsLabel();
     document.body.appendChild(searchBackFix);
-
-    const stats = document.createElement("script");
-    stats.src = "stats-label.js?v=20260825-03";
-    stats.onload = () => {
-      if (typeof window.installStatsLabel === "function") {
-        window.installStatsLabel();
-      }
-      window.__GOLZAR_MASTER_READY__ = true;
-    };
-    stats.onerror = () => {
-      window.__GOLZAR_MASTER_READY__ = true;
-    };
-    document.body.appendChild(stats);
   };
-  fix.onerror = () => {
+  fix.onerror = () => loadStatsLabel();
+  document.body.appendChild(fix);
+}
+
+function loadStatsLabel() {
+  const stats = document.createElement("script");
+  stats.src = "stats-label.js?v=20260825-03";
+  stats.onload = () => {
+    if (typeof window.installStatsLabel === "function") {
+      window.installStatsLabel();
+    }
     window.__GOLZAR_MASTER_READY__ = true;
   };
-  document.body.appendChild(fix);
+  stats.onerror = () => {
+    window.__GOLZAR_MASTER_READY__ = true;
+  };
+  document.body.appendChild(stats);
 }
 
 document.addEventListener("DOMContentLoaded", loadApp);
