@@ -6,6 +6,7 @@
   <title>تأیید ثبت اولیه | گلزار شهدای تهران</title>
   <link rel="stylesheet" href="all-martyrs.css?v=20260905-03">
   <link rel="stylesheet" href="all-martyrs-entry-single.css?v=20260905-03">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <main class="all-martyrs-page entry-page single-entry-page" id="top">
@@ -20,21 +21,69 @@
     <div id="confirm-content"></div>
     <div class="entry-actions"><button class="entry-secondary" type="button" id="edit-button">ویرایش اطلاعات</button><button class="entry-primary" type="button" id="final-button">تأیید و ثبت نهایی</button></div>
     <div id="confirm-status" class="entry-status" aria-live="polite"></div>
-    <div class="entry-notice">فعلاً هیچ ثبت نهایی در پایگاه داده انجام نمی‌شود. این مرحله فقط مسیر «ثبت اولیه → تأیید» را آماده می‌کند؛ اتصال به پایگاه داده مستقل بعد از تأیید طراحی انجام خواهد شد.</div>
+    <div class="entry-notice">پس از تأیید، اطلاعات در بانک مستقل ثبت‌های جدید ذخیره می‌شود و به جدول اصلی شهدا یا Master Excel منتقل نمی‌شود.</div>
   </section>
 </main>
 <button class="back-to-top" type="button" aria-label="بازگشت به بالای صفحه" title="بازگشت به بالا">↑</button>
 <script>
 (function(){
+  const SUPABASE_URL='https://bafrksgdcmglahyrppfy.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY='sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX';
+  const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
   const raw=sessionStorage.getItem('golzar_single_entry_pending');
   const content=document.getElementById('confirm-content'),status=document.getElementById('confirm-status');
+  const finalButton=document.getElementById('final-button');
   const topButton=document.querySelector('.back-to-top');
-  if(!raw){content.innerHTML='<div class="entry-empty-confirm">اطلاعات ثبت اولیه پیدا نشد. لطفاً به فرم ثبت نام تکی برگردید.</div>';document.getElementById('final-button').disabled=true;return;}
-  const d=JSON.parse(raw);
+  if(!raw){content.innerHTML='<div class="entry-empty-confirm">اطلاعات ثبت اولیه پیدا نشد. لطفاً به فرم ثبت نام تکی برگردید.</div>';finalButton.disabled=true;return;}
+  let d;
+  try{d=JSON.parse(raw);}catch(e){content.innerHTML='<div class="entry-empty-confirm">اطلاعات ثبت اولیه قابل خواندن نیست. لطفاً دوباره فرم را تکمیل کنید.</div>';finalButton.disabled=true;return;}
   const item=(label,key)=>`<div class="confirm-item"><span>${label}</span><strong>${d[key]||'—'}</strong></div>`;
   content.innerHTML=`<div class="confirm-grid">${item('نام','first_name')}${item('نام خانوادگی','last_name')}${item('نام پدر','father_name')}${item('جنسیت','gender')}${item('تاریخ تولد','birth_day')}${item('ماه تولد','birth_month')}${item('سال تولد','birth_year')}${item('تاریخ شهادت','death_day')}${item('ماه شهادت','death_month')}${item('سال شهادت','death_year')}${item('سن محاسبه‌شده','age')}${item('عملیات','martyrdom_operation')}${item('منطقه / محل شهادت','martyrdom_location')}${item('قطعه مزار','grave_piece')}${item('ردیف مزار','grave_row')}${item('شماره مزار','grave_number')}<div class="confirm-item confirm-wide"><span>توضیحات</span><strong>${d.notes||'—'}</strong></div></div>`;
   document.getElementById('edit-button').onclick=()=>window.location.href='all-martyrs-entry-single.html';
-  document.getElementById('final-button').onclick=()=>{status.textContent='تأیید نهایی فعلاً در حالت طراحی است و هنوز به پایگاه داده متصل نشده است.';status.className='entry-status is-success';};
+  finalButton.onclick=async()=>{
+    finalButton.disabled=true;
+    status.textContent='در حال اتصال امن و ثبت اطلاعات...';
+    status.className='entry-status';
+    try{
+      let {data:sessionData}=await client.auth.getSession();
+      if(!sessionData.session){
+        const {data,error}=await client.auth.signInAnonymously();
+        if(error) throw error;
+        sessionData={session:data.session};
+      }
+      if(!sessionData.session) throw new Error('نشست احراز هویت ایجاد نشد.');
+      const payload={
+        name:d.first_name||'',
+        name_readable:d.first_name||'',
+        family:d.last_name||'',
+        father_name:d.father_name||'',
+        gender:d.gender||null,
+        birth_day:d.birth_day?Number(d.birth_day):null,
+        birth_month:d.birth_month?Number(d.birth_month):null,
+        birth_year:d.birth_year?Number(d.birth_year):null,
+        death_day:d.death_day?Number(d.death_day):null,
+        death_month:d.death_month?Number(d.death_month):null,
+        death_year:d.death_year?Number(d.death_year):null,
+        operation:d.martyrdom_operation||null,
+        martyrdom_area:d.martyrdom_location||null,
+        piece:d.grave_piece||'',
+        grave_row:d.grave_row||'',
+        grave_number:d.grave_number||'',
+        notes:d.notes||null,
+        status:'pending'
+      };
+      const {data,error}=await client.from('new_martyr_registrations').insert(payload).select('id,status,created_at,age').single();
+      if(error) throw error;
+      sessionStorage.removeItem('golzar_single_entry_pending');
+      status.textContent=`ثبت نهایی با موفقیت انجام شد. کد ثبت: ${data.id}`;
+      status.className='entry-status is-success';
+    }catch(error){
+      console.error('[Golzar] single registration failed',error);
+      status.textContent='ثبت نهایی انجام نشد. اگر این اولین اجرای اتصال است، فعال بودن ورود موقت امن Supabase را بررسی کنید.';
+      status.className='entry-status is-error';
+      finalButton.disabled=false;
+    }
+  };
   const update=()=>topButton.classList.toggle('is-visible',window.scrollY>420);window.addEventListener('scroll',update,{passive:true});update();topButton.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
 })();
 </script>
