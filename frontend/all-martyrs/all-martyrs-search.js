@@ -68,23 +68,77 @@ const AllMartyrsSearch = (() => {
     return words.length > 0 && words.every(word => searchable.includes(word));
   }
 
+  function scoreField(record, field, query) {
+    const q = AllMartyrsNormalizer.clean(query);
+    if (!q) return 0;
+    const value = AllMartyrsNormalizer.clean(fieldValue(record, field));
+    if (!value) return 0;
+    if (value === q) return 100;
+    if (value.startsWith(q)) return 40;
+    return value.includes(q) ? 10 : 0;
+  }
+
+  function scoreResult(record, { query = "", field = "all", filters = {} } = {}) {
+    let score = 0;
+
+    if (query) {
+      if (field !== "all") {
+        score += scoreField(record, field, query);
+      } else {
+        const q = AllMartyrsNormalizer.clean(query);
+        const searchable = AllMartyrsNormalizer.clean(AllMartyrsNormalizer.searchableText(record));
+        if (searchable === q) score += 120;
+        else if (searchable.startsWith(q)) score += 50;
+        else if (searchable.includes(q)) score += 15;
+      }
+    }
+
+    const piece = AllMartyrsNormalizer.clean(record.grave_piece);
+    const row = AllMartyrsNormalizer.clean(record.grave_row);
+    const number = AllMartyrsNormalizer.clean(record.grave_number);
+    const fp = AllMartyrsNormalizer.clean(filters.grave_piece);
+    const fr = AllMartyrsNormalizer.clean(filters.grave_row);
+    const fn = AllMartyrsNormalizer.clean(filters.grave_number);
+
+    if (fp && fp !== "outside" && piece === fp) score += 200;
+    if (fr && row === fr) score += 200;
+    if (fn && number === fn) score += 200;
+    if (fp && fp !== "outside" && fr && fn && piece === fp && row === fr && number === fn) score += 1000;
+
+    return score;
+  }
+
+  function isInvalidGraveLocation(record) {
+    const row = AllMartyrsNormalizer.clean(record.grave_row);
+    const number = AllMartyrsNormalizer.clean(record.grave_number);
+    return row === "0" || number === "0";
+  }
+
   function search(records, { query = "", field = "all", filters = {} } = {}) {
     const q = AllMartyrsNormalizer.clean(query);
-    let result = records;
+    let result = records.filter(record => !isInvalidGraveLocation(record));
+
     if (q) {
       if (field === "all") result = result.filter(record => matchesAllWords(record, q));
       else if (FIELDS[field]) result = result.filter(record => matchesField(record, field, q));
     }
+
     for (const [key, filterValue] of Object.entries(filters)) {
       if (!filterValue) continue;
       if (key === "grave_piece") {
         if (filterValue === "outside") result = result.filter(record => record.source === "outside");
         else result = result.filter(record => AllMartyrsNormalizer.clean(record.grave_piece) === AllMartyrsNormalizer.clean(filterValue));
       } else if (FIELDS[key]) {
+        const normalizedFilter = AllMartyrsNormalizer.clean(filterValue);
+        if ((key === "grave_row" || key === "grave_number") && normalizedFilter === "0") return [];
         result = result.filter(record => matchesField(record, key, filterValue));
       }
     }
-    return result;
+
+    return result
+      .map((record, index) => ({ record, score: scoreResult(record, { query, field, filters }), index }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map(item => item.record);
   }
 
   return { FIELDS, MONTH_OPTIONS, PIECE_OPTIONS, search, fieldValue };
