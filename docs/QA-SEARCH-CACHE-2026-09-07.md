@@ -1,0 +1,1 @@
+Search QA cache-bust applied. No source data or Supabase schema/data changes.
