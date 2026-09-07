@@ -62,6 +62,21 @@ const AllMartyrsSearch = (() => {
     return AllMartyrsNormalizer.clean(fieldValue(record, field)).includes(q);
   }
 
+  // Exact matching is reserved for the "فیلترهای دقیق" conditions.
+  // The normal/public search keeps its existing partial-match behavior.
+  function matchesFieldExactly(record, field, query) {
+    const q = AllMartyrsNormalizer.clean(query);
+    if (!q) return true;
+    if (field === "birth_month" || field === "death_month") {
+      const month = Number(record[field === "birth_month" ? "birth_date" : "death_date"].month);
+      if (Number.isInteger(month) && month >= 1 && month <= 12) {
+        const name = AllMartyrsNormalizer.MONTHS[month - 1];
+        return q === String(month) || q === AllMartyrsNormalizer.clean(name);
+      }
+    }
+    return AllMartyrsNormalizer.clean(fieldValue(record, field)) === q;
+  }
+
   function matchesAllWords(record, query) {
     const searchable = AllMartyrsNormalizer.searchableText(record);
     const words = AllMartyrsNormalizer.clean(query).split(/\s+/).filter(Boolean);
@@ -127,7 +142,7 @@ const AllMartyrsSearch = (() => {
         if (filterValue === "outside") result = result.filter(record => record.source === "outside");
         else result = result.filter(record => AllMartyrsNormalizer.clean(record.grave_piece) === AllMartyrsNormalizer.clean(filterValue));
       } else if (FIELDS[key]) {
-        result = result.filter(record => matchesField(record, key, filterValue));
+        result = result.filter(record => matchesFieldExactly(record, key, filterValue));
       }
     }
     return result;
