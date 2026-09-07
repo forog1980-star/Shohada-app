@@ -12,17 +12,25 @@ function loadApp() {
   script.src = "app.js?v=20260829-01";
 
   script.onload = () => {
-    const searchFix = document.createElement("script");
-    searchFix.src = "search-pagination-fix.js?v=20260825-01";
-    searchFix.onload = () => loadSearchExportFix();
-    searchFix.onerror = () => loadSearchExportFix();
-    document.body.appendChild(searchFix);
+    const stageFix = document.createElement("script");
+    stageFix.src = "stage-logic-fix.js?v=20260907-01";
+    stageFix.onload = () => loadSearchFix();
+    stageFix.onerror = () => loadSearchFix();
+    document.body.appendChild(stageFix);
   };
 
   script.onerror = () => {
     window.__GOLZAR_MASTER_READY__ = true;
   };
   document.body.appendChild(script);
+}
+
+function loadSearchFix() {
+  const searchFix = document.createElement("script");
+  searchFix.src = "search-pagination-fix.js?v=20260825-01";
+  searchFix.onload = () => loadSearchExportFix();
+  searchFix.onerror = () => loadSearchExportFix();
+  document.body.appendChild(searchFix);
 }
 
 function loadSearchExportFix() {
