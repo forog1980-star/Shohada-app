@@ -114,6 +114,12 @@ const AllMartyrsSearch = (() => {
     return row === "0" || number === "0";
   }
 
+  function matchesLocationFilterExactly(record, key, filterValue) {
+    const normalizedFilter = AllMartyrsNormalizer.clean(filterValue);
+    if (!normalizedFilter) return true;
+    return AllMartyrsNormalizer.clean(fieldValue(record, key)) === normalizedFilter;
+  }
+
   function search(records, { query = "", field = "all", filters = {} } = {}) {
     const q = AllMartyrsNormalizer.clean(query);
     let result = records.filter(record => !isInvalidGraveLocation(record));
@@ -129,9 +135,13 @@ const AllMartyrsSearch = (() => {
         if (filterValue === "outside") result = result.filter(record => record.source === "outside");
         else result = result.filter(record => AllMartyrsNormalizer.clean(record.grave_piece) === AllMartyrsNormalizer.clean(filterValue));
       } else if (FIELDS[key]) {
-        const normalizedFilter = AllMartyrsNormalizer.clean(filterValue);
-        if ((key === "grave_row" || key === "grave_number") && normalizedFilter === "0") return [];
-        result = result.filter(record => matchesField(record, key, filterValue));
+        if (key === "grave_row" || key === "grave_number") {
+          const normalizedFilter = AllMartyrsNormalizer.clean(filterValue);
+          if (normalizedFilter === "0") return [];
+          result = result.filter(record => matchesLocationFilterExactly(record, key, filterValue));
+        } else {
+          result = result.filter(record => matchesField(record, key, filterValue));
+        }
       }
     }
 
