@@ -1,0 +1,1 @@
+The search page asset query-string versions were advanced to force browsers to fetch the current exact/similar grouping and zero-filter logic. No source data or Supabase schema/data changed.
