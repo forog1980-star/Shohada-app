@@ -1,8 +1,19 @@
 "use strict";
 (function(){
   const REPAIR="ترمیمی", REPLACEMENT="تعویضی";
-  const REPAIR_STAGES=["سنگ آماده ارسال به واحد مرمت","سنگ مرمتی آماده","نصب سنگ مرمت شده"];
-  const REPLACEMENT_STAGES=["سنگ آماده ارسال به واحد تعویض","سنگ تعویضی آماده","سنگ تعویضی نصب شده"];
+  const REPAIR_STAGES=["طرح سنگ به واحد مرمت ارسال شد","سنگ مرمتی آماده است","نصب سنگ مرمت شده"];
+  const REPLACEMENT_STAGES=["طرح سنگ به واحد تعویض ارسال شد","سنگ تعویضی آماده است","سنگ تعویضی نصب شد"];
+  const LEGACY_STAGE_MAP={
+    "ارسال به واحد مرمت":REPAIR_STAGES[0],
+    "سنگ آماده ارسال به واحد مرمت":REPAIR_STAGES[0],
+    "سنگ مرمتی آماده":REPAIR_STAGES[1],
+    "نصب مرمتی شده":REPAIR_STAGES[2],
+    "ارسال به واحد تعویض":REPLACEMENT_STAGES[0],
+    "سنگ آماده ارسال به واحد تعویض":REPLACEMENT_STAGES[0],
+    "سنگ تعویضی آماده":REPLACEMENT_STAGES[1],
+    "تعویضی نصب شده":REPLACEMENT_STAGES[2],
+    "سنگ تعویضی نصب شده":REPLACEMENT_STAGES[2]
+  };
   const APPROVED="تأیید شده";
   // این baseline شامل آخرین وضعیت واقعی آمار تا شناسه 12524 است.
   // رکوردهای جدید از 12525 به بعد به‌صورت Delta اضافه/ویرایش/حذف می‌شوند.
@@ -10,7 +21,7 @@
   const seenLiveIds=new Set();
   function norm(v){return String(v??"").trim().replace(/ي/g,"ی").replace(/ى/g,"ی").replace(/ك/g,"ک");}
   function typeOf(r){return norm(r?.stone_type??r?.stoneType??r?.operation_type??r?.operationType);}
-  function stageOf(r){return norm(r?.stage??r?.operation_stage??r?.operationStage);}
+  function stageOf(r){return LEGACY_STAGE_MAP[norm(r?.stage??r?.operation_stage??r?.operationStage)]||norm(r?.stage??r?.operation_stage??r?.operationStage);}
   function pieceOf(r){return norm(r?.piece??r?.قطعه??r?.piece_number??r?.pieceNumber);}
   function statusOf(r){return norm(r?.status);}
   function isRequest(r){return statusOf(r)===APPROVED;}
