@@ -120,35 +120,74 @@ const AllMartyrsSearch = (() => {
     return AllMartyrsNormalizer.clean(fieldValue(record, key)) === normalizedFilter;
   }
 
-  function search(records, { query = "", field = "all", filters = {} } = {}) {
-    const q = AllMartyrsNormalizer.clean(query);
-    let result = records.filter(record => !isInvalidGraveLocation(record));
-
-    if (q) {
-      if (field === "all") result = result.filter(record => matchesAllWords(record, q));
-      else if (FIELDS[field]) result = result.filter(record => matchesField(record, field, q));
-    }
-
+  function applyNonLocationFilters(result, filters) {
     for (const [key, filterValue] of Object.entries(filters)) {
-      if (!filterValue) continue;
+      if (!filterValue || key === "grave_row" || key === "grave_number") continue;
       if (key === "grave_piece") {
         if (filterValue === "outside") result = result.filter(record => record.source === "outside");
         else result = result.filter(record => AllMartyrsNormalizer.clean(record.grave_piece) === AllMartyrsNormalizer.clean(filterValue));
       } else if (FIELDS[key]) {
-        if (key === "grave_row" || key === "grave_number") {
-          const normalizedFilter = AllMartyrsNormalizer.clean(filterValue);
-          if (normalizedFilter === "0") return [];
-          result = result.filter(record => matchesLocationFilterExactly(record, key, filterValue));
-        } else {
-          result = result.filter(record => matchesField(record, key, filterValue));
-        }
+        result = result.filter(record => matchesField(record, key, filterValue));
       }
     }
+    return result;
+  }
 
-    return result
+  function search(records, { query = "", field = "all", filters = {} } = {}) {
+    const q = AllMartyrsNormalizer.clean(query);
+    if ((filters.grave_row && AllMartyrsNormalizer.clean(filters.grave_row) === "0") ||
+        (filters.grave_number && AllMartyrsNormalizer.clean(filters.grave_number) === "0")) return [];
+
+    const base = records.filter(record => !isInvalidGraveLocation(record));
+    let exactResult = base.slice();
+    let similarResult = [];
+
+    if (q) {
+      if (field === "all") exactResult = exactResult.filter(record => matchesAllWords(record, q));
+      else if (FIELDS[field]) exactResult = exactResult.filter(record => matchesField(record, field, q));
+    }
+
+    exactResult = applyNonLocationFilters(exactResult, filters);
+
+    const hasLocationFilter = Boolean(filters.grave_piece || filters.grave_row || filters.grave_number);
+    const hasExactRow = Boolean(filters.grave_row);
+    const hasExactNumber = Boolean(filters.grave_number);
+
+    if (hasExactRow || hasExactNumber) {
+      exactResult = exactResult.filter(record => {
+        const rowOk = !hasExactRow || matchesLocationFilterExactly(record, "grave_row", filters.grave_row);
+        const numberOk = !hasExactNumber || matchesLocationFilterExactly(record, "grave_number", filters.grave_number);
+        return rowOk && numberOk;
+      });
+
+      let loose = base.slice();
+      if (q) {
+        if (field === "all") loose = loose.filter(record => matchesAllWords(record, q));
+        else if (FIELDS[field]) loose = loose.filter(record => matchesField(record, field, q));
+      }
+      loose = applyNonLocationFilters(loose, filters);
+      if (hasExactRow) loose = loose.filter(record => matchesField(record, "grave_row", filters.grave_row));
+      if (hasExactNumber) loose = loose.filter(record => matchesField(record, "grave_number", filters.grave_number));
+
+      const exactIds = new Set(exactResult.map(record => String(record.id)));
+      similarResult = loose.filter(record => !exactIds.has(String(record.id)));
+    }
+
+    const orderedExact = exactResult
       .map((record, index) => ({ record, score: scoreResult(record, { query, field, filters }), index }))
       .sort((a, b) => b.score - a.score || a.index - b.index)
       .map(item => item.record);
+
+    const orderedSimilar = similarResult
+      .map((record, index) => ({ record, score: scoreResult(record, { query, field, filters }), index }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map(item => item.record);
+
+    if (hasLocationFilter && (hasExactRow || hasExactNumber)) {
+      return [...orderedExact, ...orderedSimilar];
+    }
+
+    return orderedExact;
   }
 
   return { FIELDS, MONTH_OPTIONS, PIECE_OPTIONS, search, fieldValue };
