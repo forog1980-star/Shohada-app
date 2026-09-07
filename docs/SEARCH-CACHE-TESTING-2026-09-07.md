@@ -1,0 +1,1 @@
+Search QA cache-bust applied. The search page now requests versioned JS/CSS assets for the exact/similar grouping fix. Zero row/number remains invalid in the current search logic. No data/schema changes.
