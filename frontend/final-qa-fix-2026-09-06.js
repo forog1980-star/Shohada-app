@@ -145,7 +145,12 @@ async function finalSaveNewRecord(event) {
     if (error) throw error;
 
     alert("اطلاعات شهید با موفقیت ثبت شد.");
-    if (typeof goHomeFromNewRecord === "function") {
+
+    // After final save, return exactly one level back to the
+    // «مدیریت و بهسازی سنگ مزار» menu, not the two-button home.
+    if (typeof goBackToStoneManagementMenu === "function") {
+      goBackToStoneManagementMenu();
+    } else if (typeof goHomeFromNewRecord === "function") {
       goHomeFromNewRecord();
     }
   } catch (error) {
