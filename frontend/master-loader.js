@@ -9,16 +9,24 @@
 
 function loadApp() {
   const script = document.createElement("script");
-  script.src = "app.js?v=20260906-final-01";
+  script.src = "app.js?v=20260907-stage-01";
 
-  script.onload = () => loadFinalQAFix();
-  script.onerror = () => loadFinalQAFix();
+  script.onload = () => loadStageDefinition();
+  script.onerror = () => loadStageDefinition();
   document.body.appendChild(script);
+}
+
+function loadStageDefinition() {
+  const stage = document.createElement("script");
+  stage.src = "stage-definition.js?v=20260907-stage-01";
+  stage.onload = () => loadFinalQAFix();
+  stage.onerror = () => loadFinalQAFix();
+  document.body.appendChild(stage);
 }
 
 function loadFinalQAFix() {
   const fix = document.createElement("script");
-  fix.src = "final-qa-fix-2026-09-06.js?v=20260906-final-01";
+  fix.src = "final-qa-fix-2026-09-06.js?v=20260907-stage-01";
   fix.onload = () => loadNavigationFix();
   fix.onerror = () => loadNavigationFix();
   document.body.appendChild(fix);
