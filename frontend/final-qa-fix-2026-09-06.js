@@ -59,8 +59,6 @@ function syncFinalStageOptions() {
   }
 }
 
-// app.js creates the form dynamically. MutationObserver handles form creation;
-// change handles the actual user selection of ترمیمی / تعویضی.
 const finalStageObserver = new MutationObserver(() => {
   syncFinalStageOptions();
 });
@@ -129,7 +127,6 @@ async function finalSaveNewRecord(event) {
   }
 
   try {
-    // Intentionally no .select(): registration must not depend on read-back permissions.
     const { error } = await supabaseClient.from("martyrs").insert({
       name,
       lastname,
@@ -145,7 +142,13 @@ async function finalSaveNewRecord(event) {
     if (error) throw error;
 
     alert("اطلاعات شهید با موفقیت ثبت شد.");
-    if (typeof goHomeFromNewRecord === "function") {
+
+    // Return exactly one UI level back to the stone-management menu.
+    // Do not use goHomeFromNewRecord here because that function targets
+    // the two-button application home.
+    if (typeof goBackToStoneManagementMenu === "function") {
+      goBackToStoneManagementMenu();
+    } else if (typeof goHomeFromNewRecord === "function") {
       goHomeFromNewRecord();
     }
   } catch (error) {
@@ -162,7 +165,6 @@ async function finalSaveNewRecord(event) {
   }
 }
 
-// Capture phase prevents the old save handler in app.js from running.
 document.addEventListener(
   "click",
   (event) => {
@@ -172,7 +174,6 @@ document.addEventListener(
   true
 );
 
-// The navigation-fix script supplies the actual one-level-back action.
 document.addEventListener(
   "click",
   (event) => {
