@@ -41,10 +41,40 @@
 ## نتیجه
 مسیر اصلی QA مربوط به Exact Search، Exact/Similar Grouping، Detail/Back و Excel Export از نظر تست عملی کاربر موفق است.
 
-## محدودیت‌های باقی‌مانده
-- GitHub Pages deployment به‌عنوان مسئله زیرساختی مستقل هنوز نباید موفق تلقی شود مگر با Run موفق جدید تأیید شود.
-- موفقیت Vercel check به‌تنهایی معادل تست runtime کامل نیست؛ تست عملی فعلی بر نسخه QA مورد استفاده کاربر انجام شده است.
-- `main` و Supabase در این مرحله تغییر داده نشده‌اند.
+## بررسی فنی نهایی — 2026-09-14
 
-## قاعده مرحله بعد
-قبل از هر انتشار یا ادغام به نسخه نهایی، همین Recovery Point مبنای برگشت است و باید ابتدا وضعیت زنده GitHub Actions/Vercel/Supabase دوباره بررسی شود.
+- `frontend/index.html` در شاخه QA موجود و قابل استقرار است؛ entry point معتبر است.
+- معماری loader و اتصال ماژول‌های جستجو، بازگشت و Excel بررسی شد.
+- `search-exact-group-fix.js` از نظر تطبیق exact برای نام، نام خانوادگی، قطعه، ردیف، شماره و نوع عملیات بررسی شد.
+- `search-exact-group-fix.js` داده‌ها را فقط read می‌کند و هیچ write به Supabase انجام نمی‌دهد.
+- `main` همچنان روی Commit `7bd5083a3ddaa7ded6f5d497837b1ea787222fc1` محفوظ است.
+- Recovery قبل از ادغام نهایی: `recovery/main-before-final-merge-20260914`.
+- QA نسبت به `main` دارای تاریخچه مستقل است؛ مقایسه زنده نشان می‌دهد QA، ۱۸۷ commit جلوتر و ۴۱ commit عقب‌تر است. بنابراین force-reset یا merge مستقیم بدون حل اختلاف تاریخچه انجام نشد.
+- PR شماره 22 به `main` به دلیل همین divergence غیرقابل merge باقی مانده و عمداً بدون دستکاری `main` متوقف است.
+
+## GitHub Pages — تأیید نهایی فنی
+
+- Workflow Run: `34842871631`
+- Job: `103971699092`
+- نتیجه: `success`
+- مراحل Checkout، Validate Pages entry point، Configure Pages، Upload artifact و Deploy همگی موفق شدند.
+- Commit مستقر: `cf8a1c67efc4f29544a8086a00ade42f2ddc18a7`
+- URL QA: `https://forog1980-star.github.io/Shohada-app/`
+
+## Vercel
+
+Checkهای Vercel برای شاخه QA موفق گزارش شده‌اند؛ با این حال این موضوع به‌تنهایی جایگزین تست runtime مرورگر نمی‌شود.
+
+## Supabase
+
+در این مرحله هیچ write یا تغییر schema انجام نشد. وضعیت Supabase صرفاً برای QA بررسی شده است.
+
+## محدودیت‌های باقی‌مانده
+
+- ادغام مستقیم QA در `main` هنوز انجام نشده، زیرا `main` و QA تاریخچه واگرا دارند و `main` نسخه عملیاتی فریز‌شده است.
+- موفقیت GitHub Pages اکنون به صورت زنده با Run موفق تأیید شده است.
+- تست عملی runtime توسط کاربر برای مسیر اصلی QA انجام شده است؛ تست مرورگر خودکار مستقل در این مرحله انجام نشده است.
+
+## قاعده انتشار نهایی
+
+نسخه QA فعلی مبنای انتشار تأییدشده است. برای ورود به `main` باید یک شاخه Integration مستقل از `main` ساخته شود، اختلاف ۴۱ commit آن با QA به صورت آگاهانه حل شود، سپس تست کامل و Recovery جدید انجام و فقط بعد از موفقیت آن merge شود. `main` نباید force-reset شود.
