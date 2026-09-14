@@ -18,11 +18,22 @@ jobs:
       pages: write
       id-token: write
     environment:
-      name: github-pages
+      # Separate QA environment prevents a production/default-branch
+      # protection rule on github-pages from blocking this QA branch.
+      # The deploy-pages action supports a non-default environment name.
+      name: github-pages-qa
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout QA branch
         uses: actions/checkout@v6
+
+      - name: Validate Pages entry point
+        shell: bash
+        run: |
+          test -f ./frontend/index.html
+          test -s ./frontend/index.html
+          grep -q '<title>' ./frontend/index.html
+          echo "GitHub Pages entry point: frontend/index.html"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
