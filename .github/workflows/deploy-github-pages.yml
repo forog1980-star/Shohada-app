@@ -1,9 +1,9 @@
-name: Deploy GolzarStone to GitHub Pages
+name: Deploy GolzarStone QA to GitHub Pages
 
 on:
   push:
     branches:
-      - final/shohada-entry-2026-09-05
+      - fix/exact-filters-match-20260907
   workflow_dispatch:
 
 permissions:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-qa
   cancel-in-progress: true
 
 jobs:
@@ -23,17 +23,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout final branch
+      - name: Checkout QA branch
         uses: actions/checkout@v4
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload frontend as Pages artifact
+      - name: Upload QA frontend as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./frontend
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy QA to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
