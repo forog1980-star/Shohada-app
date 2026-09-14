@@ -12,11 +12,12 @@
 (function installSearchExportFix() {
   const BUTTON_ID = "export-search-results";
 
+  // فقط فیلدهایی که در فرم/صفحه جستجوی فعلی وجود دارند در خروجی Excel می‌آیند.
+  // «نام پدر» عمداً حذف شده است.
   const HEADERS = {
     id: "شناسه بانک",
     name: "نام",
     lastname: "نام خانوادگی",
-    father_name: "نام پدر",
     piece: "قطعه",
     grave_row: "ردیف",
     grave_number: "شماره",
@@ -65,7 +66,6 @@
         [HEADERS.id]: value(record, "id"),
         [HEADERS.name]: value(record, "name"),
         [HEADERS.lastname]: value(record, "lastname"),
-        [HEADERS.father_name]: value(record, "father_name"),
         [HEADERS.piece]: value(record, "piece"),
         [HEADERS.grave_row]: value(record, "grave_row"),
         [HEADERS.grave_number]: value(record, "grave_number"),
