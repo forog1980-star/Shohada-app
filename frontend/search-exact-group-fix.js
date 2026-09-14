@@ -9,6 +9,7 @@
 // - جدا کردن نتیجه دقیق از نتایج مشابه
 // - نمایش نتیجه‌های دقیق در ابتدای فهرست
 // - حفظ جستجوی جزئی برای پیدا کردن نتایج مشابه
+// - هماهنگی با Search -> Detail -> Back
 //
 // هیچ تغییر در Supabase schema یا داده ایجاد نمی‌کند.
 // ============================================================
@@ -188,10 +189,9 @@
     });
   }
 
-  window.performSearch = async function performSearchWithExactGrouping() {
+  function readCurrentFilters() {
     const value = (id) => clean(document.getElementById(id)?.value || "");
-
-    const filters = {
+    return {
       name: value("search-name"),
       lastname: value("search-lastname"),
       piece: clean(document.getElementById("search-piece")?.value || ""),
@@ -199,18 +199,28 @@
       number: value("search-number"),
       status: clean(document.getElementById("search-status")?.value || ""),
     };
+  }
 
+  window.performSearch = async function performSearchWithExactGrouping() {
+    const filters = readCurrentFilters();
     const container = document.getElementById("search-results");
     if (!container) return;
 
     lastSearchFilters = filters;
+    window.__GOLZAR_SEARCH_FILTERS__ = { ...filters };
+    window.__GOLZAR_SEARCH_RESULTS_HTML__ = null;
+    window.__GOLZAR_SEARCH_RESULTS_DATA__ = null;
+
     container.innerHTML = '<div class="loading-message">در حال جستجو و تفکیک نتایج...</div>';
 
     try {
       const results = await fetchAll(filters);
       lastSearchResults = results;
       window.__GOLZAR_SEARCH_RESULTS__ = results;
+      window.__GOLZAR_SEARCH_RESULTS_DATA__ = results.slice();
       renderGroupedResults(results, filters);
+      window.__GOLZAR_SEARCH_RESULTS_HTML__ = container.innerHTML;
+      window.__GOLZAR_SEARCH_RESULT_COUNT__ = results.length;
     } catch (error) {
       console.error("Exact search grouping error:", error);
       container.innerHTML = `
@@ -219,6 +229,51 @@
           ${escapeHtml(error?.message || String(error))}
         </div>
       `;
+    }
+  };
+
+  // ----------------------------------------------------------
+  // Integration with Search -> Detail -> Back
+  // ----------------------------------------------------------
+  // search-back-restore-fix.js is intentionally loaded before this
+  // module. Therefore this module takes ownership of restoreSearchPage
+  // and restores the grouped exact/similar view from the same data cache.
+  const previousRestoreSearchPage = window.restoreSearchPage;
+  window.restoreSearchPage = function restoreExactGroupedSearchPage() {
+    const filters = window.__GOLZAR_SEARCH_FILTERS__ || lastSearchFilters || readCurrentFilters();
+    const cachedResults = window.__GOLZAR_SEARCH_RESULTS_DATA__;
+
+    if (typeof window.showSearch !== "function") {
+      console.error("Exact search grouping: showSearch not found.");
+      return;
+    }
+
+    window.showSearch(true);
+
+    const fields = {
+      "search-name": filters.name || "",
+      "search-lastname": filters.lastname || "",
+      "search-piece": filters.piece || "",
+      "search-row": filters.row || "",
+      "search-number": filters.number || "",
+      "search-status": filters.status || "",
+    };
+
+    Object.entries(fields).forEach(([id, value]) => {
+      const fieldElement = document.getElementById(id);
+      if (fieldElement) fieldElement.value = value;
+    });
+
+    if (Array.isArray(cachedResults)) {
+      renderGroupedResults(cachedResults.slice(), filters);
+      window.__GOLZAR_SEARCH_RESULTS_HTML__ = document.getElementById("search-results")?.innerHTML || null;
+      window.__GOLZAR_SEARCH_RESULT_COUNT__ = cachedResults.length;
+      return;
+    }
+
+    // Compatibility fallback for older cached state.
+    if (typeof previousRestoreSearchPage === "function") {
+      previousRestoreSearchPage();
     }
   };
 
