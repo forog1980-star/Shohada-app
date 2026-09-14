@@ -50,7 +50,7 @@ function loadSearchFixes() {
 
 function loadSearchExportFix() {
   const script = document.createElement("script");
-  script.src = "search-export-fix.js?v=20260825-01";
+  script.src = "search-export-fix.js?v=20260914-02";
   script.onload = () => loadExactSearch();
   script.onerror = () => loadExactSearch();
   document.body.appendChild(script);
