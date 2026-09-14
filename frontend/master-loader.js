@@ -75,9 +75,17 @@ function loadRuntimeFix() {
 function loadSearchBackFix() {
   const searchBackFix = document.createElement("script");
   searchBackFix.src = "search-back-restore-fix.js?v=20260906-01";
-  searchBackFix.onload = () => loadStatsLabel();
-  searchBackFix.onerror = () => loadStatsLabel();
+  searchBackFix.onload = () => loadExactSearchGroupFix();
+  searchBackFix.onerror = () => loadExactSearchGroupFix();
   document.body.appendChild(searchBackFix);
+}
+
+function loadExactSearchGroupFix() {
+  const fix = document.createElement("script");
+  fix.src = "search-exact-group-fix.js?v=20260914-01";
+  fix.onload = () => loadStatsLabel();
+  fix.onerror = () => loadStatsLabel();
+  document.body.appendChild(fix);
 }
 
 function loadStatsLabel() {
