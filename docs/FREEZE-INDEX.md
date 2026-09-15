@@ -1,0 +1,1 @@
+Index and completed modules are frozen as of 2026-09-05. Open development is limited to single and group martyr entry.

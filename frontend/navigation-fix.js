@@ -1,13 +1,52 @@
 "use strict";
-// بازگشت قطعی از صفحه ثبت اطلاعات به صفحه اصلی.
-// از delegation استفاده می‌کنیم تا با بازسازی innerHTML دکمه از کار نیفتد.
-document.addEventListener("click", function(event){
+
+// ============================================================
+// GolzarStone — navigation fix
+// بازگشت از صفحات داخلی به «یک مرحله قبل» در منوی مدیریت سنگ مزار.
+// ============================================================
+
+function goBackToStoneManagementMenu() {
+  // این مسیر فقط ناوبری UI است و هیچ داده‌ای را تغییر نمی‌دهد.
+  window.history.replaceState(
+    {
+      golzarApp: true,
+      page: "home",
+    },
+    "",
+    window.location.href
+  );
+
+  currentAppPage = "home";
+
+  if (typeof window.showHome === "function") {
+    window.showHome();
+  }
+
+  // showHome توسط launcher به منوی دوگانه برمی‌گردد؛
+  // سپس کارت سبز «مدیریت و بهسازی سنگ مزار» را باز می‌کنیم.
+  setTimeout(() => {
+    const stoneButton = document.querySelector(
+      ".modular-home-main-action.green"
+    );
+
+    if (stoneButton) {
+      stoneButton.click();
+    }
+  }, 0);
+}
+
+document.addEventListener("click", function (event) {
   const button = event.target.closest?.("#back-home");
   if (!button) return;
-  if (typeof currentAppPage === "undefined" || currentAppPage !== "new") return;
-  if (typeof goHomeFromNewRecord === "function") {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    goHomeFromNewRecord();
+
+  if (
+    typeof currentAppPage === "undefined" ||
+    (currentAppPage !== "new" && currentAppPage !== "pending")
+  ) {
+    return;
   }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  goBackToStoneManagementMenu();
 }, true);
