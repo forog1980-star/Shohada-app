@@ -9,25 +9,56 @@
 
 function loadApp() {
   const script = document.createElement("script");
-  script.src = "app.js?v=20260829-01";
+  script.src = "app.js?v=20260907-stage-01";
 
-  script.onload = () => {
-    const searchFix = document.createElement("script");
-    searchFix.src = "search-pagination-fix.js?v=20260825-01";
-    searchFix.onload = () => loadSearchExportFix();
-    searchFix.onerror = () => loadSearchExportFix();
-    document.body.appendChild(searchFix);
-  };
-
-  script.onerror = () => {
-    window.__GOLZAR_MASTER_READY__ = true;
-  };
+  script.onload = () => loadStageDefinition();
+  script.onerror = () => loadStageDefinition();
   document.body.appendChild(script);
+}
+
+function loadStageDefinition() {
+  const stage = document.createElement("script");
+  stage.src = "stage-definition.js?v=20260907-stage-01";
+  stage.onload = () => loadFinalQAFix();
+  stage.onerror = () => loadFinalQAFix();
+  document.body.appendChild(stage);
+}
+
+function loadFinalQAFix() {
+  const fix = document.createElement("script");
+  fix.src = "final-qa-fix-2026-09-06.js?v=20260907-stage-01";
+  fix.onload = () => loadNavigationFix();
+  fix.onerror = () => loadNavigationFix();
+  document.body.appendChild(fix);
+}
+
+function loadNavigationFix() {
+  const navigation = document.createElement("script");
+  navigation.src = "navigation-fix.js?v=20260906-final-01";
+  navigation.onload = () => loadSearchFixes();
+  navigation.onerror = () => loadSearchFixes();
+  document.body.appendChild(navigation);
+}
+
+function loadSearchFixes() {
+  const searchFix = document.createElement("script");
+  searchFix.src = "search-pagination-fix.js?v=20260825-01";
+  searchFix.onload = () => loadSearchExportFix();
+  searchFix.onerror = () => loadSearchExportFix();
+  document.body.appendChild(searchFix);
 }
 
 function loadSearchExportFix() {
   const script = document.createElement("script");
-  script.src = "search-export-fix.js?v=20260825-01";
+  script.src = "search-export-fix.js?v=20260914-02";
+  script.onload = () => loadExactSearch();
+  script.onerror = () => loadExactSearch();
+  document.body.appendChild(script);
+}
+
+function loadExactSearch() {
+  const script = document.createElement("script");
+  script.src = "search-exact.js?v=20260823-01";
   script.onload = () => loadRuntimeFix();
   script.onerror = () => loadRuntimeFix();
   document.body.appendChild(script);
@@ -35,34 +66,41 @@ function loadSearchExportFix() {
 
 function loadRuntimeFix() {
   const fix = document.createElement("script");
-  fix.src = "runtime-fix.js?v=20260829-01";
-  fix.onload = () => {
-    const stats = document.createElement("script");
-    stats.src = "stats-label.js?v=20260825-03";
-    stats.onload = () => loadSearchBackRestoreFix();
-    stats.onerror = () => loadSearchBackRestoreFix();
-    document.body.appendChild(stats);
-  };
-  fix.onerror = () => loadSearchBackRestoreFix();
+  fix.src = "runtime-fix.js?v=20260823-01";
+  fix.onload = () => loadSearchBackFix();
+  fix.onerror = () => loadSearchBackFix();
   document.body.appendChild(fix);
 }
 
-function loadSearchBackRestoreFix() {
-  const script = document.createElement("script");
-  script.src = "search-back-restore-fix.js?v=20260829-03";
-  script.onload = () => {
+function loadSearchBackFix() {
+  const searchBackFix = document.createElement("script");
+  searchBackFix.src = "search-back-restore-fix.js?v=20260906-01";
+  searchBackFix.onload = () => loadExactSearchGroupFix();
+  searchBackFix.onerror = () => loadExactSearchGroupFix();
+  document.body.appendChild(searchBackFix);
+}
+
+function loadExactSearchGroupFix() {
+  const fix = document.createElement("script");
+  fix.src = "search-exact-group-fix.js?v=20260914-01";
+  fix.onload = () => loadStatsLabel();
+  fix.onerror = () => loadStatsLabel();
+  document.body.appendChild(fix);
+}
+
+function loadStatsLabel() {
+  const stats = document.createElement("script");
+  stats.src = "stats-label.js?v=20260825-03";
+  stats.onload = () => {
     if (typeof window.installStatsLabel === "function") {
       window.installStatsLabel();
     }
     window.__GOLZAR_MASTER_READY__ = true;
   };
-  script.onerror = () => {
-    if (typeof window.installStatsLabel === "function") {
-      window.installStatsLabel();
-    }
+  stats.onerror = () => {
     window.__GOLZAR_MASTER_READY__ = true;
   };
-  document.body.appendChild(script);
+  document.body.appendChild(stats);
 }
 
 document.addEventListener("DOMContentLoaded", loadApp);

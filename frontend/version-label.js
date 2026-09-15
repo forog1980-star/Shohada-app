@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "۲.۰.۱";
+  const APP_VERSION = "۲.۰.۲";
 
   function installVersionLabel() {
     const footer = document.querySelector(".footer");

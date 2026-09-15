@@ -1,0 +1,1 @@
+Open development scope: only single martyr entry and group martyr entry.

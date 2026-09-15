@@ -1,0 +1,195 @@
+"use strict";
+
+// GolzarStone final QA fix — minimal runtime overrides.
+// No Supabase schema/data changes.
+
+function getCanonicalStageDefinition() {
+  return window.GOLZAR_STAGE_DEFINITION || {
+    "ترمیمی": [
+      "طرح سنگ به واحد مرمت ارسال شد",
+      "سنگ مرمتی آماده است",
+      "نصب سنگ مرمت شده",
+    ],
+    "تعویضی": [
+      "طرح سنگ به واحد تعویض ارسال شد",
+      "سنگ تعویضی آماده است",
+      "سنگ تعویضی نصب شد",
+    ],
+  };
+}
+
+let syncingFinalStages = false;
+
+function syncFinalStageOptions() {
+  if (syncingFinalStages) return;
+  const list = document.getElementById("stage-list");
+  if (!list) return;
+
+  const stages = getCanonicalStageDefinition();
+  const selectedType =
+    document.querySelector('input[name="stone-type"]:checked')?.value || "";
+  const allowed = new Set(stages[selectedType] || []);
+
+  syncingFinalStages = true;
+  try {
+    list
+      .querySelectorAll('input[name="stage"]')
+      .forEach((input, index) => {
+        const type = index < 3 ? "ترمیمی" : "تعویضی";
+        const typeStages = stages[type] || [];
+        const stage = typeStages[index % 3] || "";
+        const option = input.closest(".stage-option");
+        const enabled = !!stage && allowed.has(stage);
+
+        if (input.value !== stage) input.value = stage;
+        input.disabled = !enabled;
+        if (!enabled && input.checked) input.checked = false;
+
+        if (option) {
+          option.dataset.stage = stage;
+          option.classList.toggle("disabled", !enabled);
+          const span = option.querySelector("span");
+          if (span && span.textContent !== stage) {
+            span.textContent = stage;
+          }
+        }
+      });
+  } finally {
+    syncingFinalStages = false;
+  }
+}
+
+const finalStageObserver = new MutationObserver(() => {
+  syncFinalStageOptions();
+});
+
+if (document.body) {
+  finalStageObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+document.addEventListener(
+  "change",
+  (event) => {
+    const input = event.target;
+    if (input?.matches?.('input[name="stone-type"]')) {
+      syncFinalStageOptions();
+    }
+  },
+  true
+);
+
+document.addEventListener(
+  "input",
+  (event) => {
+    const input = event.target;
+    if (input?.matches?.('input[name="stone-type"]')) {
+      syncFinalStageOptions();
+    }
+  },
+  true
+);
+
+async function finalSaveNewRecord(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+
+  const value = (id) =>
+    document.getElementById(id)?.value?.trim() || "";
+  const name = value("new-name");
+  const lastname = value("new-lastname");
+  const piece = value("new-piece");
+  const row = value("new-row");
+  const number = value("new-number");
+  const stoneType =
+    document.querySelector('input[name="stone-type"]:checked')?.value || "";
+  const stage =
+    document.querySelector('input[name="stage"]:checked')?.value || "";
+  const notes = value("new-notes");
+  const stages = getCanonicalStageDefinition();
+
+  if (!name) return alert("نام شهید را وارد کنید.");
+  if (!lastname) return alert("نام خانوادگی شهید را وارد کنید.");
+  if (!stoneType) return alert("نوع عملیات سنگ را مشخص کنید.");
+  if (!piece) return alert("قطعه را انتخاب کنید.");
+  if (!row) return alert("ردیف مزار را وارد کنید.");
+  if (!number) return alert("شماره مزار را وارد کنید.");
+  if (!stage || !(stages[stoneType] || []).includes(stage)) {
+    return alert("مرحله فعلی کار را مشخص کنید.");
+  }
+
+  const button = document.getElementById("save-new");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "در حال ثبت اطلاعات...";
+  }
+
+  try {
+    const { error } = await supabaseClient.from("martyrs").insert({
+      name,
+      lastname,
+      piece,
+      grave_row: row,
+      grave_number: number,
+      stone_type: stoneType,
+      stage,
+      notes: notes || null,
+      status: STATUS.PENDING,
+    });
+
+    if (error) throw error;
+
+    alert("اطلاعات شهید با موفقیت ثبت شد.");
+
+    // Return exactly one UI level back to the stone-management menu.
+    // Do not use goHomeFromNewRecord here because that function targets
+    // the two-button application home.
+    if (typeof goBackToStoneManagementMenu === "function") {
+      goBackToStoneManagementMenu();
+    } else if (typeof goHomeFromNewRecord === "function") {
+      goHomeFromNewRecord();
+    }
+  } catch (error) {
+    console.error("GolzarStone save error:", error);
+    if (button) {
+      button.disabled = false;
+      button.textContent = "ذخیره اطلاعات";
+    }
+    alert(
+      `ذخیره اطلاعات انجام نشد.\n\nکد خطا: ${
+        error?.code || "نامشخص"
+      }\nجزئیات: ${error?.message || error}`
+    );
+  }
+}
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const button = event.target.closest?.("#save-new");
+    if (button) finalSaveNewRecord(event);
+  },
+  true
+);
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const button = event.target.closest?.("#back-home");
+    if (!button) return;
+    if (
+      typeof currentAppPage === "undefined" ||
+      (currentAppPage !== "new" && currentAppPage !== "pending")
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (typeof goBackToStoneManagementMenu === "function") {
+      goBackToStoneManagementMenu();
+    }
+  },
+  true
+);
