@@ -1,13 +1,14 @@
-name: Deploy GolzarStone QA to GitHub Pages
+name: Deploy GolzarStone to GitHub Pages
 
 on:
   push:
     branches:
+      - main
       - fix/exact-filters-match-20260907
   workflow_dispatch:
 
 concurrency:
-  group: pages-qa
+  group: pages-golzarstone
   cancel-in-progress: false
 
 jobs:
@@ -18,13 +19,12 @@ jobs:
       pages: write
       id-token: write
     environment:
-      # Separate QA environment prevents a production/default-branch
-      # protection rule on github-pages from blocking this QA branch.
-      # The deploy-pages action supports a non-default environment name.
+      # Keep the known-working Pages environment configuration.
+      # It avoids the previous production-environment protection issue.
       name: github-pages-qa
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout QA branch
+      - name: Checkout current release branch
         uses: actions/checkout@v6
 
       - name: Validate Pages entry point
@@ -38,11 +38,11 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload QA frontend as Pages artifact
+      - name: Upload frontend as Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./frontend
 
-      - name: Deploy QA to GitHub Pages
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
