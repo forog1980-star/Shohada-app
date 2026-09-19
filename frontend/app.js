@@ -517,6 +517,14 @@ window.addEventListener(
           showHome();
           break;
 
+        case "stone-menu":
+          if (typeof window.showStoneManagementMenu === "function") {
+            window.showStoneManagementMenu(false);
+          } else {
+            showHome();
+          }
+          break;
+
         case "search":
           showSearch(true);
           break;
