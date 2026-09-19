@@ -1,17 +1,12 @@
 "use strict";
-// وضعیت فعلی مورد تأیید: ترمیمی = ۰ ارسال، ۱ سنگ آماده، ۶۱۹ نصب شده.
+
+// این فایل فقط برای سازگاری با نسخه‌های قبلی نگه داشته شده است.
+// از این نسخه به بعد هیچ عدد آماری را بازنویسی نمی‌کند.
+// محاسبه کامل آمار از داده‌های فعلی Supabase در
+// statistics-live-calculator.js انجام می‌شود.
 (function(){
-  function normalize(){
-    if(typeof STATS === "undefined") return;
-    STATS.repairStages[0]=0;
-    STATS.repairStages[1]=1;
-    STATS.repairStages[2]=619;
-    STATS.repair.total=1172;
-    STATS.repair.completed=619;
-    STATS.repair.remaining=553;
-    STATS.trackedOperations=STATS.replacement.total+STATS.repair.total;
-    STATS.unclassified=STATS.totalRequests-STATS.trackedOperations;
-  }
-  normalize();
-  window.addEventListener("golzar:statistics-live", normalize);
+  window.GOLZAR_STATISTICS_BASELINE = {
+    live: true,
+    totalGraves: 26200
+  };
 })();
