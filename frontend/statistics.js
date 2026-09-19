@@ -3,7 +3,7 @@
 const STATS={
  totalGraves:26200,totalRequests:3004,trackedOperations:2936,unclassified:68,
  replacement:{total:1736,completed:1397,remaining:339},repair:{total:1200,completed:619,remaining:581},
- replacementStages:[0,0,1386],repairStages:[1,1,619],
+ replacementStages:[0,0,1397],repairStages:[1,1,619],
  pieces:[
   {piece:"17",total:103,requests:1,replacement:0,replacementDone:0,replacementRemaining:0,repair:1,repairDone:1,repairRemaining:0},
   {piece:"24",total:6100,requests:597,replacement:281,replacementDone:166,replacementRemaining:115,repair:316,repairDone:120,repairRemaining:196},
