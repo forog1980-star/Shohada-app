@@ -48,7 +48,11 @@
     return button;
   }
 
-  function buildStoneMenu() {
+  function buildStoneMenu(pushHistory = true) {
+    if (pushHistory && !window.__GOLZAR_STONE_MENU_HISTORY_PUSHED__) {
+      window.history.pushState({ golzarApp: true, page: "stone-menu" }, "", window.location.href);
+    }
+    window.__GOLZAR_STONE_MENU_HISTORY_PUSHED__ = false;
     const menu = document.querySelector(".menu");
     if (!menu) return;
     menu.innerHTML = "";
@@ -61,7 +65,11 @@
     back.type = "button";
     back.className = "modular-home-back";
     back.textContent = "بازگشت";
-    back.addEventListener("click", buildHome);
+    back.addEventListener("click", () => {
+      window.history.replaceState({ golzarApp: true, page: "home" }, "", window.location.href);
+      currentAppPage = "home";
+      buildHome();
+    });
     header.appendChild(back);
     header.insertAdjacentHTML("beforeend", "<h2>مدیریت و بهسازی سنگ مزار</h2><p>لطفاً بخش موردنظر را انتخاب کنید</p>");
     wrapper.appendChild(header);
@@ -97,7 +105,7 @@
     stone.type = "button";
     stone.className = "modular-home-main-action green";
     stone.innerHTML = `<span class="modular-home-main-icon" aria-hidden="true">🛠️</span><span><strong>مدیریت و بهسازی سنگ مزار</strong><small>جستجو، ثبت، تأیید و گزارش‌های آماری</small></span><span class="modular-home-main-arrow" aria-hidden="true">‹</span>`;
-    stone.addEventListener("click", buildStoneMenu);
+    stone.addEventListener("click", () => buildStoneMenu(true));
 
     mainActions.appendChild(allMartyrs);
     mainActions.appendChild(stone);
@@ -106,6 +114,7 @@
   }
 
   window.showModularHome = buildHome;
+  window.showStoneManagementMenu = buildStoneMenu;
   window.showHome = function () {
     originalShowHome.apply(this, arguments);
     installStyles();
