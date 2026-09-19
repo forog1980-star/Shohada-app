@@ -1,17 +1,16 @@
 "use strict";
-// وضعیت فعلی مورد تأیید: ترمیمی = ۰ ارسال، ۱ سنگ آماده، ۶۱۹ نصب شده.
 (function(){
   function normalize(){
     if(typeof STATS === "undefined") return;
-    STATS.repairStages[0]=0;
-    STATS.repairStages[1]=1;
-    STATS.repairStages[2]=619;
-    STATS.repair.total=1172;
+    STATS.totalRequests=3004;
+    STATS.replacement.total=1736;
+    STATS.replacement.completed=1397;
+    STATS.replacement.remaining=339;
+    STATS.repair.total=1200;
     STATS.repair.completed=619;
-    STATS.repair.remaining=553;
-    STATS.trackedOperations=STATS.replacement.total+STATS.repair.total;
-    STATS.unclassified=STATS.totalRequests-STATS.trackedOperations;
+    STATS.repair.remaining=581;
+    STATS.trackedOperations=2936;
+    STATS.unclassified=68;
   }
   normalize();
-  window.addEventListener("golzar:statistics-live", normalize);
 })();

@@ -2,198 +2,65 @@
 (function () {
   const REPAIR = "ترمیمی";
   const REPLACEMENT = "تعویضی";
-  const STAGE_DEFINITION = window.GOLZAR_STAGE_DEFINITION || {
-    [REPAIR]: [
-      "طرح سنگ به واحد مرمت ارسال شد",
-      "سنگ مرمتی آماده است",
-      "نصب سنگ مرمت شده",
-    ],
-    [REPLACEMENT]: [
-      "طرح سنگ به واحد تعویض ارسال شد",
-      "سنگ تعویضی آماده است",
-      "سنگ تعویضی نصب شد",
-    ],
+  const normalize = v => String(v ?? "").trim().replace(/ي/g,"ی").replace(/ى/g,"ی").replace(/ك/g,"ک");
+  const typeOf = r => normalize(r?.stone_type ?? r?.stoneType ?? r?.operation_type ?? r?.operationType);
+  const stageOf = r => normalize(r?.stage ?? r?.operation_stage ?? r?.operationStage);
+  const statusOf = r => normalize(r?.status);
+  const isRequest = r => statusOf(r) === "تأیید شده";
+  const isDone = (type, stage) => {
+    const s=normalize(stage);
+    if(type===REPAIR) return s==="نصب سنگ مرمت شده" || s==="نصب مرمتی شده";
+    if(type===REPLACEMENT) return s==="سنگ تعویضی نصب شد" || s==="تعویضی نصب شده";
+    return false;
   };
-  const REPAIR_STAGES = STAGE_DEFINITION[REPAIR] || [];
-  const REPLACEMENT_STAGES = STAGE_DEFINITION[REPLACEMENT] || [];
-  const APPROVED = "تأیید شده";
-  const BASELINE_MAX_ID = 12524;
-  const seenLiveIds = new Set();
-
-  function norm(v) {
-    return String(v ?? "")
-      .trim()
-      .replace(/ي/g, "ی")
-      .replace(/ى/g, "ی")
-      .replace(/ك/g, "ک");
-  }
-
-  function typeOf(r) {
-    return norm(
-      r?.stone_type ??
-        r?.stoneType ??
-        r?.operation_type ??
-        r?.operationType
-    );
-  }
-
-  function stageOf(r) {
-    return norm(
-      r?.stage ??
-        r?.operation_stage ??
-        r?.operationStage
-    );
-  }
-
-  function pieceOf(r) {
-    return norm(
-      r?.piece ??
-        r?.قطعه ??
-        r?.piece_number ??
-        r?.pieceNumber
-    );
-  }
-
-  function statusOf(r) {
-    return norm(r?.status);
-  }
-
-  function isRequest(r) {
-    return statusOf(r) === APPROVED;
-  }
-
-  function idOf(r) {
-    return Number(r?.id ?? r?.ID);
-  }
-
-  function isLiveAddition(r) {
-    const id = idOf(r);
-    return Number.isFinite(id) && id > BASELINE_MAX_ID;
-  }
-
-  function contribution(r, sign) {
-    if (!r || !isRequest(r)) return;
-
-    const signN = sign || 1;
-    const piece = STATS.pieces.find(
-      (p) => String(p.piece) === pieceOf(r)
-    );
-    const t = typeOf(r);
-    const s = stageOf(r);
-
-    STATS.totalRequests += signN;
-
-    if (t === REPAIR) {
-      STATS.repair.total += signN;
-      STATS.repair.remaining += signN;
-
-      if (s === REPAIR_STAGES[2]) {
-        STATS.repair.completed += signN;
-        STATS.repair.remaining -= signN;
-      }
-
-      if (piece) {
-        piece.requests += signN;
-        piece.repair += signN;
-        if (s === REPAIR_STAGES[2]) {
-          piece.repairDone += signN;
-        }
-        piece.repairRemaining =
-          piece.repair - piece.repairDone;
-      }
-
-      const i = REPAIR_STAGES.indexOf(s);
-      if (i >= 0) STATS.repairStages[i] += signN;
-    } else if (t === REPLACEMENT) {
-      STATS.replacement.total += signN;
-      STATS.replacement.remaining += signN;
-
-      if (s === REPLACEMENT_STAGES[2]) {
-        STATS.replacement.completed += signN;
-        STATS.replacement.remaining -= signN;
-      }
-
-      if (piece) {
-        piece.requests += signN;
-        piece.replacement += signN;
-        if (s === REPLACEMENT_STAGES[2]) {
-          piece.replacementDone += signN;
-        }
-        piece.replacementRemaining =
-          piece.replacement - piece.replacementDone;
-      }
-
-      const i = REPLACEMENT_STAGES.indexOf(s);
-      if (i >= 0) STATS.replacementStages[i] += signN;
-    } else if (piece) {
-      piece.requests += signN;
+  const seenIds = new Set();
+  function contribution(r, sign=1){
+    if(!r || !isRequest(r)) return;
+    const t=typeOf(r), done=isDone(t,stageOf(r));
+    STATS.totalRequests += sign;
+    if(t===REPAIR){
+      STATS.repair.total += sign;
+      STATS.repair.remaining += sign;
+      if(done){ STATS.repair.completed += sign; STATS.repair.remaining -= sign; }
+    } else if(t===REPLACEMENT){
+      STATS.replacement.total += sign;
+      STATS.replacement.remaining += sign;
+      if(done){ STATS.replacement.completed += sign; STATS.replacement.remaining -= sign; }
     }
-
-    STATS.trackedOperations =
-      STATS.replacement.total + STATS.repair.total;
-    STATS.unclassified =
-      STATS.totalRequests - STATS.trackedOperations;
+    STATS.trackedOperations=STATS.replacement.total+STATS.repair.total;
+    STATS.unclassified=STATS.totalRequests-STATS.trackedOperations;
   }
-
-  function applyInitial(rows) {
-    for (const r of rows || []) {
-      if (!isLiveAddition(r)) continue;
-      const id = idOf(r);
-      if (seenLiveIds.has(id)) continue;
-      seenLiveIds.add(id);
-      contribution(r, 1);
+  function applyInitial(rows){
+    seenIds.clear();
+    for(const r of rows||[]){
+      const id=Number(r?.id ?? r?.ID);
+      if(Number.isFinite(id)) seenIds.add(id);
     }
   }
-
-  function applyChange(c) {
-    const oldR = c?.old || null;
-    const newR = c?.new || null;
-
-    if (c?.event === "INSERT") {
-      const id = idOf(newR);
-      if (seenLiveIds.has(id)) return;
-      if (isLiveAddition(newR)) {
-        seenLiveIds.add(id);
-        contribution(newR, 1);
-      }
-      return;
+  function applyChange(c){
+    const oldR=c?.old||null, newR=c?.new||null;
+    if(c?.event==="INSERT"){
+      const id=Number(newR?.id ?? newR?.ID);
+      if(Number.isFinite(id) && seenIds.has(id)) return;
+      if(Number.isFinite(id)) seenIds.add(id);
+      contribution(newR,1); return;
     }
-
-    if (c?.event === "DELETE") {
-      const id = idOf(oldR);
-      if (isLiveAddition(oldR)) {
-        seenLiveIds.delete(id);
-        contribution(oldR, -1);
-      }
-      return;
+    if(c?.event==="DELETE"){
+      const id=Number(oldR?.id ?? oldR?.ID);
+      if(Number.isFinite(id)) seenIds.delete(id);
+      contribution(oldR,-1); return;
     }
-
-    if (c?.event === "UPDATE") {
-      if (isLiveAddition(oldR)) {
-        contribution(oldR, -1);
-      }
-      if (isLiveAddition(newR)) {
-        contribution(newR, 1);
-        seenLiveIds.add(idOf(newR));
-      }
+    if(c?.event==="UPDATE"){
+      const id=Number(newR?.id ?? oldR?.id ?? newR?.ID ?? oldR?.ID);
+      if(Number.isFinite(id)) seenIds.add(id);
+      contribution(oldR,-1);
+      contribution(newR,1);
     }
   }
-
-  window.addEventListener(
-    "golzar:statistics-live",
-    (event) => {
-      const detail = event.detail || {};
-      if (detail.initial) {
-        applyInitial(detail.rows || []);
-      } else {
-        for (const c of detail.changes || []) {
-          applyChange(c);
-        }
-      }
-
-      if (typeof render === "function") {
-        render();
-      }
-    }
-  );
+  window.addEventListener("golzar:statistics-live",(event)=>{
+    const detail=event.detail||{};
+    if(detail.initial) applyInitial(detail.rows||[]);
+    else for(const c of detail.changes||[]) applyChange(c);
+    if(typeof render==="function") render();
+  });
 })();
