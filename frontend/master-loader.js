@@ -90,7 +90,7 @@ function loadExactSearchGroupFix() {
 
 function loadSearchNavigationUxFix() {
   const fix = document.createElement("script");
-  fix.src = "search-navigation-ux-fix-20260920.js?v=20260920-02";
+  fix.src = "search-navigation-ux-fix-20260920.js?v=20260920-03";
   fix.onload = () => loadStatsLabel();
   fix.onerror = () => loadStatsLabel();
   document.body.appendChild(fix);
