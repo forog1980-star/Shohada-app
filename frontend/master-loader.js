@@ -96,6 +96,14 @@ function loadSearchNavigationUxFix() {
   document.body.appendChild(fix);
 }
 
+function loadGlobalStoneBackFix() {
+  const fix = document.createElement("script");
+  fix.src = "global-stone-back-fix-20260920.js?v=20260920-01";
+  fix.onload = () => loadGlobalStoneBackFix();
+  fix.onerror = () => loadGlobalStoneBackFix();
+  document.body.appendChild(fix);
+}
+
 function loadStatsLabel() {
   const stats = document.createElement("script");
   stats.src = "stats-label.js?v=20260825-03";
