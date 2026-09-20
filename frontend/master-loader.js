@@ -91,16 +91,16 @@ function loadExactSearchGroupFix() {
 function loadSearchNavigationUxFix() {
   const fix = document.createElement("script");
   fix.src = "search-navigation-ux-fix-20260920.js?v=20260920-03";
-  fix.onload = () => loadStatsLabel();
-  fix.onerror = () => loadStatsLabel();
+  fix.onload = () => loadGlobalStoneBackFix();
+  fix.onerror = () => loadGlobalStoneBackFix();
   document.body.appendChild(fix);
 }
 
 function loadGlobalStoneBackFix() {
   const fix = document.createElement("script");
   fix.src = "global-stone-back-fix-20260920.js?v=20260920-01";
-  fix.onload = () => loadGlobalStoneBackFix();
-  fix.onerror = () => loadGlobalStoneBackFix();
+  fix.onload = () => loadStatsLabel();
+  fix.onerror = () => loadStatsLabel();
   document.body.appendChild(fix);
 }
 
