@@ -9,6 +9,12 @@
   <link rel="stylesheet" href="statistics.css?v=20260825-03">
 </head>
 <body>
+  <div style="padding:12px 16px 0;text-align:right;">
+    <button id="statistics-back-to-management" type="button"
+      style="border:1px solid #d6e2dc;border-radius:10px;background:#fff;color:#17633d;padding:9px 15px;font:inherit;font-weight:700;cursor:pointer;">
+      بازگشت به مدیریت و بهسازی سنگ مزار
+    </button>
+  </div>
   <div id="statistics-app"><div class="loading">در حال بارگذاری گزارش‌های آماری...</div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="statistics.js?v=20260919-01"></script>
@@ -18,5 +24,10 @@
   <script src="stage-definition.js?v=20260907-stage-01"></script>
   <script src="statistics-live-calculator.js?v=20260919-01"></script>
   <script src="statistics-live-ui.js?v=20260919-01"></script>
+  <script>
+    document.getElementById("statistics-back-to-management")?.addEventListener("click", function () {
+      window.location.href = "index.html?open=stone-menu";
+    });
+  </script>
 </body>
 </html>
