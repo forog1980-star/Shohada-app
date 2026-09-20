@@ -1,1 +1,0 @@
-Final freeze status 2026-09-05. Only single and group martyr entry remain open.

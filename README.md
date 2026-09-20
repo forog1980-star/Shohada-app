@@ -33,3 +33,18 @@
 `docs/PROJECT-TECHNICAL-MASTER-REPORT.md`
 
 این سند شامل وضعیت فنی، شاخه‌ها و Commitهای مهم، Recovery Pointها، معماری، QA، GitHub Pages، Vercel، Supabase، تست‌های انجام‌شده، موارد باز و نقطه دقیق ادامه پروژه است.
+
+
+## نسخه‌ها و لینک‌های رسمی
+
+### MAIN — نسخه مرجع عملیاتی
+`https://forog1980-star.github.io/Shohada-app/`
+
+این لینک برای استفاده عملیاتی است و باید فقط بر اساس branch `main` منتشر شود.
+
+### QA — نسخه مرجع تست و توسعه
+`https://shohada-app-git-qa-forog1980-8339.vercel.app/`
+
+این لینک برای توسعه، رفع ایراد و تست عملی است و نباید به‌عنوان لینک عملیاتی معرفی شود.
+
+**تعریف کامل و قوانین انتشار:** `docs/PROJECT-ENVIRONMENT-AND-LINKS.md`
