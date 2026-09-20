@@ -2,10 +2,10 @@
 
 > این فایل مرجع اصلی ادامه پروژه است. در هر گفت‌وگوی جدید ابتدا این فایل خوانده شود و سپس وضعیت زنده GitHub / GitHub Pages / Vercel / Supabase با آن تطبیق داده شود.
 
-**آخرین به‌روزرسانی:** 2026-09-15 — انتشار نسخه نهایی
+**آخرین به‌روزرسانی:** 2026-09-20 — تثبیت مدل رسمی QA / main و اصلاحات آمار و ناوبری
 **مخزن:** `forog1980-star/Shohada-app`
 **نسخه عملیاتی نهایی:** `main`
-**Commit نهایی فعلی:** `bdc91f692877467972ae4111fac7ff60fbbe43bd`
+**Commit فعلی main:** `757dcc1373d3f5761cae08d7bc6c35b0bb6a34ba`
 
 ---
 
@@ -86,8 +86,10 @@ Run نهایی:
 Job:
 `104296262549`
 
-Commit مستقر در این Deploy:
+Commit مستقر در Deploy تاریخی ثبت‌شده:
 `bdc91f692877467972ae4111fac7ff60fbbe43bd`
+
+> این Deploy مربوط به نسخه تاریخی 2026-09-15 است و به معنی Deploy شدن commit فعلی main نیست. وضعیت Deploy فعلی باید جداگانه با Workflow جدید تأیید شود.
 
 نتیجه:
 `success`
@@ -194,16 +196,21 @@ All Martyrs نیز در `frontend/all-martyrs/` و داده‌های آن در `
 
 **Integration با main:** PASS
 
-**GitHub Pages Deploy از main:** PASS
+**GitHub Pages Deploy از main:** نیازمند تأیید Deploy جدید پس از تثبیت Workflow
 
 **Vercel checks:** PASS
 
 **Supabase:** بدون تغییر
 
-**main:** نسخه نهایی منتشرشده
+**main:** `757dcc1373d3f5761cae08d7bc6c35b0bb6a34ba` — مرجع عملیاتی فعلی
 
-**لینک نهایی:**
+**لینک عملیاتی:**
 `https://forog1980-star.github.io/Shohada-app/`
+
+**لینک تست QA:**
+`https://shohada-app-git-qa-forog1980-8339.vercel.app/`
+
+تعریف رسمی QA و main در `docs/PROJECT-ENVIRONMENT-AND-LINKS.md` ثبت شده است.
 
 ### نقطه پایان این مرحله
 نسخه نهایی سامانه در `main` قرار گرفت و GitHub Pages از `main` با موفقیت Deploy شد.
@@ -213,3 +220,93 @@ All Martyrs نیز در `frontend/all-martyrs/` و داده‌های آن در `
 `Request → Recovery → Diagnose → Branch → Change → Technical Test → Deploy → Practical Test`
 
 **از این نقطه به بعد، تغییر جدید روی نسخه منتشرشده فقط با درخواست مشخص و Recovery انجام شود.**
+
+
+---
+
+## 12. اصلاح همگام‌سازی آمار — 2026-09-19
+
+علت‌های اصلی شناسایی‌شده:
+- baseline قدیمی در `statistics-baseline-fix.js`
+- انعکاس نادرست UPDATE رکوردهای قدیمی در محاسبه زنده
+- نیاز به محاسبه delta برای INSERT / UPDATE / DELETE به جای بارگذاری کامل جدول پس از هر تغییر
+
+baseline عملیاتی تأییدشده:
+- کل درخواست‌ها: 3004
+- عملیات پیگیری‌شده: 2936
+- خارج از تفکیک: 68
+- تعویضی: 1736 / انجام‌شده 1397 / باقی‌مانده 339
+- ترمیمی: 1200 / انجام‌شده 619 / باقی‌مانده 581
+- کل انجام‌شده: 2016
+- کل باقی‌مانده: 920
+
+فایل‌های اصلاح‌شده:
+- `frontend/statistics.js`
+- `frontend/statistics-baseline-fix.js`
+- `frontend/statistics-live-calculator.js`
+- `frontend/statistics-live-bridge-v2.js`
+- `frontend/statistics.html`
+
+تست فنی تغییر وضعیت رکورد موجود از مرحله آماده به مرحله نصب موفق شد و بدون Supabase write انجام شد.
+
+PR مربوطه: `#24` — merge شده در `main`.
+
+---
+
+## 13. اصلاح ناوبری و Back — 2026-09-19/20
+
+مشکل: بازگشت از بخش‌های «مدیریت و بهسازی سنگ مزار» در بعضی مسیرها مستقیماً به صفحه اصلی می‌رفت.
+
+علت: منوی «مدیریت و بهسازی سنگ مزار» state مستقل `stone-menu` در history نداشت.
+
+راه‌حل QA:
+- ثبت state مستقل `stone-menu`
+- بازسازی منوی بهسازی بدون ایجاد history اضافی
+- اصلاح `navigation-fix.js`
+- افزودن handling مربوط به `stone-menu` در `app.js`
+- cache-busting برای loader و launcher
+- اصلاح دکمه بازگشت صفحه نتایج به صورت `← بازگشت`
+
+Branch:
+`fix/navigation-stone-menu-20260919`
+
+Recovery:
+`recovery/main-before-navigation-fix-20260919`
+
+PR:
+`#25` — در زمان ثبت این گزارش هنوز برای merge نهایی نگه داشته شده تا تست عملی QA انجام شود.
+
+---
+
+## 14. مدل رسمی جدید Branch / Deployment
+
+از 2026-09-20 تعریف رسمی پروژه:
+
+- **نسخه مرجع تست و توسعه:** `qa`
+- **نسخه مرجع عملیات:** `main`
+- **لینک تست:** Vercel Preview متصل به branch `qa`
+- **لینک عملیاتی:** GitHub Pages متصل فقط به `main`
+
+GitHub Pages Workflow اصلاح شده تا فقط با push به `main` اجرا شود. Branchهای آزمایشی دیگر نباید همان سایت عملیاتی GitHub Pages را Deploy کنند.
+
+چرخه:
+`Recovery → QA → Technical Test → QA Link → Practical Test → Approval → main → GitHub Pages → Operational Link`
+
+---
+
+## 15. وضعیت فعلی
+
+**Statistics fix:** فنی PASS و PR #24 merge شده.
+
+**Navigation fix:** فنی PASS روی QA؛ تست عملی کاربر هنوز مرجع تصمیم برای merge نهایی PR #25 است.
+
+**main فعلی:** `757dcc1373d3f5761cae08d7bc6c35b0bb6a34ba`
+
+**Supabase:** در اصلاحات اخیر بدون write/schema change.
+
+**Pages:** Workflow جدید آماده است؛ Deploy جدید از main باید جداگانه تأیید شود.
+
+**QA:** branch دائمی `qa` ایجاد شده و مبنای کار تستی است.
+
+**پاک‌سازی فایل‌ها:** فقط فایل‌هایی که پس از بررسی dependency و Recovery واقعاً بلااستفاده بودنشان ثابت شود حذف خواهند شد؛ فایل‌های تاریخی/Recovery بدون بررسی حذف نمی‌شوند.
+
