@@ -88,7 +88,7 @@ function loadExactSearchGroupFix() {
   document.body.appendChild(fix);
 }
 
-function loadBackToTop {
+function loadBackToTop() {
   const fix = document.createElement("script");
   fix.src = "back-to-top-20260920.js?v=20260920-01";
   fix.onload = () => loadStatsLabel();
