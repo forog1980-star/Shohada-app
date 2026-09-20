@@ -10,31 +10,20 @@ function goBackToStoneManagementMenu() {
   window.history.replaceState(
     {
       golzarApp: true,
-      page: "home",
+      page: "stone-menu",
     },
     "",
     window.location.href
   );
 
-  currentAppPage = "home";
+  currentAppPage = "stone-menu";
 
-  if (typeof window.showHome === "function") {
+  if (typeof window.showStoneManagementMenu === "function") {
+    window.showStoneManagementMenu(false);
+  } else if (typeof window.showHome === "function") {
     window.showHome();
   }
-
-  // showHome توسط launcher به منوی دوگانه برمی‌گردد؛
-  // سپس کارت سبز «مدیریت و بهسازی سنگ مزار» را باز می‌کنیم.
-  setTimeout(() => {
-    const stoneButton = document.querySelector(
-      ".modular-home-main-action.green"
-    );
-
-    if (stoneButton) {
-      stoneButton.click();
-    }
-  }, 0);
 }
-
 document.addEventListener("click", function (event) {
   const button = event.target.closest?.("#back-home");
   if (!button) return;

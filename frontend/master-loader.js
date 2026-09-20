@@ -9,7 +9,7 @@
 
 function loadApp() {
   const script = document.createElement("script");
-  script.src = "app.js?v=20260907-stage-01";
+  script.src = "app.js?v=20260919-nav-01";
 
   script.onload = () => loadStageDefinition();
   script.onerror = () => loadStageDefinition();
@@ -34,7 +34,7 @@ function loadFinalQAFix() {
 
 function loadNavigationFix() {
   const navigation = document.createElement("script");
-  navigation.src = "navigation-fix.js?v=20260906-final-01";
+  navigation.src = "navigation-fix.js?v=20260919-nav-01";
   navigation.onload = () => loadSearchFixes();
   navigation.onerror = () => loadSearchFixes();
   document.body.appendChild(navigation);

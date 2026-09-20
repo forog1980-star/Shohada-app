@@ -517,6 +517,14 @@ window.addEventListener(
           showHome();
           break;
 
+        case "stone-menu":
+          if (typeof window.showStoneManagementMenu === "function") {
+            window.showStoneManagementMenu(false);
+          } else {
+            showHome();
+          }
+          break;
+
         case "search":
           showSearch(true);
           break;
@@ -770,12 +778,7 @@ function applyAppStyles() {
       position: relative;
     }
 
-    /* حذف کامل هر فلش/آیکون احتمالی اطراف بازگشت */
-    .back-button::before,
-    .back-button::after {
-      content: none !important;
-      display: none !important;
-    }
+    /* فلش بازگشت به‌صورت صریح داخل خود دکمه نمایش داده می‌شود. */
 
     .refresh-button {
       border: none;
@@ -1325,7 +1328,7 @@ function internalHeader(
         type="button"
         class="back-button"
         id="back-home"
-      >بازگشت</button>
+      >← بازگشت</button>
 
       <div class="internal-title">
 
