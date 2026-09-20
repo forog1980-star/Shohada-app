@@ -50,10 +50,6 @@
         if(typeof window.initializeHistory==="function")window.initializeHistory();
         if(typeof window.applyAppStyles==="function")window.applyAppStyles();
         if(typeof window.showHome==="function")window.showHome();
-        const openView=new URLSearchParams(window.location.search).get("open");
-        if(openView==="stone-menu" && typeof window.showStoneManagementMenu==="function"){
-          window.showStoneManagementMenu(false);
-        }
         if(typeof window.installStatsLabel==="function")window.installStatsLabel();
         if(typeof window.installVersionLabel==="function")window.installVersionLabel();
       }catch(e){console.error("GolzarStone app startup error:",e)}
