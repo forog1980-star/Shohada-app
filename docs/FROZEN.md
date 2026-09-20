@@ -1,1 +1,0 @@
-Frozen completed modules; open only single and group martyr entry.
