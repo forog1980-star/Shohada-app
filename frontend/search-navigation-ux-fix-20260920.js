@@ -136,7 +136,7 @@
   style.textContent = `
     #${TOP_BUTTON_ID} {
       position: fixed;
-      right: 18px;
+      left: 50%;
       bottom: 22px;
       z-index: 1000;
       width: 48px;
@@ -153,14 +153,14 @@
       cursor: pointer;
       opacity: 0;
       visibility: hidden;
-      transform: translateY(8px);
+      transform: translate(-50%, 8px);
       transition: opacity .18s ease, visibility .18s ease, transform .18s ease;
     }
 
     #${TOP_BUTTON_ID}.is-visible {
       opacity: 1;
       visibility: visible;
-      transform: translateY(0);
+      transform: translate(-50%, 0);
     }
 
     #${TOP_BUTTON_ID}:focus-visible {
@@ -170,7 +170,7 @@
 
     @media (max-width: 520px) {
       #${TOP_BUTTON_ID} {
-        right: 14px;
+        left: 50%;
         bottom: 16px;
         width: 44px;
         height: 44px;
