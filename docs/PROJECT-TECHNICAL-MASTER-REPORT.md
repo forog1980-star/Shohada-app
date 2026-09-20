@@ -300,7 +300,7 @@ GitHub Pages Workflow اصلاح شده تا فقط با push به `main` اجر
 
 **Navigation fix:** فنی PASS روی QA؛ تست عملی کاربر هنوز مرجع تصمیم برای merge نهایی PR #25 است.
 
-**main فعلی:** `8fd5e4bc1152e60dc387e2849c32e15798c33f71`
+**main فعلی:** `b1c0b3c4a2264622ac2d8ce64c085ecd7a40b22d`
 
 **Supabase:** در اصلاحات اخیر بدون write/schema change.
 
@@ -365,3 +365,25 @@ Recoveryها، اسناد تاریخی اصلی، Loaderها، فایل‌های
 `https://shohada-app-git-qa-forog1980-8339.vercel.app/`
 
 اتصال زنده و Commit مستقر هر دو لینک باید هنگام تست عملی با Branch/Deployment واقعی تطبیق داده شوند.
+
+
+---
+
+## 17. نهایی‌سازی پاک‌سازی مخزن — 2026-09-20
+
+PR پاک‌سازی مخزن `#27` با موفقیت Merge شد.
+
+- Merge commit: `b1c0b3c4a2264622ac2d8ce64c085ecd7a40b22d`
+- Recovery قبل از پاک‌سازی: `recovery/main-before-repository-cleanup-20260920`
+- فایل‌های حذف‌شده پس از Merge در `main` نیز بررسی شدند و دیگر وجود ندارند.
+- هیچ تغییر داده یا Schema در Supabase انجام نشد.
+- فایل‌های فعال جایگزین و Loaderهای مرتبط حفظ شدند.
+- وضعیت عملیاتی برنامه از نظر کد همچنان بر مبنای `main` است.
+- وضعیت QA همچنان بر مبنای branch دائمی `qa` است.
+
+### دو لینک رسمی برای مراجعه روزانه
+1. **MAIN — نسخه مرجع عملیاتی:** `https://forog1980-star.github.io/Shohada-app/`
+2. **QA — نسخه مرجع تست و توسعه:** `https://shohada-app-git-qa-forog1980-8339.vercel.app/`
+
+### قانون مراجعه
+برای هر کار جدید ابتدا وضعیت `qa` بررسی و تست می‌شود. فقط پس از تأیید نهایی، تغییر از مسیر Pull Request وارد `main` می‌شود. لینک اول برای استفاده عملیاتی و لینک دوم برای تست است.
