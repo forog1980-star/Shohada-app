@@ -778,12 +778,7 @@ function applyAppStyles() {
       position: relative;
     }
 
-    /* حذف کامل هر فلش/آیکون احتمالی اطراف بازگشت */
-    .back-button::before,
-    .back-button::after {
-      content: none !important;
-      display: none !important;
-    }
+    /* فلش بازگشت به‌صورت صریح داخل خود دکمه نمایش داده می‌شود. */
 
     .refresh-button {
       border: none;
@@ -1333,7 +1328,7 @@ function internalHeader(
         type="button"
         class="back-button"
         id="back-home"
-      >بازگشت</button>
+      >← بازگشت</button>
 
       <div class="internal-title">
 
