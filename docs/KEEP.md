@@ -1,1 +1,0 @@
-Keep this project stable. Only single and group martyr entry are open for development.
