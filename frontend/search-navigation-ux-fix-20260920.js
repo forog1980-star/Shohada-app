@@ -5,8 +5,9 @@
  *
  * هدف:
  * 1) حفظ موقع اسکرول هنگام ورود از نتایج جستجو به جزئیات و بازگشت.
- * 2) افزودن دکمه شناور «بازگشت به بالا» برای صفحات داخلی برنامه.
- * 3) حذف فلش متنی قدیمی «←» از دکمه بازگشت در نسخه QA.
+ * 2) ثبت history مستقل برای جزئیات جستجو تا Back همیشه یک مرحله برگردد.
+ * 3) افزودن دکمه شناور «بازگشت به بالا» برای صفحات داخلی برنامه.
+ * 4) حذف فلش متنی قدیمی «←» از دکمه بازگشت در نسخه QA.
  *
  * این ماژول مستقل است و داده/Schema مربوط به Supabase را تغییر نمی‌دهد.
  */
@@ -17,6 +18,7 @@
 
   const SCROLL_KEY = "__GOLZAR_SEARCH_SCROLL_Y__";
   const TOP_BUTTON_ID = "golzar-back-to-top";
+  const SEARCH_DETAIL_PAGE = "search-detail";
 
   function currentPage() {
     return window.currentAppPage || window.history.state?.page || "home";
@@ -110,9 +112,23 @@
       if (source === "search") {
         try {
           sessionStorage.setItem(SCROLL_KEY, String(getScrollY()));
+
+          const currentState = window.history.state;
+          if (currentState?.page !== SEARCH_DETAIL_PAGE) {
+            window.history.pushState(
+              {
+                golzarApp: true,
+                page: SEARCH_DETAIL_PAGE,
+              },
+              "",
+              window.location.href
+            );
+          }
+
+          currentAppPage = SEARCH_DETAIL_PAGE;
         } catch (error) {
           console.warn(
-            "GolzarStone search scroll save failed:",
+            "GolzarStone search detail history setup failed:",
             error
           );
         }
@@ -122,11 +138,60 @@
     };
   }
 
+  /*
+   * Detail -> Back:
+   * حالا جزئیات جستجو history مستقل دارد. بنابراین دکمه Back
+   * باید یک مرحله history عقب برود؛ نه اینکه مستقیماً restore کند.
+   * این کار مانع پرش search -> stone-menu -> home می‌شود.
+   */
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (currentPage() !== SEARCH_DETAIL_PAGE) return;
+
+      const button = event.target?.closest?.("#back-home, #back-records");
+      if (!button) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.history.back();
+    },
+    true
+  );
+
+  /*
+   * popstate در app.js زودتر ثبت شده و برای state ناشناخته
+   * به home می‌رود. این capture handler باید قبل از آن state
+   * search-detail را مصرف کند و نتیجه جستجو را بازگرداند.
+   */
+  window.addEventListener(
+    "popstate",
+    (event) => {
+      if (event.state?.golzarApp === true && event.state?.page === SEARCH_DETAIL_PAGE) {
+        event.stopImmediatePropagation();
+        currentAppPage = SEARCH_DETAIL_PAGE;
+        return;
+      }
+
+      if (currentPage() !== SEARCH_DETAIL_PAGE) return;
+
+      event.stopImmediatePropagation();
+      currentAppPage = "search";
+
+      if (typeof window.restoreSearchPage === "function") {
+        window.restoreSearchPage();
+      }
+    },
+    true
+  );
+
   const originalRestoreSearchPage = window.restoreSearchPage;
   if (typeof originalRestoreSearchPage === "function") {
     window.restoreSearchPage = function patchedRestoreSearchPage(...args) {
       const result = originalRestoreSearchPage.apply(this, args);
       restoreSearchScroll();
+      currentAppPage = "search";
+      updateTopButton();
       return result;
     };
   }
@@ -136,7 +201,7 @@
   style.textContent = `
     #${TOP_BUTTON_ID} {
       position: fixed;
-      right: 18px;
+      left: 50%;
       bottom: 22px;
       z-index: 1000;
       width: 48px;
@@ -153,14 +218,14 @@
       cursor: pointer;
       opacity: 0;
       visibility: hidden;
-      transform: translateY(8px);
+      transform: translate(-50%, 8px);
       transition: opacity .18s ease, visibility .18s ease, transform .18s ease;
     }
 
     #${TOP_BUTTON_ID}.is-visible {
       opacity: 1;
       visibility: visible;
-      transform: translateY(0);
+      transform: translate(-50%, 0);
     }
 
     #${TOP_BUTTON_ID}:focus-visible {
@@ -170,7 +235,7 @@
 
     @media (max-width: 520px) {
       #${TOP_BUTTON_ID} {
-        right: 14px;
+        left: 50%;
         bottom: 16px;
         width: 44px;
         height: 44px;
