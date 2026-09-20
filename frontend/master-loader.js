@@ -83,6 +83,14 @@ function loadSearchBackFix() {
 function loadExactSearchGroupFix() {
   const fix = document.createElement("script");
   fix.src = "search-exact-group-fix.js?v=20260914-01";
+  fix.onload = () => loadSearchBackDirect();
+  fix.onerror = () => loadSearchBackDirect();
+  document.body.appendChild(fix);
+}
+
+function loadSearchBackDirect() {
+  const fix = document.createElement("script");
+  fix.src = "search-back-direct-20260920.js?v=20260920-01";
   fix.onload = () => loadBackToTop();
   fix.onerror = () => loadBackToTop();
   document.body.appendChild(fix);
