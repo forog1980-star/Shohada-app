@@ -112,23 +112,11 @@
       if (source === "search") {
         try {
           sessionStorage.setItem(SCROLL_KEY, String(getScrollY()));
-
-          const currentState = window.history.state;
-          if (currentState?.page !== SEARCH_DETAIL_PAGE) {
-            window.history.pushState(
-              {
-                golzarApp: true,
-                page: SEARCH_DETAIL_PAGE,
-              },
-              "",
-              window.location.href
-            );
-          }
-
-          currentAppPage = SEARCH_DETAIL_PAGE;
+          window.__GOLZAR_SEARCH_DETAIL_ACTIVE__ = true;
+          window.currentAppPage = "search-detail";
         } catch (error) {
           console.warn(
-            "GolzarStone search detail history setup failed:",
+            "GolzarStone search detail setup failed:",
             error
           );
         }
@@ -139,44 +127,23 @@
   }
 
   /*
-   * Detail -> Back:
-   * حالا جزئیات جستجو history مستقل دارد. بنابراین دکمه Back
-   * باید یک مرحله history عقب برود؛ نه اینکه مستقیماً restore کند.
-   * این کار مانع پرش search -> stone-menu -> home می‌شود.
+   * Search -> Detail -> Back:
+   * برای دکمه بازگشت داخل جزئیات جستجو، مستقیماً همان
+   * restoreSearchPage را اجرا می‌کنیم. در این مسیر به
+   * history.back() وابسته نیستیم؛ بنابراین Back دوم نمی‌تواند
+   * به stone-menu یا home پرش کند.
    */
   document.addEventListener(
     "click",
     (event) => {
-      if (currentPage() !== SEARCH_DETAIL_PAGE) return;
-
       const button = event.target?.closest?.("#back-home, #back-records");
-      if (!button) return;
+      if (!button || !window.__GOLZAR_SEARCH_DETAIL_ACTIVE__) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
-      window.history.back();
-    },
-    true
-  );
 
-  /*
-   * popstate در app.js زودتر ثبت شده و برای state ناشناخته
-   * به home می‌رود. این capture handler باید قبل از آن state
-   * search-detail را مصرف کند و نتیجه جستجو را بازگرداند.
-   */
-  window.addEventListener(
-    "popstate",
-    (event) => {
-      if (event.state?.golzarApp === true && event.state?.page === SEARCH_DETAIL_PAGE) {
-        event.stopImmediatePropagation();
-        currentAppPage = SEARCH_DETAIL_PAGE;
-        return;
-      }
-
-      if (currentPage() !== SEARCH_DETAIL_PAGE) return;
-
-      event.stopImmediatePropagation();
-      currentAppPage = "search";
+      window.__GOLZAR_SEARCH_DETAIL_ACTIVE__ = false;
+      window.currentAppPage = "search";
 
       if (typeof window.restoreSearchPage === "function") {
         window.restoreSearchPage();
