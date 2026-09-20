@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - fix/exact-filters-match-20260907
   workflow_dispatch:
 
 concurrency:
@@ -19,12 +18,10 @@ jobs:
       pages: write
       id-token: write
     environment:
-      # Keep the known-working Pages environment configuration.
-      # It avoids the previous production-environment protection issue.
       name: github-pages-qa
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout current release branch
+      - name: Checkout main release
         uses: actions/checkout@v6
 
       - name: Validate Pages entry point
