@@ -130,13 +130,21 @@ function loadGolzartehPhoto() {
 function loadGolzartehDetailPhoto() {
   const detailPhoto = document.createElement("script");
   detailPhoto.src = "golzarteh-detail-photo.js?v=20260927-02";
-  detailPhoto.onload = () => {
-    window.__GOLZAR_MASTER_READY__ = true;
-  };
-  detailPhoto.onerror = () => {
-    window.__GOLZAR_MASTER_READY__ = true;
-  };
+  detailPhoto.onload = () => loadGolzartehTombPhoto();
+  detailPhoto.onerror = () => loadGolzartehTombPhoto();
   document.body.appendChild(detailPhoto);
+}
+
+function loadGolzartehTombPhoto() {
+  const tombPhoto = document.createElement("script");
+  tombPhoto.src = "golzarteh-tomb-photo.js?v=20260927-01";
+  tombPhoto.onload = () => {
+    window.__GOLZAR_MASTER_READY__ = true;
+  };
+  tombPhoto.onerror = () => {
+    window.__GOLZAR_MASTER_READY__ = true;
+  };
+  document.body.appendChild(tombPhoto);
 }
 
 document.addEventListener("DOMContentLoaded", loadApp);
