@@ -227,6 +227,10 @@ async function showRecordDetail(id, source = "records") {
   }
 
   document.getElementById("back-records")?.addEventListener("click", goBack);
+
+  if (typeof window.renderGolzartehDetailPhoto === "function") {
+    window.renderGolzartehDetailPhoto(data, detailContainer);
+  }
 }
 
 // ------------------------------------------------------------
