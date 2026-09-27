@@ -111,12 +111,32 @@ function loadStatsLabel() {
     if (typeof window.installStatsLabel === "function") {
       window.installStatsLabel();
     }
-    window.__GOLZAR_MASTER_READY__ = true;
+    loadGolzartehPhoto();
   };
   stats.onerror = () => {
-    window.__GOLZAR_MASTER_READY__ = true;
+    loadGolzartehPhoto();
   };
   document.body.appendChild(stats);
+}
+
+function loadGolzartehPhoto() {
+  const photo = document.createElement("script");
+  photo.src = "golzarteh-photo.js?v=20260927-02";
+  photo.onload = () => loadGolzartehDetailPhoto();
+  photo.onerror = () => loadGolzartehDetailPhoto();
+  document.body.appendChild(photo);
+}
+
+function loadGolzartehDetailPhoto() {
+  const detailPhoto = document.createElement("script");
+  detailPhoto.src = "golzarteh-detail-photo.js?v=20260927-01";
+  detailPhoto.onload = () => {
+    window.__GOLZAR_MASTER_READY__ = true;
+  };
+  detailPhoto.onerror = () => {
+    window.__GOLZAR_MASTER_READY__ = true;
+  };
+  document.body.appendChild(detailPhoto);
 }
 
 document.addEventListener("DOMContentLoaded", loadApp);
