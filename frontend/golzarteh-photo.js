@@ -95,8 +95,15 @@ function namesEquivalent(a, b) {
   return aVariants.some((variant) => bVariants.has(variant));
 }
 
+function normalizeNumber(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+}
+
 function sameNumber(a, b) {
-  return String(a ?? "").trim() === String(b ?? "").trim();
+  return normalizeNumber(a) === normalizeNumber(b);
 }
 
 function getMartyrPlaceField(martyr, field) {
