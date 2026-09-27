@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Golzarteh Photo Test</title>
+  <style>
+    body{font-family:Tahoma,Arial,sans-serif;max-width:900px;margin:30px auto;padding:0 16px;line-height:1.8}
+    img{display:block;max-width:100%;max-height:700px;margin-top:20px;border:1px solid #ccc}
+    pre{white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <h1>تست مستقل اتصال عکس گلزارته</h1>
+  <p>رکورد آزمون: محمدعلی جهان‌آرا — قطعه ۲۴، ردیف ۹۸، شماره ۴۴</p>
+  <pre id="status">در حال دریافت اطلاعات...</pre>
+  <img id="photo" alt="عکس مزار محمدعلی جهان‌آرا" hidden>
+
+  <script src="./golzarteh-photo.js"></script>
+  <script>
+    (async () => {
+      const record = {
+        name: "محمدعلی",
+        lastname: "جهان آرا",
+        piece: "24",
+        grave_row: "98",
+        grave_number: "44"
+      };
+
+      const status = document.getElementById("status");
+      const photo = document.getElementById("photo");
+
+      try {
+        const result = await window.GolzarTehPhoto.getPhotos(record);
+
+        if (!result) {
+          status.textContent = "نتیجه‌ای برای تطبیق دقیق پیدا نشد.";
+          return;
+        }
+
+        status.textContent = JSON.stringify(result, null, 2);
+
+        if (result.mainPhoto) {
+          photo.src = result.mainPhoto;
+          photo.hidden = false;
+        }
+      } catch (error) {
+        status.textContent = "ERROR\n" + (error?.stack || error);
+      }
+    })();
+  </script>
+</body>
+</html>
