@@ -24,6 +24,10 @@ function normalizeFamilyName(value) {
   return normalizeText(value).replace(/[آأإ]/g, "ا");
 }
 
+function normalizeIdentityText(value) {
+  return normalizeText(value).replace(/\s+/g, "");
+}
+
 function getFamilyNameVariants(value) {
   const normalized = normalizeText(value);
   const variants = [normalized];
@@ -31,7 +35,12 @@ function getFamilyNameVariants(value) {
   if (alefAroVariant && alefAroVariant !== normalized) {
     variants.push(alefAroVariant);
   }
-  return [...new Set(variants)];
+
+  const compactVariants = variants
+    .map((variant) => variant.replace(/\s+/g, ""))
+    .filter(Boolean);
+
+  return [...new Set([...variants, ...compactVariants])];
 }
 
 function sameNumber(a, b) {
@@ -44,8 +53,10 @@ function getMartyrPlaceField(martyr, field) {
 
 function isExactMatch(record, martyr) {
   return (
-    normalizePersonName(record.name) === normalizePersonName(martyr.firstName) &&
-    normalizeFamilyName(record.lastname) === normalizeFamilyName(martyr.lastName) &&
+    normalizeIdentityText(normalizePersonName(record.name)) ===
+      normalizeIdentityText(normalizePersonName(martyr.firstName)) &&
+    normalizeIdentityText(normalizeFamilyName(record.lastname)) ===
+      normalizeIdentityText(normalizeFamilyName(martyr.lastName)) &&
     sameNumber(record.piece, getMartyrPlaceField(martyr, "section")) &&
     sameNumber(record.grave_row, getMartyrPlaceField(martyr, "row")) &&
     sameNumber(record.grave_number, getMartyrPlaceField(martyr, "number"))
@@ -53,50 +64,53 @@ function isExactMatch(record, martyr) {
 }
 
 async function findGolzartehMartyr(record) {
+  const firstNameBase = String(record.name ?? "");
   const firstNameVariants = [
-    String(record.name ?? ""),
-    normalizeText(record.name ?? "").replace(/^(سید|سیده)\s*/, "")
+    firstNameBase,
+    normalizeText(firstNameBase).replace(/^(سید|سیده)\s*/, ""),
+    normalizeText(firstNameBase).replace(/\s+/g, "")
   ].filter((value, index, list) => value && list.indexOf(value) === index);
 
   const lastNameVariants = getFamilyNameVariants(record.lastname);
 
   for (const firstName of firstNameVariants) {
     for (const lastName of lastNameVariants) {
-    const params = new URLSearchParams({
-      perPage: "25",
-      number: String(record.grave_number ?? ""),
-      section: String(record.piece ?? ""),
-      lastName,
-      row: String(record.grave_row ?? ""),
-      page: "1",
-      firstName
-    });
+      const params = new URLSearchParams({
+        perPage: "25",
+        number: String(record.grave_number ?? ""),
+        section: String(record.piece ?? ""),
+        lastName,
+        row: String(record.grave_row ?? ""),
+        page: "1",
+        firstName
+      });
 
-    const response = await fetch(
-      GOLZARTEH_API + "/martyr/summary?" + params.toString()
-    );
+      const response = await fetch(
+        GOLZARTEH_API + "/martyr/summary?" + params.toString()
+      );
 
-    if (!response.ok) {
-      throw new Error("Golzarteh API: " + response.status);
-    }
+      if (!response.ok) {
+        throw new Error("Golzarteh API: " + response.status);
+      }
 
-    const result = await response.json();
-    const rows = Array.isArray(result.data) ? result.data : [];
+      const result = await response.json();
+      const rows = Array.isArray(result.data) ? result.data : [];
 
-    if (result.total !== undefined && Number(result.total) !== 1) {
-      continue;
-    }
+      if (result.total !== undefined && Number(result.total) !== 1) {
+        continue;
+      }
 
-    const exact = rows.filter((martyr) => isExactMatch(record, martyr));
+      const exact = rows.filter((martyr) => isExactMatch(record, martyr));
 
-    if (exact.length === 1) {
-      return exact[0];
-    }
+      if (exact.length === 1) {
+        return exact[0];
+      }
     }
   }
 
   return null;
 }
+
 function getGolzartehPhotoUrl(photoId) {
   if (!photoId) return "";
   return GOLZARTEH_FILE + "/" + encodeURIComponent(photoId);
