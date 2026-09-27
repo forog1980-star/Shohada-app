@@ -73,6 +73,10 @@
       box.appendChild(source);
 
       status.remove();
+
+      if (typeof window.renderGolzartehTombPhoto === "function") {
+        window.renderGolzartehTombPhoto(record, container);
+      }
     } catch (error) {
       console.error("Golzarteh detail photo error:", error);
       status.textContent = "دریافت عکس از سایت گلزار شهدای تهران انجام نشد.";
