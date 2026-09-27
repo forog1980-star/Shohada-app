@@ -438,3 +438,189 @@ Recoveryها، اسناد تاریخی اصلی، Loaderها، فایل‌های
 4. تعیین اینکه کدام بخش‌های برنامه برای همه کاربران قابل دسترسی و کدام عملیات فقط برای مسئول/ناظر مجاز باشند.
 
 در طراحی احراز هویت و سطح دسترسی، **هیچ تغییری در Supabase Auth/RLS یا داده عملیاتی تا زمان تصویب مدل دسترسی انجام نشود**.
+
+
+---
+
+## 18. اتصال عکس و اطلاعات گلزارته — وضعیت جاری 2026-09-27
+
+این بخش آخرین وضعیت فنی Integration با سامانه گلزار شهدای تهران است و در صورت تعارض با بخش‌های قدیمی‌تر این گزارش، مبنای ادامه کار محسوب می‌شود.
+
+### 18-1. Branch و Commit جاری
+
+- **Branch کاری:** `feature/golzarteh-photo-2026-09-27`
+- **Commit فعلی ثبت‌شده:** `6abaae5a88b1a27518e22e81a6fcc0bdb3c605d7`
+- **PR:** `#39`
+- وضعیت PR: **Draft**
+- `main` در این مرحله دست‌نخورده و مرجع عملیاتی باقی مانده است.
+- Recovery Pointهای مربوط به این Integration ایجاد شده‌اند و تا پایان QA حفظ می‌شوند:
+  - `recovery/golzarteh-photo-all-2026-09-27` → `2153b61`
+  - `recovery/golzarteh-photo-loader-before-cachefix-20260927` → `24f154e`
+  - `recovery/golzarteh-photo-before-integration-2026-09-27`
+  - `recovery/golzarteh-photo-all-martyrs-before-integration-2026-09-27`
+  - `recovery/golzarteh-photo-name-normalization-2026-09-27`
+  - `recovery/golzarteh-2026-09-27`
+  - `recovery/golzarteh-similar-before-2026-09-27`
+
+### 18-2. API و زنجیره عکس
+
+Endpoint مورد استفاده:
+`https://api.golzarteh.ir/api/v1/martyr/summary`
+
+دانلود فایل:
+`https://api.golzarteh.ir/api/v1/files/download/{ID}`
+
+نمونه‌های API که عملی تأیید شده‌اند:
+
+**محمدعلی جهان‌آرا**
+- API id: `18852`
+- father: هدایت
+- uniqueCode: `24098044`
+- mainPhoto: `37058a7f-7ec8-4550-ac86-72cb93780b45`
+- thumbnailKey: `506e0728-291c-4bac-8c32-c8f6893ecfdd`
+- tomb photo: `f78ec56a-7ff7-4616-a2c9-fa546c214588`
+- location: 24/98/44
+- دانلود مستقیم فایل‌های عکس با HTTP 200 و image/jpeg تأیید شده است.
+
+**سید مهدی سیدفاطمی**
+- API id: `27557`
+- firstName: سیدمهدی
+- lastName: سیدفاطمی
+- father: سیدجواد
+- location: 17/81/39
+- نام با فاصله و بدون فاصله در مسیر Normalization پشتیبانی می‌شود.
+
+### 18-3. اصلاح نرمال‌سازی «ا / آ»
+
+برای نام‌هایی مانند «آباده / اباده» منطق Controlled Alef Variant اضافه شده است.
+
+توابع اصلی:
+- `getLeadingAlefVariants`
+- `getIdentityVariants`
+- `getFamilyNameVariants`
+- `getPersonNameVariants`
+- `namesEquivalent`
+
+این منطق فقط برای افزایش احتمال پیدا شدن Candidate در API استفاده می‌شود و به‌تنهایی باعث Exact شدن رکورد نمی‌شود.
+
+### 18-4. تفکیک Exact و Similar
+
+قانون فعلی:
+
+- **Exact** نیازمند تطبیق محل قبر و سپس تطبیق هویتی معتبر است.
+- در صورت اختلاف محل، رکورد نباید Exact شود.
+- Similar می‌تواند Candidate هویتی معتبر را برای بررسی کاربر نمایش دهد.
+- تطبیق صرفاً بر اساس نام/نام خانوادگی برای Exact کافی نیست.
+- برای Exact، در صورت عدم تطبیق strict نام، حداقل یکی از father / birth / death باید همراه با تطبیق نام و نام خانوادگی تأیید شود.
+
+توابع کلیدی:
+- `isExactLocation`
+- `strictNamesMatch`
+- `isExactMatch`
+- `isNameSimilar`
+- `findExactGolzartehMartyr`
+- `findSimilarGolzartehMartyrs`
+- `findGolzartehMatches`
+- `getGolzartehPhotos`
+
+Export فعلی:
+- `findMartyr`
+- `findMatches`
+- `getPhotos`
+- `getPhotoUrl`
+
+### 18-5. تست کلیدی «محسن آباده» — PASS عملی
+
+رکورد برنامه با اطلاعات زیر تست شد:
+- نام: محسن
+- نام خانوادگی در رکورد محلی: اباده
+- پدر: حسین
+- تولد: ۱۳۴۲
+- شهادت: ۱۶ دی ۱۳۶۳
+- محل شهادت: ابوغریب
+- محل مزار ثبت‌شده در برنامه: 27/105/8
+
+API با «اباده» به‌صورت مستقیم Candidate نداد، اما با Variant «آباده» رکورد زیر پیدا شد:
+
+- **id: 10378**
+- نام: محسن
+- نام خانوادگی: آباده
+- پدر: حسین
+- location در گلزارته: 24/104/1
+- mainPhoto: `ca747139-0fd3-4bee-9f4f-009fea31c934`
+- thumbnail: `98c1ce7b-1a7d-4776-9344-71a1d5f8f4a2`
+
+جزئیات Match:
+- nameMatch: true
+- lastNameMatch: true
+- fatherMatch: true
+- birthMatch: null
+- deathMatch: null
+- locationMatch: false
+- score: **90**
+
+نتیجه رسمی تست:
+`matchType = similar`
+
+رکورد به‌درستی **Exact نشد**، زیرا محل مزار برنامه با محل مزار گلزارته متفاوت بود؛ اما Candidate معتبر برای بررسی کاربر نمایش داده شد.
+
+### 18-6. تست عملی UI — PASS
+
+پس از رفع Cache/Runtime در مرورگر:
+- `window.GolzarTehPhoto` شامل `findMatches` شد.
+- Similar Candidate برای محسن آباده در UI نمایش داده شد.
+- عکس اصلی Candidate نیز نمایش داده شد.
+- بنابراین زنجیره زیر عملی PASS شده است:
+
+`Local Record → API Query → Name Normalization → Similar Match → Identity Corroboration → Photo ID → Similar Card → Photo Display`
+
+### 18-7. مشکل Cache که در QA شناسایی و رفع شد
+
+در ابتدا مرورگر نسخه قدیمی `golzarteh-photo.js?v=20260927-05` را در runtime داشت و فقط این توابع را expose می‌کرد:
+- `findMartyr`
+- `getPhotos`
+- `getPhotoUrl`
+
+در حالی که فایل محلی فعلی شامل `findMatches` و `findSimilarGolzartehMartyrs` بود.
+
+با **Ctrl + Shift + R**، runtime به نسخه صحیح Reload شد و خروجی به چهار تابع رسید:
+- `findMartyr`
+- `findMatches`
+- `getPhotos`
+- `getPhotoUrl`
+
+این مورد به‌عنوان **Cache/Runtime issue** ثبت می‌شود و نه خطای Matching.
+
+### 18-8. وضعیت فایل‌های عکس
+
+فایل‌های مرتبط فعلی:
+- `frontend/golzarteh-photo.js?v=20260927-06`
+- `frontend/golzarteh-detail-photo.js?v=20260927-03`
+- `frontend/golzarteh-tomb-photo.js?v=20260927-01`
+
+در تست محلی، فایل `golzarteh-photo.js` با طول 12489 بایت و وجود توابع Similar تأیید شد.
+
+### 18-9. محدودیت مهم برای ادامه QA
+
+تا این مرحله:
+- Matching: **PASS**
+- Similar UI: **PASS**
+- Photo retrieval/display: **PASS**
+- Exact/Simiar separation: **PASS**
+- Supabase write/schema change: **انجام نشده**
+- Merge به `main`: **انجام نشده**
+- PR #39: همچنان **Draft**
+
+بنابراین این Integration هنوز **برای Merge نهایی به main تأیید نشده** است.
+
+### 18-10. نقطه ادامه بعدی
+
+قبل از هر Merge:
+1. تست مجدد نمونه‌های Exact قبلی، به‌خصوص محمدعلی جهان‌آرا و سید مهدی سیدفاطمی.
+2. تست نمونه‌ای که نباید Match شود، مانند اصغر پرستاری.
+3. بررسی اینکه Similar فقط Candidateهای هویتی معتبر را نشان دهد.
+4. بررسی عکس اصلی و عکس مزار در چند Candidate.
+5. سپس بررسی Deploy/Version و تست عملی نهایی.
+6. فقط پس از PASS کامل، تصمیم برای انتقال از branch کاری به `main`.
+
+**قاعده ثابت:** تا پایان این QA هیچ تغییر مستقیمی روی `main` و هیچ Mergeی انجام نشود.
