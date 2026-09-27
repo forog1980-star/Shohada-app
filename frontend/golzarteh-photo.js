@@ -20,13 +20,17 @@ function sameNumber(a, b) {
   return String(a ?? "").trim() === String(b ?? "").trim();
 }
 
+function getMartyrPlaceField(martyr, field) {
+  return martyr?.[field] ?? martyr?.tombInfo?.[field] ?? "";
+}
+
 function isExactMatch(record, martyr) {
   return (
     sameText(record.name, martyr.firstName) &&
     sameText(record.lastname, martyr.lastName) &&
-    sameNumber(record.piece, martyr.section) &&
-    sameNumber(record.grave_row, martyr.row) &&
-    sameNumber(record.grave_number, martyr.number)
+    sameNumber(record.piece, getMartyrPlaceField(martyr, "section")) &&
+    sameNumber(record.grave_row, getMartyrPlaceField(martyr, "row")) &&
+    sameNumber(record.grave_number, getMartyrPlaceField(martyr, "number"))
   );
 }
 
