@@ -263,16 +263,8 @@ function buildMatchDetails(record, martyr) {
   };
 }
 
-function isExactMatch(record, martyr) {
+function isExactLocation(record, martyr) {
   return (
-    namesEquivalent(
-      normalizePersonName(record.name),
-      normalizePersonName(martyr.firstName)
-    ) &&
-    namesEquivalent(
-      record.lastname,
-      martyr.lastName
-    ) &&
     sameNumber(
       record.piece,
       getMartyrPlaceField(martyr, "section")
@@ -285,6 +277,37 @@ function isExactMatch(record, martyr) {
       record.grave_number,
       getMartyrPlaceField(martyr, "number")
     )
+  );
+}
+
+function strictNamesMatch(record, martyr) {
+  return (
+    normalizeIdentityText(
+      normalizePersonName(record.name)
+    ) ===
+      normalizeIdentityText(
+        normalizePersonName(martyr.firstName)
+      ) &&
+    normalizeIdentityText(record.lastname) ===
+      normalizeIdentityText(martyr.lastName)
+  );
+}
+
+function isExactMatch(record, martyr) {
+  if (!isExactLocation(record, martyr)) return false;
+
+  if (strictNamesMatch(record, martyr)) {
+    return true;
+  }
+
+  const details = buildMatchDetails(record, martyr);
+
+  return (
+    details.nameMatch &&
+    details.lastNameMatch &&
+    (details.fatherMatch === true ||
+      details.birthMatch === true ||
+      details.deathMatch === true)
   );
 }
 
