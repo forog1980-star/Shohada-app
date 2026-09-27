@@ -129,7 +129,7 @@ function loadGolzartehPhoto() {
 
 function loadGolzartehDetailPhoto() {
   const detailPhoto = document.createElement("script");
-  detailPhoto.src = "golzarteh-detail-photo.js?v=20260927-02";
+  detailPhoto.src = "golzarteh-detail-photo.js?v=20260927-03";
   detailPhoto.onload = () => loadGolzartehTombPhoto();
   detailPhoto.onerror = () => loadGolzartehTombPhoto();
   document.body.appendChild(detailPhoto);
