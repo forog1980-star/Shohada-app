@@ -121,7 +121,7 @@ function loadStatsLabel() {
 
 function loadGolzartehPhoto() {
   const photo = document.createElement("script");
-  photo.src = "golzarteh-photo.js?v=20260927-05";
+  photo.src = "golzarteh-photo.js?v=20260927-06";
   photo.onload = () => loadGolzartehDetailPhoto();
   photo.onerror = () => loadGolzartehDetailPhoto();
   document.body.appendChild(photo);
