@@ -30,7 +30,7 @@
 
     const title = document.createElement("div");
     title.className = "golzarteh-photo-title";
-    title.textContent = "📷 عکس شهید در گلزارته";
+    title.textContent = "📷 عکس شهید در سایت گلزار شهدای تهران";
 
     const status = document.createElement("div");
     status.className = "golzarteh-photo-status";
@@ -43,13 +43,13 @@
       const photos = await window.GolzarTehPhoto.getPhotos(record);
 
       if (!photos?.mainPhoto) {
-        status.textContent = "عکس دقیق این شهید در گلزارته پیدا نشد.";
+        status.textContent = "عکس دقیق این شهید در سایت گلزار شهدای تهران پیدا نشد.";
         return;
       }
 
       const image = document.createElement("img");
       image.className = "golzarteh-photo-image";
-      image.alt = "عکس شهید در گلزارته";
+      image.alt = "عکس شهید در سایت گلزار شهدای تهران";
       image.loading = "lazy";
       image.src = photos.mainPhoto;
 
@@ -58,7 +58,7 @@
           image.src = photos.thumbnail;
           return;
         }
-        status.textContent = "دریافت عکس از گلزارته انجام نشد.";
+        status.textContent = "دریافت عکس از سایت گلزار شهدای تهران انجام نشد.";
         image.remove();
       };
 
@@ -69,13 +69,13 @@
       source.href = photos.mainPhoto;
       source.target = "_blank";
       source.rel = "noopener noreferrer";
-      source.textContent = "منبع عکس: گلزارته";
+      source.textContent = "منبع عکس: سایت گلزار شهدای تهران";
       box.appendChild(source);
 
       status.remove();
     } catch (error) {
       console.error("Golzarteh detail photo error:", error);
-      status.textContent = "دریافت عکس از گلزارته انجام نشد.";
+      status.textContent = "دریافت عکس از سایت گلزار شهدای تهران انجام نشد.";
     }
   }
 
