@@ -357,10 +357,10 @@ async function findExactGolzartehMartyr(record) {
     for (const lastName of lastNameVariants.slice(0, 4)) {
       const result = await fetchGolzartehByParams({
         perPage: "25",
-        number: String(record.grave_number ?? ""),
-        section: String(record.piece ?? ""),
+        number: normalizeNumber(record.grave_number),
+        section: normalizeNumber(record.piece),
         lastName,
-        row: String(record.grave_row ?? ""),
+        row: normalizeNumber(record.grave_row),
         page: "1",
         firstName
       });
