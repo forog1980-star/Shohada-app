@@ -129,7 +129,7 @@ function loadGolzartehPhoto() {
 
 function loadGolzartehDetailPhoto() {
   const detailPhoto = document.createElement("script");
-  detailPhoto.src = "golzarteh-detail-photo.js?v=20260927-01";
+  detailPhoto.src = "golzarteh-detail-photo.js?v=20260927-02";
   detailPhoto.onload = () => {
     window.__GOLZAR_MASTER_READY__ = true;
   };
