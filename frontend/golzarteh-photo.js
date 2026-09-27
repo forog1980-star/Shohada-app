@@ -16,6 +16,10 @@ function sameText(a, b) {
   return normalizeText(a) === normalizeText(b);
 }
 
+function normalizePersonName(value) {
+  return normalizeText(value).replace(/^(سید|سیده)\s*/, "");
+}
+
 function sameNumber(a, b) {
   return String(a ?? "").trim() === String(b ?? "").trim();
 }
@@ -26,7 +30,7 @@ function getMartyrPlaceField(martyr, field) {
 
 function isExactMatch(record, martyr) {
   return (
-    sameText(record.name, martyr.firstName) &&
+    normalizePersonName(record.name) === normalizePersonName(martyr.firstName) &&
     sameText(record.lastname, martyr.lastName) &&
     sameNumber(record.piece, getMartyrPlaceField(martyr, "section")) &&
     sameNumber(record.grave_row, getMartyrPlaceField(martyr, "row")) &&
@@ -35,36 +39,46 @@ function isExactMatch(record, martyr) {
 }
 
 async function findGolzartehMartyr(record) {
-  const params = new URLSearchParams({
-    perPage: "25",
-    number: String(record.grave_number ?? ""),
-    section: String(record.piece ?? ""),
-    lastName: String(record.lastname ?? ""),
-    row: String(record.grave_row ?? ""),
-    page: "1",
-    firstName: String(record.name ?? "")
-  });
+  const firstNameVariants = [
+    String(record.name ?? ""),
+    normalizeText(record.name ?? "").replace(/^(سید|سیده)\s*/, "")
+  ].filter((value, index, list) => value && list.indexOf(value) === index);
 
-  const response = await fetch(
-    GOLZARTEH_API + "/martyr/summary?" + params.toString()
-  );
+  for (const firstName of firstNameVariants) {
+    const params = new URLSearchParams({
+      perPage: "25",
+      number: String(record.grave_number ?? ""),
+      section: String(record.piece ?? ""),
+      lastName: String(record.lastname ?? ""),
+      row: String(record.grave_row ?? ""),
+      page: "1",
+      firstName
+    });
 
-  if (!response.ok) {
-    throw new Error("Golzarteh API: " + response.status);
+    const response = await fetch(
+      GOLZARTEH_API + "/martyr/summary?" + params.toString()
+    );
+
+    if (!response.ok) {
+      throw new Error("Golzarteh API: " + response.status);
+    }
+
+    const result = await response.json();
+    const rows = Array.isArray(result.data) ? result.data : [];
+
+    if (result.total !== undefined && Number(result.total) !== 1) {
+      continue;
+    }
+
+    const exact = rows.filter((martyr) => isExactMatch(record, martyr));
+
+    if (exact.length === 1) {
+      return exact[0];
+    }
   }
 
-  const result = await response.json();
-  const rows = Array.isArray(result.data) ? result.data : [];
-
-  if (result.total !== undefined && Number(result.total) !== 1) {
-    return null;
-  }
-
-  const exact = rows.filter((martyr) => isExactMatch(record, martyr));
-
-  return exact.length === 1 ? exact[0] : null;
+  return null;
 }
-
 function getGolzartehPhotoUrl(photoId) {
   if (!photoId) return "";
   return GOLZARTEH_FILE + "/" + encodeURIComponent(photoId);
