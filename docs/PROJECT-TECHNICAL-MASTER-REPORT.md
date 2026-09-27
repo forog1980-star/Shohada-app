@@ -449,7 +449,7 @@ Recoveryها، اسناد تاریخی اصلی، Loaderها، فایل‌های
 ### 18-1. Branch و Commit جاری
 
 - **Branch کاری:** `feature/golzarteh-photo-2026-09-27`
-- **Commit فعلی ثبت‌شده:** `6abaae5a88b1a27518e22e81a6fcc0bdb3c605d7`
+- **Commit فعلی ثبت‌شده:** `e841c81` — `fix: normalize location digits in Golzarteh exact query`
 - **PR:** `#39`
 - وضعیت PR: **Draft**
 - `main` در این مرحله دست‌نخورده و مرجع عملیاتی باقی مانده است.
@@ -624,3 +624,76 @@ API با «اباده» به‌صورت مستقیم Candidate نداد، اما
 6. فقط پس از PASS کامل، تصمیم برای انتقال از branch کاری به `main`.
 
 **قاعده ثابت:** تا پایان این QA هیچ تغییر مستقیمی روی `main` و هیچ Mergeی انجام نشود.
+
+### 18-11. اصلاح نهایی Query موقعیت قبر — 2026-09-27
+
+در QA مشخص شد API گلزارته برای پارامترهای موقعیت قبر با ارقام فارسی/عربی Candidate دقیق برنمی‌گرداند، در حالی که همان درخواست با ارقام لاتین رکورد صحیح را برمی‌گرداند.
+
+نمونه تأییدشده:
+- ورودی برنامه: قطعه ۲۴ / ردیف ۹۸ / شماره ۴۴
+- درخواست صحیح API: 24 / 98 / 44
+- نتیجه: data.length = 1
+- رکورد: id = 18852
+- نام: محمدعلی
+- نام خانوادگی: جهان آرا
+- پدر: هدایت
+
+علت ریشه‌ای:
+findExactGolzartehMartyr() مقادیر piece / grave_row / grave_number را مستقیماً و بدون نرمال‌سازی عددی به Query API ارسال می‌کرد.
+
+اصلاح حداقلی اعمال‌شده در:
+frontend/golzarteh-photo.js
+
+سه پارامتر Query اکنون از normalizeNumber() عبور می‌کنند:
+- number: normalizeNumber(record.grave_number)
+- section: normalizeNumber(record.piece)
+- row: normalizeNumber(record.grave_row)
+
+Commit اصلاح:
+e841c81 — fix: normalize location digits in Golzarteh exact query
+
+کنترل تغییر:
+- فقط ۳ خط کد تغییر کرده است.
+- git diff --check: PASS
+- Encoding فایل حفظ شد.
+- Commit و Push به branch کاری با موفقیت انجام شد.
+- main هیچ تغییری نکرده است.
+- Supabase write/schema change انجام نشده است.
+
+تست مستقیم API پس از اصلاح:
+24/98/44 + محمدعلی + جهان آرا → id 18852 : PASS
+
+### 18-12. نقطه پایان کار امروز — 2026-09-27
+
+کار امروز در همین نقطه متوقف می‌شود.
+
+وضعیت پایان روز:
+- Branch: feature/golzarteh-photo-2026-09-27
+- Commit: e841c81
+- PR: #39 — Draft
+- main: دست‌نخورده
+- Supabase: بدون Write و بدون Schema Change
+- اصلاح Query موقعیت قبر: فنی PASS
+- تست مستقیم API برای محمدعلی جهان آرا: PASS
+- تست کامل UI روی نسخه Branch پس از این Commit: هنوز انجام نشده
+- Merge به main: انجام نشده
+
+نکته:
+تلاش برای تست فایل روی GitHub Pages با مسیر ریشه اشتباه انجام شد و پاسخ 404 مربوط به مسیر نادرست بود؛ این مورد به‌عنوان نتیجه QA برنامه محسوب نمی‌شود و نیاز به اصلاح کد ندارد.
+
+### 18-13. نقطه شروع فردا — 2026-09-28
+
+نقطه شروع فردا دقیقاً همین‌جاست:
+feature/golzarteh-photo-2026-09-27 @ e841c81
+
+ترتیب ادامه کار:
+1. خواندن همین گزارش فنی و تطبیق با وضعیت زنده GitHub.
+2. بررسی Preview/Deployment مربوط به همین Branch.
+3. تست عملی محمدعلی جهان آرا → انتظار: Exact, id 18852.
+4. تست سید مهدی سیدفاطمی → انتظار: Exact, id 27557.
+5. تست محسن آباده → انتظار: Similar, id 10378 و location mismatch.
+6. تست اصغر پرستاری → انتظار: No Match.
+7. در صورت PASS همه موارد، بررسی عکس اصلی و عکس مزار و سپس تصمیم‌گیری درباره Merge به main.
+8. تا قبل از PASS کامل، هیچ Merge یا تغییر مستقیم روی main انجام نشود.
+
+یادداشت اجرایی فردا: قبل از شروع هر تغییر، وضعیت Branch، Commit، PR #39 و Deploy/Preview بررسی شود؛ سپس از همین نقطه ادامه داده شود.
