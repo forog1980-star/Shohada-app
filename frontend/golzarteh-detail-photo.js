@@ -39,9 +39,9 @@
       ".golzarteh-similar-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}",
       ".golzarteh-match-chip{padding:4px 8px;border-radius:999px;background:#eef6f0;color:#315f45;font-size:11px}",
       ".golzarteh-match-chip.is-unknown{background:#f3f4f4;color:#69726e}",
-      ".golzarteh-similar-photo-box{margin-top:12px;padding:10px;border:1px solid #dde7e1;border-radius:12px;background:#fbfdfc}
-      .golzarteh-similar-photo-title{font-weight:bold;color:#315f45;font-size:12px;margin-bottom:7px}
-      .golzarteh-similar-main{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:10px;background:#eef2ef}",
+      ".golzarteh-similar-photo-box{margin-top:12px;padding:10px;border:1px solid #dde7e1;border-radius:12px;background:#fbfdfc}",
+      ".golzarteh-similar-photo-title{font-weight:bold;color:#315f45;font-size:12px;margin-bottom:7px}",
+      ".golzarteh-similar-main{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:10px;background:#eef2ef}",
       ".golzarteh-similar-tombs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px}",
       ".golzarteh-similar-tombs img{display:block;width:100%;height:170px;object-fit:cover;border-radius:10px;background:#eef2ef}",
       ".golzarteh-similar-source{display:block;margin-top:8px;color:#6f7c76;font-size:11px;text-decoration:none}"
