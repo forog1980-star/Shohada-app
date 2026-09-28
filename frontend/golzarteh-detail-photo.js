@@ -227,7 +227,7 @@
       source.target = "_blank";
       source.rel = "noopener noreferrer";
       source.textContent =
-        "منبع عکس شهید: سایت گلزار شهدای تهران — این نتیجه به‌صورت مشابه نمایش داده شده است.";
+        "منبع عکس شهید: سایت گلزار شهدای تهران";
       card.appendChild(source);
     }
 
