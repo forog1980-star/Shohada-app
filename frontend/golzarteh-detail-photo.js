@@ -43,7 +43,7 @@
       ".golzarteh-similar-photo-title{font-weight:bold;color:#315f45;font-size:12px;margin-bottom:7px}",
       ".golzarteh-similar-main{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:10px;background:#eef2ef}",
       ".golzarteh-similar-tombs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px}",
-      ".golzarteh-similar-tombs img{display:block;width:100%;height:170px;object-fit:cover;border-radius:10px;background:#eef2ef}",
+      ".golzarteh-similar-tombs img{display:block;width:100%;max-height:520px;object-fit:contain;border-radius:10px;background:#eef2ef}",
       ".golzarteh-similar-source{display:block;margin-top:8px;color:#6f7c76;font-size:11px;text-decoration:none}"
     ].join("");
 
@@ -191,31 +191,45 @@
       const tombs = document.createElement("div");
       tombs.className = "golzarteh-similar-tombs";
 
-      candidate.tombPhotos.forEach((src) => {
+      candidate.tombPhotos.forEach((src, index) => {
+        const tombItem = document.createElement("div");
+        tombItem.className = "golzarteh-similar-tomb-item";
+
         const img = document.createElement("img");
         img.alt = "عکس مزار شهید در گلزار شهدای تهران";
         img.loading = "lazy";
         img.src = src;
-        img.onerror = () => img.remove();
-        tombs.appendChild(img);
+
+        img.onerror = () => tombItem.remove();
+
+        tombItem.appendChild(img);
+
+        const tombSource = document.createElement("a");
+        tombSource.className = "golzarteh-similar-source";
+        tombSource.href = src;
+        tombSource.target = "_blank";
+        tombSource.rel = "noopener noreferrer";
+        tombSource.textContent =
+          "منبع عکس مزار " + (index + 1) + ": سایت گلزار شهدای تهران";
+        tombItem.appendChild(tombSource);
+
+        tombs.appendChild(tombItem);
       });
 
       tombBox.appendChild(tombs);
       card.appendChild(tombBox);
     }
 
-    const source = document.createElement("a");
-    source.className = "golzarteh-similar-source";
-    source.href =
-      candidate.mainPhoto ||
-      candidate.thumbnail ||
-      candidate.tombPhotos?.[0] ||
-      "#";
-    source.target = "_blank";
-    source.rel = "noopener noreferrer";
-    source.textContent =
-      "منبع تصویر: سایت گلزار شهدای تهران — این نتیجه به‌صورت مشابه نمایش داده شده است.";
-    card.appendChild(source);
+    if (candidate.mainPhoto || candidate.thumbnail) {
+      const source = document.createElement("a");
+      source.className = "golzarteh-similar-source";
+      source.href = candidate.mainPhoto || candidate.thumbnail;
+      source.target = "_blank";
+      source.rel = "noopener noreferrer";
+      source.textContent =
+        "منبع عکس شهید: سایت گلزار شهدای تهران — این نتیجه به‌صورت مشابه نمایش داده شده است.";
+      card.appendChild(source);
+    }
 
     return card;
   }
