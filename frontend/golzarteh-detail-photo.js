@@ -176,6 +176,16 @@
       };
 
       photoBox.appendChild(image);
+
+      const martyrSource = document.createElement("a");
+      martyrSource.className = "golzarteh-similar-source";
+      martyrSource.href = candidate.mainPhoto || candidate.thumbnail;
+      martyrSource.target = "_blank";
+      martyrSource.rel = "noopener noreferrer";
+      martyrSource.textContent =
+        "منبع عکس شهید: سایت گلزار شهدای تهران";
+      photoBox.appendChild(martyrSource);
+
       card.appendChild(photoBox);
     }
 
@@ -220,16 +230,6 @@
       card.appendChild(tombBox);
     }
 
-    if (candidate.mainPhoto || candidate.thumbnail) {
-      const source = document.createElement("a");
-      source.className = "golzarteh-similar-source";
-      source.href = candidate.mainPhoto || candidate.thumbnail;
-      source.target = "_blank";
-      source.rel = "noopener noreferrer";
-      source.textContent =
-        "منبع عکس شهید: سایت گلزار شهدای تهران";
-      card.appendChild(source);
-    }
 
     return card;
   }
