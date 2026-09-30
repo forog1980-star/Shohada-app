@@ -33,7 +33,7 @@ function loadMatchingCore() {
 
 function loadFinalQAFix() {
   const fix = document.createElement("script");
-  fix.src = "final-qa-fix-2026-09-06.js?v=20260930-entry-02";
+  fix.src = "new-record-validation-fix-20260930.js?v=20260930-entry-01";
   fix.onload = () => loadNavigationFix();
   fix.onerror = () => loadNavigationFix();
   document.body.appendChild(fix);
