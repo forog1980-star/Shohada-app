@@ -105,7 +105,7 @@ function loadSearchBackDirect() {
 
 function loadBackToTop() {
   const fix = document.createElement("script");
-  fix.src = "back-to-top-20260920.js?v=20260920-01";
+  fix.src = "back-to-top-20260920.js?v=20260930-02";
   fix.onload = () => loadStatsLabel();
   fix.onerror = () => loadStatsLabel();
   document.body.appendChild(fix);
