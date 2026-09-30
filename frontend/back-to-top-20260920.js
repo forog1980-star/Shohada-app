@@ -43,6 +43,11 @@
     const saveInProgress = !!saveButton?.disabled;
     button.classList.toggle("is-visible", visible);
     button.classList.toggle("is-save-busy", visible && saveInProgress);
+    if (visible && saveInProgress) {
+      button.style.setProperty("display", "none", "important");
+    } else {
+      button.style.removeProperty("display");
+    }
     button.setAttribute("aria-hidden", visible ? "false" : "true");
     button.tabIndex = visible ? 0 : -1;
   }
@@ -82,6 +87,7 @@
 
       /* هنگام بررسی/ثبت اطلاعات شهید، دکمه رویی مزاحم متن دکمه ثبت نشود. */
       #${BUTTON_ID}.is-visible.is-save-busy {
+        display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -121,6 +127,7 @@
     const button = document.getElementById(BUTTON_ID);
     if (!button || window.scrollY <= 420) return;
     button.classList.add("is-save-busy");
+    button.style.setProperty("display", "none", "important");
     button.setAttribute("aria-hidden", "true");
     button.tabIndex = -1;
   }, true);
