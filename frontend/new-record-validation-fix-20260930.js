@@ -133,7 +133,7 @@ function candidateHtml(item) {
           ${item.reasons.map(escapeMatch).join(" · ")}
         </div>` : ""}
       <div style="font-size:11px;color:#8a9891;">
-        میزان شباهت محاسباتی: ${score}٪
+        امتیاز تطبیق محاسباتی: ${score}٪
       </div>
     </div>`;
 }
