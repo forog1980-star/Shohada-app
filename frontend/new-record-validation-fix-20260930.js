@@ -517,6 +517,11 @@ document.addEventListener(
   true
 );
 
+function resetNewRecordMatchCache() {
+  newRecordCandidateCache = [];
+  newRecordMatchReviewed = false;
+}
+
 document.addEventListener(
   "click",
   event => {
@@ -532,6 +537,7 @@ document.addEventListener(
 
     event.preventDefault();
     event.stopImmediatePropagation();
+    resetNewRecordMatchCache();
 
     if (typeof goBackToStoneManagementMenu === "function") {
       goBackToStoneManagementMenu();
