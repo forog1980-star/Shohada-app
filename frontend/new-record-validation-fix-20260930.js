@@ -238,53 +238,52 @@ async function saveNewRecordFromQA(event) {
 
   const button = document.getElementById("save-new");
 
-  if (!newRecordMatchReviewed) {
-    if (button) {
-      button.disabled = true;
-      button.textContent = "در حال بررسی رکوردهای موجود...";
-    }
+  if (button) {
+    button.disabled = true;
+    button.textContent = "در حال بررسی رکوردهای موجود...";
+  }
 
-    try {
-      const result = await checkNewRecordMatch({
-        name,
-        lastname,
-        piece,
-        grave_row: row,
-        grave_number: number,
-      });
+  try {
+    const result = await checkNewRecordMatch({
+      name,
+      lastname,
+      piece,
+      grave_row: row,
+      grave_number: number,
+    });
 
-      if (result.classification === "EXACT") {
-        showExactWarning(result);
-        if (button) {
-          button.disabled = false;
-          button.textContent = "ذخیره اطلاعات";
-        }
-        return;
-      }
-
-      if (result.classification === "SIMILAR") {
-        showSimilarWarning(result);
-        newRecordMatchReviewed = true;
-        if (button) {
-          button.disabled = false;
-          button.textContent = "ثبت اطلاعات پس از بررسی";
-        }
-        return;
-      }
-
-      newRecordMatchReviewed = true;
-    } catch (error) {
-      console.error("GolzarStone matching error:", error);
+    if (result.classification === "EXACT") {
+      showExactWarning(result);
+      newRecordMatchReviewed = false;
       if (button) {
         button.disabled = false;
         button.textContent = "ذخیره اطلاعات";
       }
-      alert(
-        "بررسی رکوردهای موجود انجام نشد. برای جلوگیری از ثبت رکورد بدون کنترل تکراری، ذخیره متوقف شد.\n\n" +
-        (error?.message || error)
-      );
       return;
     }
+
+    if (result.classification === "SIMILAR" && !newRecordMatchReviewed) {
+      showSimilarWarning(result);
+      newRecordMatchReviewed = true;
+      if (button) {
+        button.disabled = false;
+        button.textContent = "ثبت اطلاعات پس از بررسی";
+      }
+      return;
+    }
+
+    newRecordMatchReviewed = true;
+  } catch (error) {
+    console.error("GolzarStone matching error:", error);
+    if (button) {
+      button.disabled = false;
+      button.textContent = "ذخیره اطلاعات";
+    }
+    alert(
+      "بررسی رکوردهای موجود انجام نشد. برای جلوگیری از ثبت رکورد بدون کنترل تکراری، ذخیره متوقف شد.\n\n" +
+      (error?.message || error)
+    );
+    return;
   }
 
   if (button) {
