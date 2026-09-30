@@ -23,8 +23,13 @@ let syncingNewRecordStages = false;
 let newRecordMatchReviewed = false;
 let newRecordSaveInFlight = false;
 
-// کنترل زمان انتظار شبکه؛ کنترل تطبیق قبل از INSERT همچنان اجباری است.
-const NEW_RECORD_MATCH_TIMEOUT_MS = 15000;
+// نتایج پیدا شده در بررسی قبلی برای کلیک/بررسی بعدی نگه داشته می‌شوند.
+// Cache فقط یک لایه سرعت است و جایگزین جستجوی تکمیلی Supabase نیست.
+let newRecordCandidateCache = [];
+let newRecordCandidateCacheFingerprint = "";
+
+const NEW_RECORD_MATCH_STATUS_DELAY_MS = 5500;
+const NEW_RECORD_TARGET_LIMIT = 200;
 
 function syncNewRecordStageOptions() {
   if (syncingNewRecordStages) return;
@@ -174,37 +179,92 @@ function showSimilarWarning(result) {
     ${result.similar.map(candidateHtml).join("")}`;
 }
 
-async function fetchExistingMartyrsForMatching(signal) {
-  const all = [];
-  const pageSize = 1000;
-
-  for (let page = 0; page < 20; page += 1) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    let query = supabaseClient
-      .from("martyrs")
-      .select("id,name,lastname,father_name,piece,grave_row,grave_number")
-      .order("id", { ascending: true })
-      .range(from, to);
-
-    if (signal && typeof query.abortSignal === "function") {
-      query = query.abortSignal(signal);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    const rows = data || [];
-    all.push(...rows);
-    if (rows.length < pageSize) break;
-  }
-
-  return all;
+function matchFingerprint(input) {
+  return [
+    input?.name || "",
+    input?.lastname || "",
+    input?.piece || "",
+    input?.grave_row || "",
+    input?.grave_number || "",
+  ].join("|");
 }
 
-async function checkNewRecordMatch(input) {
+function mergeMartyrCandidates(...groups) {
+  const byId = new Map();
+
+  for (const group of groups) {
+    for (const row of Array.isArray(group) ? group : []) {
+      if (!row || row.id == null) continue;
+      byId.set(String(row.id), row);
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
+function buildTargetedQuery(input, kind, signal) {
+  let query = supabaseClient
+    .from("martyrs")
+    .select("id,name,lastname,father_name,piece,grave_row,grave_number")
+    .limit(NEW_RECORD_TARGET_LIMIT);
+
+  if (kind === "identity") {
+    query = query
+      .ilike("name", input.name)
+      .ilike("lastname", input.lastname);
+  } else if (kind === "location") {
+    query = query
+      .eq("piece", input.piece)
+      .ilike("grave_row", input.grave_row)
+      .ilike("grave_number", input.grave_number);
+  } else if (kind === "piece-row") {
+    query = query
+      .eq("piece", input.piece)
+      .ilike("grave_row", input.grave_row);
+  } else if (kind === "piece-number") {
+    query = query
+      .eq("piece", input.piece)
+      .ilike("grave_number", input.grave_number);
+  }
+
+  if (signal && typeof query.abortSignal === "function") {
+    query = query.abortSignal(signal);
+  }
+
+  return query;
+}
+
+async function fetchTargetedMartyrCandidates(input, signal) {
+  // چهار جستجوی محدود و مستقل:
+  // 1) نام + نام خانوادگی
+  // 2) محل مزار کامل
+  // 3) قطعه + ردیف
+  // 4) قطعه + شماره
+  //
+  // این ترکیب باعث می‌شود با تغییر یک جزء کلیدی، شانس از دست‌رفتن
+  // رکورد مشابه کم شود؛ بدون اینکه کل جدول روی موبایل دانلود شود.
+  const kinds = ["identity", "location", "piece-row", "piece-number"];
+
+  const results = await Promise.all(
+    kinds.map(async kind => {
+      const { data, error } = await buildTargetedQuery(input, kind, signal);
+      if (error) throw error;
+      return data || [];
+    })
+  );
+
+  return mergeMartyrCandidates(...results);
+}
+
+function classifyCachedCandidates(input) {
+  if (!Array.isArray(newRecordCandidateCache) || !newRecordCandidateCache.length) {
+    return null;
+  }
+
+  return window.GolzarMatchingCore.classify(input, newRecordCandidateCache);
+}
+
+async function checkNewRecordMatch(input, options = {}) {
   if (
     !window.GolzarMatchingCore ||
     typeof window.GolzarMatchingCore.classify !== "function"
@@ -212,27 +272,57 @@ async function checkNewRecordMatch(input) {
     throw new Error("هسته تطبیق رکوردها بارگذاری نشده است.");
   }
 
+  const cachedResult = classifyCachedCandidates(input);
+
+  // اگر Cache رکورد دقیق دارد، دیگر لازم نیست شبکه را درگیر کنیم.
+  if (cachedResult?.classification === "EXACT") {
+    return cachedResult;
+  }
+
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(
-    () => controller.abort(),
-    NEW_RECORD_MATCH_TIMEOUT_MS
-  );
+  const fingerprint = matchFingerprint(input);
 
   try {
-    const existing = await fetchExistingMartyrsForMatching(controller.signal);
-    return window.GolzarMatchingCore.classify(input, existing);
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      const timeoutError = new Error(
-        "زمان بررسی رکوردهای موجود بیش از حد مجاز شد. اتصال شبکه یا پاسخ پایگاه داده را بررسی کنید و دوباره تلاش کنید."
-      );
-      timeoutError.code = "MATCH_TIMEOUT";
-      throw timeoutError;
-    }
-    throw error;
+    const freshCandidates = await fetchTargetedMartyrCandidates(
+      input,
+      controller.signal
+    );
+
+    newRecordCandidateCache = mergeMartyrCandidates(
+      newRecordCandidateCache,
+      freshCandidates
+    );
+    newRecordCandidateCacheFingerprint = fingerprint;
+
+    return window.GolzarMatchingCore.classify(
+      input,
+      newRecordCandidateCache
+    );
   } finally {
-    window.clearTimeout(timeoutId);
+    // AbortController فقط برای لغو صریح بررسی‌های آینده/ناخواسته است؛
+    // Timeout کاربرمحور ۱۵ ثانیه‌ای عمداً حذف شده است.
+    if (options?.abortSignal && options.abortSignal.aborted) {
+      controller.abort();
+    }
   }
+}
+
+function showMatchProgressMessage(startedAt) {
+  const box = getMatchContainer();
+  if (!box) return;
+
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < NEW_RECORD_MATCH_STATUS_DELAY_MS) return;
+
+  box.style.background = "#f7faf8";
+  box.style.borderColor = "#cbded3";
+  box.innerHTML = `
+    <div style="font-weight:800;color:#315f4a;font-size:15px;">
+      ⏳ لطفاً شکیبا باشید
+    </div>
+    <div style="margin-top:5px;color:#5f6d66;">
+      در حال بررسی کامل اسامی و سوابق موجود هستیم...
+    </div>`;
 }
 
 async function saveNewRecordFromQA(event) {
@@ -270,6 +360,8 @@ async function saveNewRecordFromQA(event) {
   newRecordSaveInFlight = true;
   const button = document.getElementById("save-new");
   const isRecheck = newRecordMatchReviewed;
+  const matchStartedAt = Date.now();
+  let progressTimer = null;
 
   if (button) {
     button.disabled = true;
@@ -279,6 +371,10 @@ async function saveNewRecordFromQA(event) {
   }
 
   try {
+    progressTimer = window.setTimeout(() => {
+      showMatchProgressMessage(matchStartedAt);
+    }, NEW_RECORD_MATCH_STATUS_DELAY_MS);
+
     const result = await checkNewRecordMatch({
       name,
       lastname,
@@ -311,16 +407,15 @@ async function saveNewRecordFromQA(event) {
 
     newRecordMatchReviewed = true;
   } catch (error) {
+    if (progressTimer) window.clearTimeout(progressTimer);
     console.error("GolzarStone matching error:", error);
     if (button) {
       button.disabled = false;
       button.textContent = "ذخیره اطلاعات";
     }
     alert(
-      error?.code === "MATCH_TIMEOUT"
-        ? "بررسی رکوردهای موجود بیش از ۱۵ ثانیه طول کشید و برای جلوگیری از ثبت بدون کنترل تکراری متوقف شد.\n\nلطفاً اتصال شبکه را بررسی کنید و دوباره تلاش کنید."
-        : "بررسی رکوردهای موجود انجام نشد. برای جلوگیری از ثبت رکورد بدون کنترل تکراری، ذخیره متوقف شد.\n\n" +
-          (error?.message || error)
+      "بررسی رکوردهای موجود انجام نشد. برای جلوگیری از ثبت رکورد بدون کنترل تکراری، ذخیره متوقف شد.\n\n" +
+        (error?.message || error)
     );
     newRecordSaveInFlight = false;
     return;
