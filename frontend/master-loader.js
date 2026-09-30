@@ -33,7 +33,7 @@ function loadMatchingCore() {
 
 function loadFinalQAFix() {
   const fix = document.createElement("script");
-  fix.src = "new-record-validation-fix-20260930.js?v=20260930-entry-01";
+  fix.src = "new-record-validation-fix-20260930.js?v=20260930-entry-02";
   fix.onload = () => loadNavigationFix();
   fix.onerror = () => loadNavigationFix();
   document.body.appendChild(fix);
@@ -105,7 +105,7 @@ function loadSearchBackDirect() {
 
 function loadBackToTop() {
   const fix = document.createElement("script");
-  fix.src = "back-to-top-20260920.js?v=20260920-01";
+  fix.src = "back-to-top-20260920.js?v=20260930-04";
   fix.onload = () => loadStatsLabel();
   fix.onerror = () => loadStatsLabel();
   document.body.appendChild(fix);

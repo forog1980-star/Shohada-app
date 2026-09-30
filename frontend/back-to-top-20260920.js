@@ -39,7 +39,15 @@
     if (!button) return;
 
     const visible = window.scrollY > 420;
+    const saveButton = document.getElementById("save-new");
+    const saveInProgress = !!saveButton?.disabled;
     button.classList.toggle("is-visible", visible);
+    button.classList.toggle("is-save-busy", visible && saveInProgress);
+    if (visible && saveInProgress) {
+      button.style.setProperty("display", "none", "important");
+    } else {
+      button.style.removeProperty("display");
+    }
     button.setAttribute("aria-hidden", visible ? "false" : "true");
     button.tabIndex = visible ? 0 : -1;
   }
@@ -77,6 +85,15 @@
         transform: translate(-50%, 0);
       }
 
+      /* هنگام بررسی/ثبت اطلاعات شهید، دکمه رویی مزاحم متن دکمه ثبت نشود. */
+      #${BUTTON_ID}.is-visible.is-save-busy {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        box-shadow: none !important;
+      }
+
       #${BUTTON_ID}:focus-visible {
         outline: 3px solid rgba(40,120,184,.35);
         outline-offset: 2px;
@@ -104,8 +121,39 @@
 
   window.addEventListener("resize", updateVisibility);
 
+  document.addEventListener("click", event => {
+    const saveButton = event.target.closest?.("#save-new");
+    if (!saveButton) return;
+    const button = document.getElementById(BUTTON_ID);
+    if (!button || window.scrollY <= 420) return;
+    button.classList.add("is-save-busy");
+    button.style.setProperty("display", "none", "important");
+    button.setAttribute("aria-hidden", "true");
+    button.tabIndex = -1;
+  }, true);
+
+  const saveStateObserver = new MutationObserver(mutations => {
+    if (mutations.some(mutation => mutation.type === "attributes" && mutation.attributeName === "disabled")) {
+      updateVisibility();
+    }
+  });
+
+  function observeSaveButton() {
+    const saveButton = document.getElementById("save-new");
+    if (!saveButton) return;
+    saveStateObserver.disconnect();
+    saveStateObserver.observe(saveButton, { attributes: true, attributeFilter: ["disabled"] });
+    updateVisibility();
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     ensureButton();
     updateVisibility();
+    observeSaveButton();
   });
+
+  const formObserver = new MutationObserver(() => observeSaveButton());
+  if (document.body) {
+    formObserver.observe(document.body, { childList: true, subtree: true });
+  }
 })();

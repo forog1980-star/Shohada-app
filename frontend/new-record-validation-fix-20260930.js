@@ -21,6 +21,13 @@ function getCanonicalStageDefinition() {
 
 let syncingNewRecordStages = false;
 let newRecordMatchReviewed = false;
+let newRecordSaveInFlight = false;
+
+// نتایج پیدا شده در بررسی قبلی برای کلیک/بررسی بعدی نگه داشته می‌شوند.
+// Cache فقط یک لایه سرعت است و جایگزین جستجوی تکمیلی Supabase نیست.
+let newRecordCandidateCache = [];
+const NEW_RECORD_MATCH_STATUS_DELAY_MS = 5500;
+const NEW_RECORD_TARGET_LIMIT = 200;
 
 function syncNewRecordStageOptions() {
   if (syncingNewRecordStages) return;
@@ -170,28 +177,79 @@ function showSimilarWarning(result) {
     ${result.similar.map(candidateHtml).join("")}`;
 }
 
-async function fetchExistingMartyrsForMatching() {
-  const all = [];
-  const pageSize = 1000;
+function mergeMartyrCandidates(...groups) {
+  const byId = new Map();
 
-  for (let page = 0; page < 20; page += 1) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    const { data, error } = await supabaseClient
-      .from("martyrs")
-      .select("id,name,lastname,father_name,piece,grave_row,grave_number")
-      .order("id", { ascending: true })
-      .range(from, to);
-
-    if (error) throw error;
-
-    const rows = data || [];
-    all.push(...rows);
-    if (rows.length < pageSize) break;
+  for (const group of groups) {
+    for (const row of Array.isArray(group) ? group : []) {
+      if (!row || row.id == null) continue;
+      byId.set(String(row.id), row);
+    }
   }
 
-  return all;
+  return Array.from(byId.values());
+}
+
+function buildTargetedQuery(input, kind, signal) {
+  let query = supabaseClient
+    .from("martyrs")
+    .select("id,name,lastname,father_name,piece,grave_row,grave_number")
+    .limit(NEW_RECORD_TARGET_LIMIT);
+
+  if (kind === "identity") {
+    query = query
+      .ilike("name", input.name)
+      .ilike("lastname", input.lastname);
+  } else if (kind === "location") {
+    query = query
+      .eq("piece", input.piece)
+      .ilike("grave_row", input.grave_row)
+      .ilike("grave_number", input.grave_number);
+  } else if (kind === "piece-row") {
+    query = query
+      .eq("piece", input.piece)
+      .ilike("grave_row", input.grave_row);
+  } else if (kind === "piece-number") {
+    query = query
+      .eq("piece", input.piece)
+      .ilike("grave_number", input.grave_number);
+  }
+
+  if (signal && typeof query.abortSignal === "function") {
+    query = query.abortSignal(signal);
+  }
+
+  return query;
+}
+
+async function fetchTargetedMartyrCandidates(input, signal) {
+  // چهار جستجوی محدود و مستقل:
+  // 1) نام + نام خانوادگی
+  // 2) محل مزار کامل
+  // 3) قطعه + ردیف
+  // 4) قطعه + شماره
+  //
+  // این ترکیب باعث می‌شود با تغییر یک جزء کلیدی، شانس از دست‌رفتن
+  // رکورد مشابه کم شود؛ بدون اینکه کل جدول روی موبایل دانلود شود.
+  const kinds = ["identity", "location", "piece-row", "piece-number"];
+
+  const results = await Promise.all(
+    kinds.map(async kind => {
+      const { data, error } = await buildTargetedQuery(input, kind, signal);
+      if (error) throw error;
+      return data || [];
+    })
+  );
+
+  return mergeMartyrCandidates(...results);
+}
+
+function classifyCachedCandidates(input) {
+  if (!Array.isArray(newRecordCandidateCache) || !newRecordCandidateCache.length) {
+    return null;
+  }
+
+  return window.GolzarMatchingCore.classify(input, newRecordCandidateCache);
 }
 
 async function checkNewRecordMatch(input) {
@@ -202,13 +260,49 @@ async function checkNewRecordMatch(input) {
     throw new Error("هسته تطبیق رکوردها بارگذاری نشده است.");
   }
 
-  const existing = await fetchExistingMartyrsForMatching();
-  return window.GolzarMatchingCore.classify(input, existing);
+  const cachedResult = classifyCachedCandidates(input);
+
+  // اگر Cache رکورد دقیق دارد، دیگر لازم نیست شبکه را درگیر کنیم.
+  if (cachedResult?.classification === "EXACT") {
+    return cachedResult;
+  }
+
+  const freshCandidates = await fetchTargetedMartyrCandidates(input);
+
+  newRecordCandidateCache = mergeMartyrCandidates(
+    newRecordCandidateCache,
+    freshCandidates
+  );
+
+  return window.GolzarMatchingCore.classify(
+    input,
+    newRecordCandidateCache
+  );
+}
+
+function showMatchProgressMessage(startedAt) {
+  const box = getMatchContainer();
+  if (!box) return;
+
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < NEW_RECORD_MATCH_STATUS_DELAY_MS) return;
+
+  box.style.background = "#f7faf8";
+  box.style.borderColor = "#cbded3";
+  box.innerHTML = `
+    <div style="font-weight:800;color:#315f4a;font-size:15px;">
+      ⏳ لطفاً شکیبا باشید
+    </div>
+    <div style="margin-top:5px;color:#5f6d66;">
+      در حال بررسی کامل اسامی و سوابق موجود هستیم...
+    </div>`;
 }
 
 async function saveNewRecordFromQA(event) {
   event.preventDefault();
   event.stopImmediatePropagation();
+
+  if (newRecordSaveInFlight) return;
 
   const value = id =>
     document.getElementById(id)?.value?.trim() || "";
@@ -236,14 +330,24 @@ async function saveNewRecordFromQA(event) {
     return alert("مرحله انتخاب‌شده با نوع عملیات سازگار نیست.");
   }
 
+  newRecordSaveInFlight = true;
   const button = document.getElementById("save-new");
+  const isRecheck = newRecordMatchReviewed;
+  const matchStartedAt = Date.now();
+  let progressTimer = null;
 
   if (button) {
     button.disabled = true;
-    button.textContent = "در حال بررسی رکوردهای موجود...";
+    button.textContent = isRecheck
+      ? "در حال بررسی مجدد رکوردهای موجود..."
+      : "در حال بررسی رکوردهای موجود...";
   }
 
   try {
+    progressTimer = window.setTimeout(() => {
+      showMatchProgressMessage(matchStartedAt);
+    }, NEW_RECORD_MATCH_STATUS_DELAY_MS);
+
     const result = await checkNewRecordMatch({
       name,
       lastname,
@@ -252,6 +356,11 @@ async function saveNewRecordFromQA(event) {
       grave_number: number,
     });
 
+    if (progressTimer) {
+      window.clearTimeout(progressTimer);
+      progressTimer = null;
+    }
+
     if (result.classification === "EXACT") {
       showExactWarning(result);
       newRecordMatchReviewed = false;
@@ -259,6 +368,7 @@ async function saveNewRecordFromQA(event) {
         button.disabled = false;
         button.textContent = "ذخیره اطلاعات";
       }
+      newRecordSaveInFlight = false;
       return;
     }
 
@@ -269,11 +379,13 @@ async function saveNewRecordFromQA(event) {
         button.disabled = false;
         button.textContent = "ثبت اطلاعات پس از بررسی";
       }
+      newRecordSaveInFlight = false;
       return;
     }
 
     newRecordMatchReviewed = true;
   } catch (error) {
+    if (progressTimer) window.clearTimeout(progressTimer);
     console.error("GolzarStone matching error:", error);
     if (button) {
       button.disabled = false;
@@ -281,8 +393,9 @@ async function saveNewRecordFromQA(event) {
     }
     alert(
       "بررسی رکوردهای موجود انجام نشد. برای جلوگیری از ثبت رکورد بدون کنترل تکراری، ذخیره متوقف شد.\n\n" +
-      (error?.message || error)
+        (error?.message || error)
     );
+    newRecordSaveInFlight = false;
     return;
   }
 
@@ -311,6 +424,8 @@ async function saveNewRecordFromQA(event) {
     // ثبت موفق باید پنجره ثبت اطلاعات را باز نگه دارد
     // و فرم را برای ثبت رکورد بعدی از نو بسازد؛
     // بدون ایجاد History Entry جدید.
+    newRecordSaveInFlight = false;
+    newRecordCandidateCache = [];
     if (typeof showNewRecord === "function") {
       showNewRecord({ preserveHistory: true });
     } else {
@@ -327,6 +442,7 @@ async function saveNewRecordFromQA(event) {
         error?.code || "نامشخص"
       }\nجزئیات: ${error?.message || error}`
     );
+    newRecordSaveInFlight = false;
   }
 }
 
@@ -401,6 +517,11 @@ document.addEventListener(
   true
 );
 
+function resetNewRecordMatchCache() {
+  newRecordCandidateCache = [];
+  newRecordMatchReviewed = false;
+}
+
 document.addEventListener(
   "click",
   event => {
@@ -416,6 +537,7 @@ document.addEventListener(
 
     event.preventDefault();
     event.stopImmediatePropagation();
+    resetNewRecordMatchCache();
 
     if (typeof goBackToStoneManagementMenu === "function") {
       goBackToStoneManagementMenu();
