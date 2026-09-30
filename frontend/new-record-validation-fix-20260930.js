@@ -26,8 +26,6 @@ let newRecordSaveInFlight = false;
 // نتایج پیدا شده در بررسی قبلی برای کلیک/بررسی بعدی نگه داشته می‌شوند.
 // Cache فقط یک لایه سرعت است و جایگزین جستجوی تکمیلی Supabase نیست.
 let newRecordCandidateCache = [];
-let newRecordCandidateCacheFingerprint = "";
-
 const NEW_RECORD_MATCH_STATUS_DELAY_MS = 5500;
 const NEW_RECORD_TARGET_LIMIT = 200;
 
@@ -179,16 +177,6 @@ function showSimilarWarning(result) {
     ${result.similar.map(candidateHtml).join("")}`;
 }
 
-function matchFingerprint(input) {
-  return [
-    input?.name || "",
-    input?.lastname || "",
-    input?.piece || "",
-    input?.grave_row || "",
-    input?.grave_number || "",
-  ].join("|");
-}
-
 function mergeMartyrCandidates(...groups) {
   const byId = new Map();
 
@@ -264,7 +252,7 @@ function classifyCachedCandidates(input) {
   return window.GolzarMatchingCore.classify(input, newRecordCandidateCache);
 }
 
-async function checkNewRecordMatch(input, options = {}) {
+async function checkNewRecordMatch(input) {
   if (
     !window.GolzarMatchingCore ||
     typeof window.GolzarMatchingCore.classify !== "function"
@@ -279,32 +267,17 @@ async function checkNewRecordMatch(input, options = {}) {
     return cachedResult;
   }
 
-  const controller = new AbortController();
-  const fingerprint = matchFingerprint(input);
+  const freshCandidates = await fetchTargetedMartyrCandidates(input);
 
-  try {
-    const freshCandidates = await fetchTargetedMartyrCandidates(
-      input,
-      controller.signal
-    );
+  newRecordCandidateCache = mergeMartyrCandidates(
+    newRecordCandidateCache,
+    freshCandidates
+  );
 
-    newRecordCandidateCache = mergeMartyrCandidates(
-      newRecordCandidateCache,
-      freshCandidates
-    );
-    newRecordCandidateCacheFingerprint = fingerprint;
-
-    return window.GolzarMatchingCore.classify(
-      input,
-      newRecordCandidateCache
-    );
-  } finally {
-    // AbortController فقط برای لغو صریح بررسی‌های آینده/ناخواسته است؛
-    // Timeout کاربرمحور ۱۵ ثانیه‌ای عمداً حذف شده است.
-    if (options?.abortSignal && options.abortSignal.aborted) {
-      controller.abort();
-    }
-  }
+  return window.GolzarMatchingCore.classify(
+    input,
+    newRecordCandidateCache
+  );
 }
 
 function showMatchProgressMessage(startedAt) {
@@ -453,7 +426,6 @@ async function saveNewRecordFromQA(event) {
     // بدون ایجاد History Entry جدید.
     newRecordSaveInFlight = false;
     newRecordCandidateCache = [];
-    newRecordCandidateCacheFingerprint = "";
     if (typeof showNewRecord === "function") {
       showNewRecord({ preserveHistory: true });
     } else {
