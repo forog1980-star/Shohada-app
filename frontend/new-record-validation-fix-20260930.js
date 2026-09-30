@@ -331,8 +331,21 @@ document.addEventListener("DOMContentLoaded", () => {
   syncNewRecordStageOptions();
 });
 
-const newRecordObserver = new MutationObserver(() => {
-  syncNewRecordStageOptions();
+const newRecordObserver = new MutationObserver(mutations => {
+  const stageListWasAdded = mutations.some(mutation =>
+    Array.from(mutation.addedNodes || []).some(node => {
+      if (node.nodeType !== 1) return false;
+      return (
+        node.id === "stage-list" ||
+        typeof node.querySelector !== "function" ||
+        !!node.querySelector("#stage-list")
+      );
+    })
+  );
+
+  if (stageListWasAdded) {
+    syncNewRecordStageOptions();
+  }
 });
 
 if (document.body) {
