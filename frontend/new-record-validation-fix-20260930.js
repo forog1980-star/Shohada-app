@@ -383,6 +383,11 @@ async function saveNewRecordFromQA(event) {
       grave_number: number,
     });
 
+    if (progressTimer) {
+      window.clearTimeout(progressTimer);
+      progressTimer = null;
+    }
+
     if (result.classification === "EXACT") {
       showExactWarning(result);
       newRecordMatchReviewed = false;
@@ -447,6 +452,8 @@ async function saveNewRecordFromQA(event) {
     // و فرم را برای ثبت رکورد بعدی از نو بسازد؛
     // بدون ایجاد History Entry جدید.
     newRecordSaveInFlight = false;
+    newRecordCandidateCache = [];
+    newRecordCandidateCacheFingerprint = "";
     if (typeof showNewRecord === "function") {
       showNewRecord({ preserveHistory: true });
     } else {
