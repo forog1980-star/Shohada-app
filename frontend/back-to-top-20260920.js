@@ -39,7 +39,10 @@
     if (!button) return;
 
     const visible = window.scrollY > 420;
+    const saveButton = document.getElementById("save-new");
+    const saveInProgress = !!saveButton?.disabled;
     button.classList.toggle("is-visible", visible);
+    button.classList.toggle("is-save-busy", visible && saveInProgress);
     button.setAttribute("aria-hidden", visible ? "false" : "true");
     button.tabIndex = visible ? 0 : -1;
   }
@@ -77,6 +80,13 @@
         transform: translate(-50%, 0);
       }
 
+      /* هنگام بررسی/ثبت اطلاعات شهید، دکمه رویی مزاحم متن دکمه ثبت نشود. */
+      #${BUTTON_ID}.is-visible.is-save-busy {
+        opacity: .16;
+        pointer-events: none;
+        box-shadow: none;
+      }
+
       #${BUTTON_ID}:focus-visible {
         outline: 3px solid rgba(40,120,184,.35);
         outline-offset: 2px;
@@ -104,8 +114,28 @@
 
   window.addEventListener("resize", updateVisibility);
 
+  const saveStateObserver = new MutationObserver(mutations => {
+    if (mutations.some(mutation => mutation.type === "attributes" && mutation.attributeName === "disabled")) {
+      updateVisibility();
+    }
+  });
+
+  function observeSaveButton() {
+    const saveButton = document.getElementById("save-new");
+    if (!saveButton) return;
+    saveStateObserver.disconnect();
+    saveStateObserver.observe(saveButton, { attributes: true, attributeFilter: ["disabled"] });
+    updateVisibility();
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     ensureButton();
     updateVisibility();
+    observeSaveButton();
   });
+
+  const formObserver = new MutationObserver(() => observeSaveButton());
+  if (document.body) {
+    formObserver.observe(document.body, { childList: true, subtree: true });
+  }
 })();
