@@ -82,9 +82,10 @@
 
       /* هنگام بررسی/ثبت اطلاعات شهید، دکمه رویی مزاحم متن دکمه ثبت نشود. */
       #${BUTTON_ID}.is-visible.is-save-busy {
-        opacity: .16;
-        pointer-events: none;
-        box-shadow: none;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        box-shadow: none !important;
       }
 
       #${BUTTON_ID}:focus-visible {
@@ -113,6 +114,16 @@
   }, { passive: true });
 
   window.addEventListener("resize", updateVisibility);
+
+  document.addEventListener("click", event => {
+    const saveButton = event.target.closest?.("#save-new");
+    if (!saveButton) return;
+    const button = document.getElementById(BUTTON_ID);
+    if (!button || window.scrollY <= 420) return;
+    button.classList.add("is-save-busy");
+    button.setAttribute("aria-hidden", "true");
+    button.tabIndex = -1;
+  }, true);
 
   const saveStateObserver = new MutationObserver(mutations => {
     if (mutations.some(mutation => mutation.type === "attributes" && mutation.attributeName === "disabled")) {
