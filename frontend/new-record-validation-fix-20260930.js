@@ -21,6 +21,10 @@ function getCanonicalStageDefinition() {
 
 let syncingNewRecordStages = false;
 let newRecordMatchReviewed = false;
+let newRecordSaveInFlight = false;
+
+// کنترل زمان انتظار شبکه؛ کنترل تطبیق قبل از INSERT همچنان اجباری است.
+const NEW_RECORD_MATCH_TIMEOUT_MS = 15000;
 
 function syncNewRecordStageOptions() {
   if (syncingNewRecordStages) return;
@@ -170,7 +174,7 @@ function showSimilarWarning(result) {
     ${result.similar.map(candidateHtml).join("")}`;
 }
 
-async function fetchExistingMartyrsForMatching() {
+async function fetchExistingMartyrsForMatching(signal) {
   const all = [];
   const pageSize = 1000;
 
@@ -178,11 +182,17 @@ async function fetchExistingMartyrsForMatching() {
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error } = await supabaseClient
+    let query = supabaseClient
       .from("martyrs")
       .select("id,name,lastname,father_name,piece,grave_row,grave_number")
       .order("id", { ascending: true })
       .range(from, to);
+
+    if (signal && typeof query.abortSignal === "function") {
+      query = query.abortSignal(signal);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -202,13 +212,34 @@ async function checkNewRecordMatch(input) {
     throw new Error("هسته تطبیق رکوردها بارگذاری نشده است.");
   }
 
-  const existing = await fetchExistingMartyrsForMatching();
-  return window.GolzarMatchingCore.classify(input, existing);
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(
+    () => controller.abort(),
+    NEW_RECORD_MATCH_TIMEOUT_MS
+  );
+
+  try {
+    const existing = await fetchExistingMartyrsForMatching(controller.signal);
+    return window.GolzarMatchingCore.classify(input, existing);
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeoutError = new Error(
+        "زمان بررسی رکوردهای موجود بیش از حد مجاز شد. اتصال شبکه یا پاسخ پایگاه داده را بررسی کنید و دوباره تلاش کنید."
+      );
+      timeoutError.code = "MATCH_TIMEOUT";
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 async function saveNewRecordFromQA(event) {
   event.preventDefault();
   event.stopImmediatePropagation();
+
+  if (newRecordSaveInFlight) return;
 
   const value = id =>
     document.getElementById(id)?.value?.trim() || "";
@@ -236,11 +267,15 @@ async function saveNewRecordFromQA(event) {
     return alert("مرحله انتخاب‌شده با نوع عملیات سازگار نیست.");
   }
 
+  newRecordSaveInFlight = true;
   const button = document.getElementById("save-new");
+  const isRecheck = newRecordMatchReviewed;
 
   if (button) {
     button.disabled = true;
-    button.textContent = "در حال بررسی رکوردهای موجود...";
+    button.textContent = isRecheck
+      ? "در حال بررسی مجدد رکوردهای موجود..."
+      : "در حال بررسی رکوردهای موجود...";
   }
 
   try {
@@ -259,6 +294,7 @@ async function saveNewRecordFromQA(event) {
         button.disabled = false;
         button.textContent = "ذخیره اطلاعات";
       }
+      newRecordSaveInFlight = false;
       return;
     }
 
@@ -269,6 +305,7 @@ async function saveNewRecordFromQA(event) {
         button.disabled = false;
         button.textContent = "ثبت اطلاعات پس از بررسی";
       }
+      newRecordSaveInFlight = false;
       return;
     }
 
@@ -280,9 +317,12 @@ async function saveNewRecordFromQA(event) {
       button.textContent = "ذخیره اطلاعات";
     }
     alert(
-      "بررسی رکوردهای موجود انجام نشد. برای جلوگیری از ثبت رکورد بدون کنترل تکراری، ذخیره متوقف شد.\n\n" +
-      (error?.message || error)
+      error?.code === "MATCH_TIMEOUT"
+        ? "بررسی رکوردهای موجود بیش از ۱۵ ثانیه طول کشید و برای جلوگیری از ثبت بدون کنترل تکراری متوقف شد.\n\nلطفاً اتصال شبکه را بررسی کنید و دوباره تلاش کنید."
+        : "بررسی رکوردهای موجود انجام نشد. برای جلوگیری از ثبت رکورد بدون کنترل تکراری، ذخیره متوقف شد.\n\n" +
+          (error?.message || error)
     );
+    newRecordSaveInFlight = false;
     return;
   }
 
@@ -311,6 +351,7 @@ async function saveNewRecordFromQA(event) {
     // ثبت موفق باید پنجره ثبت اطلاعات را باز نگه دارد
     // و فرم را برای ثبت رکورد بعدی از نو بسازد؛
     // بدون ایجاد History Entry جدید.
+    newRecordSaveInFlight = false;
     if (typeof showNewRecord === "function") {
       showNewRecord({ preserveHistory: true });
     } else {
@@ -327,6 +368,7 @@ async function saveNewRecordFromQA(event) {
         error?.code || "نامشخص"
       }\nجزئیات: ${error?.message || error}`
     );
+    newRecordSaveInFlight = false;
   }
 }
 
