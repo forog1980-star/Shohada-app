@@ -1562,8 +1562,8 @@ async function testSupabaseConnection() {
 // ثبت جدید
 // ============================================================
 
-function showNewRecord() {
-  if (!isHandlingHistory) {
+function showNewRecord({ preserveHistory = false } = {}) {
+  if (!preserveHistory && !isHandlingHistory) {
     pushAppHistory("new");
   }
 
