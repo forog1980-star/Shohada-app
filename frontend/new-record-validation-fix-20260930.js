@@ -308,10 +308,13 @@ async function saveNewRecordFromQA(event) {
 
     alert("اطلاعات شهید با موفقیت ثبت شد.");
 
-    if (typeof goBackToStoneManagementMenu === "function") {
-      goBackToStoneManagementMenu();
-    } else if (typeof goHomeFromNewRecord === "function") {
-      goHomeFromNewRecord();
+    // ثبت موفق باید پنجره ثبت اطلاعات را باز نگه دارد
+    // و فرم را برای ثبت رکورد بعدی از نو بسازد؛
+    // بدون ایجاد History Entry جدید.
+    if (typeof showNewRecord === "function") {
+      showNewRecord({ preserveHistory: true });
+    } else {
+      console.error("showNewRecord is unavailable after successful save.");
     }
   } catch (error) {
     console.error("GolzarStone save error:", error);
