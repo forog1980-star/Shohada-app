@@ -141,7 +141,7 @@
     if (sameIdentity) score += 0.12;
     if (fatherSame) score += 0.05;
 
-    return Math.min(1, score);
+    return Math.min(0.99, score);
   }
 
   function classify(input, records) {
