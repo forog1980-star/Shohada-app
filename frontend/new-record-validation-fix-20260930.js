@@ -337,8 +337,8 @@ const newRecordObserver = new MutationObserver(mutations => {
       if (node.nodeType !== 1) return false;
       return (
         node.id === "stage-list" ||
-        typeof node.querySelector !== "function" ||
-        !!node.querySelector("#stage-list")
+        (typeof node.querySelector === "function" &&
+          !!node.querySelector("#stage-list"))
       );
     })
   );
