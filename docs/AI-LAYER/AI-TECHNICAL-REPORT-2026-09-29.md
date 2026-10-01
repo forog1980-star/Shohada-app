@@ -1404,3 +1404,357 @@ SHOHAda-AI-RESUME-20261001
 اصل نهایی:
 
 **AI باید سامانه بهسازی را هوشمندتر و قابل‌گفت‌وگو کند، بدون اینکه کنترل داده و تصمیم عملیاتی را از منطق قطعی و انسان بگیرد.**
+
+
+---
+
+# 34. وضعیت اجرایی A1.5 — Data Intelligence POC-02 — 2026-10-01
+
+این بخش وضعیت واقعی اجرای POC پس از تکمیل Matching Engine را ثبت می‌کند. این مرحله صرفاً در AI Layer انجام شده و هیچ تغییر اجرایی در Frontend اصلی یا داده عملیاتی Supabase ایجاد نکرده است.
+
+## 34-1. وضعیت Git و Recovery Point
+
+Branch فعال:
+
+~~~text
+ai/poc-02-data-intelligence-20261001
+~~~
+
+نقطه شروع این مرحله:
+
+~~~text
+26b91d5a07896c4478c49e203da4a7edc22df01d
+~~~
+
+Recovery Point:
+
+~~~text
+recovery/ai-poc-02-before-change-20261001
+~~~
+
+Commit نهایی A1.5:
+
+~~~text
+22a4f73
+feat(ai): add data intelligence poc-02
+~~~
+
+در این مرحله فقط سه فایل مستقل به AI Layer اضافه شده‌اند:
+
+~~~text
+ai/poc-02/data_intelligence.py
+ai/poc-02/run_snapshot_analysis.py
+ai/poc-02/test_data_intelligence.py
+~~~
+
+هیچ فایل موجود در هسته برنامه اصلی تغییر نکرده است.
+
+---
+
+## 34-2. هدف A1.5
+
+هدف این مرحله تبدیل Matching Engine اولیه به یک لایه مستقل برای **Data Intelligence و Data Quality Analysis** بود.
+
+این لایه اکنون علاوه بر تطبیق، می‌تواند موارد زیر را به‌صورت deterministic گزارش کند:
+
+- Duplicate
+- Identity Conflict
+- Location Conflict
+- Incomplete Data
+- Field Conflict
+- Stage Normalization
+- Stage Anomaly
+
+خروجی‌ها به‌صورت Finding ساختاریافته تولید می‌شوند تا در مراحل بعدی Statistics Engine و AI Inspector بتوانند از آن‌ها استفاده کنند.
+
+---
+
+## 34-3. Snapshot واقعی مورد استفاده
+
+برای جلوگیری از هرگونه تغییر در داده عملیاتی، تحلیل روی Snapshot خواندنی انجام شد:
+
+~~~text
+martyrs_supabase_snapshot_20261001.json
+~~~
+
+تعداد رکورد Snapshot:
+
+~~~text
+2767
+~~~
+
+این Snapshot از داده قابل مشاهده Supabase تهیه شده و در این مرحله فقط برای تحلیل استفاده شده است.
+
+هیچ یک از عملیات زیر در A1.5 انجام نشده است:
+
+- INSERT
+- UPDATE
+- DELETE
+- Schema Change
+- RLS Change
+- تغییر Policy
+- تغییر Function/Trigger
+
+---
+
+## 34-4. نتیجه واقعی Data Intelligence
+
+خروجی تحلیل Snapshot:
+
+| شاخص | نتیجه |
+|---|---:|
+| کل رکوردها | 2767 |
+| گروه‌های Duplicate | 24 |
+| رکوردهای Duplicate | 48 |
+| گروه‌های Identity Conflict | 54 |
+| رکوردهای Identity Conflict | 178 |
+| گروه‌های Location Conflict | 11 |
+| رکوردهای Location Conflict | 22 |
+| رکوردهای Incomplete | 70 |
+| گروه‌های Field Conflict | 15 |
+| رکوردهای Field Conflict | 30 |
+| Stage Normalization | 1270 رکورد |
+| Stage Anomaly | 0 رکورد |
+
+این اعداد مربوط به Snapshot مورخ 2026-10-01 هستند و نباید به‌عنوان آمار زنده فعلی سامانه تلقی شوند.
+
+---
+
+## 34-5. طبقه‌بندی Duplicate
+
+۲۴ گروه Duplicate به سه دسته تحلیلی تقسیم شدند:
+
+~~~text
+exact_normalized_duplicate = 6
+field_conflict_duplicate   = 15
+formatting_only_duplicate  = 3
+~~~
+
+این تفکیک برای تصمیم‌گیری مدیریتی مهم است.
+
+Duplicate به‌تنهایی به معنی حذف یا Merge نیست.
+
+به‌خصوص در گروه‌های دارای Field Conflict، اختلاف اطلاعات باید قبل از هر تصمیم انسانی بررسی شود.
+
+---
+
+## 34-6. Stage Normalization در برابر Stage Anomaly
+
+یکی از اصلاحات مهم A1.5 این بود که تفاوت بین «عبارت‌های قدیمی/معادل» و «مرحله ناشناخته» از یکدیگر جدا شوند.
+
+در Snapshot فعلی:
+
+~~~text
+Stage Normalization = 1270
+Stage Anomaly       = 0
+~~~
+
+نمونه نرمال‌سازی‌ها:
+
+~~~text
+1248 | تعویضی نصب شده -> نصب تعویضی شده
+  11 | سنگ تعویضی نصب شد -> نصب تعویضی شده
+   8 | نصب سنگ مرمت شده -> نصب مرمتی شده
+   2 | طرح سنگ به واحد مرمت ارسال شد -> ارسال به واحد مرمت
+   1 | طرح سنگ به واحد تعویض ارسال شد -> ارسال به واحد تعویض
+~~~
+
+این 1270 مورد به‌صورت خودکار «خطای داده» تلقی نمی‌شوند.
+
+نرمال‌سازی صرفاً یک لایه استانداردسازی برای تحلیل است و نباید بدون مجوز باعث تغییر داده عملیاتی شود.
+
+---
+
+## 34-7. داده‌های ناقص
+
+در Snapshot، نقص فیلدی به این شکل گزارش شد:
+
+~~~text
+grave_number = 60
+grave_row    = 61
+name         = 2
+piece        = 3
+~~~
+
+تعداد 70 رکورد ناقص، مجموع رکوردهای دارای حداقل یک فیلد ضروری ناقص است و نباید با جمع ساده مقادیر بالا اشتباه گرفته شود؛ زیرا یک رکورد ممکن است بیش از یک فیلد ناقص داشته باشد.
+
+این بخش در مراحل بعدی می‌تواند به Data Quality Dashboard و AI Inspector متصل شود.
+
+---
+
+## 34-8. Field Conflictهای ثبت‌شده
+
+۱۵ گروه Field Conflict شناسایی شد.
+
+این اختلاف‌ها عمدتاً در دو فیلد دیده شدند:
+
+- stone_type
+- stage
+
+در بخشی از موارد، یکی از رکوردها Stage یا stone_type خالی دارد و رکورد دیگر مقدار دارد.
+
+در چهار گروه، اختلاف stone_type و stage به‌صورت هم‌زمان مشاهده شد.
+
+این موارد **نیازمند بررسی هستند و نباید خودکار Merge یا اصلاح شوند.**
+
+---
+
+## 34-9. تست A1.5
+
+تست واحد مستقل A1.5 اجرا شد:
+
+~~~text
+python -m unittest -v test_data_intelligence.py
+~~~
+
+نتیجه:
+
+~~~text
+Ran 11 tests in 0.004s
+OK
+~~~
+
+بنابراین در زمان ثبت این گزارش، 11 تست واحد برای Data Intelligence با موفقیت اجرا شده‌اند.
+
+گزارش Snapshot نیز جداگانه با موفقیت اجرا شد و خروجی آن با مقادیر مورد انتظار تطبیق داشت.
+
+---
+
+## 34-10. وضعیت معماری پس از A1.5
+
+اکنون هسته AI به این شکل توسعه یافته است:
+
+~~~text
+Real Data / Snapshot
+        |
+        v
+Normalization
+        |
+        v
+Matching Engine
+        |
+        +--> Exact
+        +--> Similar
+        +--> Duplicate
+        +--> Conflict
+        |
+        v
+Data Intelligence
+        |
+        +--> Identity Conflict
+        +--> Location Conflict
+        +--> Field Conflict
+        +--> Incomplete Data
+        +--> Stage Normalization
+        +--> Stage Anomaly
+        |
+        v
+Statistics Engine
+        |
+        v
+AI Assistant / Inspector
+~~~
+
+این معماری باعث می‌شود AI زبانی مستقیماً مسئول کشف حقیقت عددی یا تصمیم درباره رکوردها نباشد.
+
+---
+
+## 34-11. وضعیت اجرایی POC تا این لحظه
+
+تا 2026-10-01 وضعیت Track A چنین است:
+
+~~~text
+A1   Matching Engine       = انجام شد
+A1.5 Data Intelligence     = انجام شد
+A2   Statistics Engine     = مرحله بعد
+~~~
+
+Track B هنوز وارد مرحله اجرایی نشده است:
+
+~~~text
+A3   AI Intent Layer
+A4   Conversational Search
+A5   Voice Input
+A6   Natural-language Reports
+A7   Inspector
+A8   Controlled Actions
+~~~
+
+بنابراین قبل از ورود به LLM، اکنون باید Statistics Engine ساخته شود تا منبع معتبر اعداد و شاخص‌های مدیریتی مشخص باشد.
+
+---
+
+## 34-12. تصمیم فنی برای مرحله بعد
+
+مرحله بعدی **A2 — Statistics Engine** است.
+
+اما قبل از کدنویسی A2 باید شاخص‌های آماری رسمی تعریف شوند.
+
+Statistics Engine باید حداقل این اصل را رعایت کند:
+
+~~~text
+Data Source
+    |
+    v
+Deterministic Calculation
+    |
+    v
+Verified Statistics
+    |
+    +--> Dashboard
+    +--> Reports
+    +--> AI Assistant
+    +--> AI Inspector
+~~~
+
+LLM در هیچ مرحله‌ای نباید خودش تعداد یا درصد تولید کند.
+
+تمام اعداد باید از Statistics Engine یا محاسبه قطعی قابل ردیابی دریافت شوند.
+
+---
+
+## 34-13. اصل ایمنی A1.5
+
+A1.5 یک **تحلیل‌گر Read-only** است.
+
+وظیفه آن:
+
+~~~text
+Detect
+Classify
+Explain
+Report
+~~~
+
+و نه:
+
+~~~text
+Delete
+Merge
+Update
+Repair
+~~~
+
+هرگونه اصلاح داده واقعی، حتی اگر از نظر الگوریتمی واضح به نظر برسد، باید در یک مرحله مستقل با مجوز صریح و کنترل انسانی طراحی شود.
+
+---
+
+## 34-14. Marker ادامه
+
+Marker رسمی ادامه پروژه همچنان:
+
+~~~text
+SHOHAda-AI-RESUME-20261001
+~~~
+
+و نقطه اجرایی جدید:
+
+~~~text
+A1 Matching Engine       -> COMPLETE
+A1.5 Data Intelligence   -> COMPLETE
+A2 Statistics Engine     -> NEXT
+~~~
+
+اصل ثابت:
+
+**ابتدا حقیقت داده و آمار با کد قطعی ساخته می‌شود؛ سپس AI زبانی روی خروجی معتبر آن قرار می‌گیرد.**
