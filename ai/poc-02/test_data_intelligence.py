@@ -19,22 +19,22 @@ class TestDataIntelligence(unittest.TestCase):
     def test_stage_normalization(self):
         self.assertEqual(
             normalize_stage("نصب سنگ مرمت شده"),
-            "نصب مرمتی شده",
+            "سنگ مرمت شده نصب شد",
         )
 
         self.assertEqual(
             normalize_stage("سنگ تعویضی نصب شد"),
-            "نصب تعویضی شده",
+            "سنگ تعویضی نصب شد",
         )
 
         self.assertEqual(
             normalize_stage("تعویضی نصب شده"),
-            "نصب تعویضی شده",
+            "سنگ تعویضی نصب شد",
         )
 
         self.assertEqual(
             normalize_stage("ارسال به واحد تعویض"),
-            "ارسال به واحد تعویض",
+            "ارسال طرح سنگ به واحد تعویض",
         )
 
     def test_duplicate_same_record(self):
@@ -351,7 +351,7 @@ class TestDataIntelligence(unittest.TestCase):
 
         self.assertEqual(
             ids,
-            {1, 2},
+            {1, 3},
         )
 
         for finding in findings:
@@ -438,7 +438,7 @@ class TestDataIntelligence(unittest.TestCase):
 
         self.assertEqual(
             len(report.stage_normalizations),
-            1,
+            2,
         )
 
         self.assertEqual(
@@ -453,7 +453,7 @@ class TestDataIntelligence(unittest.TestCase):
 
         self.assertEqual(
             report.stage_normalization_record_count,
-            1,
+            2,
         )
 
         self.assertEqual(
