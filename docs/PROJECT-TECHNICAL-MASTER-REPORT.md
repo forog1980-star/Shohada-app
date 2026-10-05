@@ -848,3 +848,219 @@ PR #39 با موفقیت Merge شده است:
 - از این نقطه به بعد، تغییر کد اجرایی، رفع اشکال، تغییر UI، تغییر منطق، تغییر API یا تغییر داده‌های وابسته به برنامه بدون درخواست صریح کاربر انجام نمی‌شود.
 - ادامه کار برنامه از اینجا وارد مرحله **یکسان‌سازی وضعیت GitHub و سیستم محلی با PowerShell** می‌شود.
 - مرجع اصلی برای یکسان‌سازی: Commit `2dea003461cc57f1590f1643420c9bfb445f518d` روی `main`.
+---
+
+# 35. لایه هوش مصنوعی سامانه بهسازی — مرجع فنی 2026-10-05
+
+این بخش مرجع Master Report برای پروژه Golzar AI Layer است. جزئیات کامل طراحی در سند مستقل زیر ثبت شده است:
+
+`docs/AI-LAYER/AI-TECHNICAL-REPORT-2026-10-05.md`
+
+Project Marker:
+
+`SHOHAda-AI-RESUME-20261005`
+
+Marker پایه:
+
+`SHOHAda-AI-RESUME-20260929`
+
+## 35-1. هدف
+
+ایجاد یک لایه مستقل برای کنترل و تحلیل هوشمند داده‌های سامانه بهسازی، شامل:
+
+- Matching
+- Duplicate Detection
+- Conflict Detection
+- Data Quality
+- Statistics
+- AI Analysis
+- گزارش مدیریتی
+- پرسش و پاسخ با زبان طبیعی
+- AI Inspector
+
+این لایه نباید هسته عملیاتی برنامه فریز‌شده 2.0.3 را بازنویسی کند.
+
+## 35-2. معماری
+
+```text
+Real Data / Snapshot
+        ↓
+Normalization
+        ↓
+Matching Engine
+        ↓
+Data Intelligence
+        ↓
+Statistics Engine
+        ↓
+AI Gateway / Local LLM
+        ↓
+Human Review
+        ↓
+Decision
+```
+
+اصل ثابت:
+
+**حقیقت عددی و تصمیم عملیاتی از منطق قطعی و انسان می‌آید؛ AI برای فهم، تحلیل، توضیح و گزارش استفاده می‌شود.**
+
+## 35-3. Local AI و Offline-first
+
+Runtime اولیه پیشنهادی:
+
+`Ollama`
+
+مدل‌های اولیه برای Benchmark:
+
+- Qwen3 4B
+- Qwen3 8B
+
+این انتخاب هنوز نهایی نیست و باید با Benchmark واقعی روی سخت‌افزار مقصد تأیید شود.
+
+معماری بهره‌برداری:
+
+**GitHub Pages همیشه آنلاین + AI محلی که فقط هنگام نیاز یا طبق برنامه روشن و اجرا می‌شود.**
+
+بنابراین PC اجرای Local AI لازم نیست 24/7 روشن باشد. هنگام خاموشی PC تحلیل جدید انجام نمی‌شود، اما نسخه وب و آخرین گزارش معتبر می‌توانند مستقل باقی بمانند.
+
+## 35-4. قواعد Match و ایمنی
+
+- Exact و Similar جدا هستند.
+- Similar خودکار Exact نمی‌شود.
+- Duplicate خودکار حذف یا Merge نمی‌شود.
+- نام به‌تنهایی کلید کافی برای Exact نیست.
+- کلید منطقی پایه: نام + قطعه + ردیف + شماره
+- موارد کم‌اطمینان به `REVIEW_REQUIRED` می‌روند.
+- False Merge از Missing Match خطرناک‌تر تلقی می‌شود.
+
+## 35-5. Statistics و گزارش
+
+Statistics Engine باید مرجع اعداد باشد.
+
+LLM نباید خودش تعداد یا درصد عملیاتی تولید کند.
+
+جریان:
+
+```text
+Question
+ ↓
+Intent
+ ↓
+Query
+ ↓
+Statistics Engine
+ ↓
+Verified Number
+ ↓
+AI Narrative
+ ↓
+Management Report
+```
+
+گزارش‌ها باید تا حد امکان شامل منبع، بازه، روش محاسبه، اعداد، مغایرت‌ها و موارد نیازمند بررسی باشند.
+
+## 35-6. وضعیت POC
+
+مسیر اجرایی:
+
+```text
+A1   Matching Engine       = انجام شده/مبنای Data Intelligence
+A1.5 Data Intelligence     = در حال توسعه و تثبیت
+A2   Statistics Engine     = مرحله بعدی
+A3   AI Intent Layer       = بعد از A2
+```
+
+شاخه Data Intelligence فعلی:
+
+`ai/poc-02-data-intelligence-changes-20261005`
+
+Commit مهم:
+
+`d6c200259d472ea11c42fea909b7fdc5e542bf26`
+
+اجزای این POC در مسیر `ai/poc-02/` قرار دارند، از جمله Data Intelligence، Snapshot Analysis، تست‌های Data Intelligence و ماژول‌های User Access / User History.
+
+## 35-7. Snapshot ثبت‌شده
+
+Snapshot تحلیل‌شده:
+
+`martyrs_supabase_snapshot_20261001.json`
+
+تعداد:
+
+2767 رکورد
+
+نتایج ثبت‌شده این Snapshot:
+
+| شاخص | نتیجه |
+|---|---:|
+| Duplicate Groups | 24 |
+| Duplicate Records | 48 |
+| Identity Conflict Groups | 54 |
+| Identity Conflict Records | 178 |
+| Location Conflict Groups | 11 |
+| Location Conflict Records | 22 |
+| Incomplete Records | 70 |
+| Field Conflict Groups | 15 |
+| Field Conflict Records | 30 |
+| Stage Normalization | 1270 |
+| Stage Anomaly | 0 |
+
+این اعداد Snapshot مورخ 2026-10-01 هستند، نه آمار زنده فعلی.
+
+## 35-8. امنیت
+
+AI Layer در مراحل فعلی Read-first / Read-only است.
+
+تا زمان مجوز مستقل:
+
+- INSERT ممنوع
+- UPDATE ممنوع
+- DELETE ممنوع
+- Schema Change ممنوع
+- تغییر RLS/Policy ممنوع
+
+AI نیز نباید مستقیماً SQL یا تغییر داده عملیاتی را کنترل کند.
+
+## 35-9. نقش انسانی
+
+مدل رسمی:
+
+```text
+AI
+ ↓
+Intent / Analysis
+ ↓
+Suggestion
+ ↓
+Human Review
+ ↓
+Decision
+```
+
+در عملیات حساس، Validation و Confirmation قبل از Action الزامی خواهد بود.
+
+## 35-10. شاخه مستندات
+
+سند جامع AI در Branch مستنداتی زیر ثبت می‌شود:
+
+`docs/ai-layer-report-20261005`
+
+فایل:
+
+`docs/AI-LAYER/AI-TECHNICAL-REPORT-2026-10-05.md`
+
+این Branch برای مستندات است و به‌صورت مستقیم نباید نسخه عملیاتی را تغییر دهد.
+
+## 35-11. نقطه ادامه
+
+پس از این ثبت مستنداتی، مرحله بعد:
+
+**A2 — Statistics Engine**
+
+قبل از ورود گسترده به LLM باید شاخص‌های رسمی، فرمول‌های قطعی و خروجی‌های قابل تست Statistics مشخص شوند.
+
+اصل نهایی:
+
+**ابتدا حقیقت داده و آمار با منطق قطعی؛ سپس AI برای فهم، تحلیل، توضیح، گزارش و تعامل.**
+
