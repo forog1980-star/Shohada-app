@@ -34,7 +34,7 @@ _POC01 = Path(__file__).resolve().parents[1] / "poc-01"
 if str(_POC01) not in sys.path:
     sys.path.insert(0, str(_POC01))
 
-from matching_engine import normalize
+from matching_engine import is_anonymous_identity, normalize
 
 
 # ---------------------------------------------------------------------------
@@ -438,15 +438,22 @@ def find_duplicate_groups(
     ] = defaultdict(list)
 
     for record in records:
-        groups[
-            normalized_full_key(record)
-        ].append(record)
+        if is_anonymous_identity(record.get("name")):
+            location = normalized_location(record)
+
+            if all(location):
+                key = ("__ANONYMOUS_LOCATION__", *location)
+            else:
+                key = ("__ANONYMOUS_INCOMPLETE__", str(record_id(record)))
+        else:
+            key = normalized_full_key(record)
+
+        groups[key].append(record)
 
     findings: list[Finding] = []
 
     for key, group in groups.items():
 
-        # از تشکیل یک گروه بزرگ برای رکوردهای کاملاً خالی جلوگیری شود.
         if all(
             not value
             for value in key
@@ -489,7 +496,8 @@ def find_identity_conflicts(
     """
     Same normalized name+lastname appearing at different locations.
 
-    Missing locations are excluded from the actual location comparison.
+    Anonymous martyr identities are excluded because anonymous labels
+    are not unique identity evidence.
     """
 
     groups: dict[
@@ -499,9 +507,10 @@ def find_identity_conflicts(
 
     for record in records:
 
-        identity = normalized_identity(
-            record
-        )
+        if is_anonymous_identity(record.get("name")):
+            continue
+
+        identity = normalized_identity(record)
 
         if not any(identity):
             continue
