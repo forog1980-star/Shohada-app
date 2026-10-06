@@ -2,10 +2,10 @@
 
 > این فایل مرجع اصلی ادامه پروژه است. در هر گفت‌وگوی جدید ابتدا این فایل خوانده شود و سپس وضعیت زنده GitHub / GitHub Pages / Vercel / Supabase با آن تطبیق داده شود.
 
-**آخرین به‌روزرسانی:** 2026-10-06 — تثبیت آمار زنده Supabase/Realtime، Merge موفق PR #50 و همگام‌سازی نهایی main
+**آخرین به‌روزرسانی:** 2026-10-06 — تثبیت آمار زنده Supabase/Realtime، Merge موفق PR #50 و PR مستندسازی #51
 **مخزن:** `forog1980-star/Shohada-app`
 **نسخه عملیاتی نهایی:** `main`
-**Commit فعلی main:** `68ab1061797e0548b3cf032910ef1e750865d47c`
+**Commit فعلی main:** `74bfa5f880fc3518c4875ba3b80be2af3b15039b`
 
 ---
 
@@ -1037,9 +1037,10 @@ Worktree مستقل نسخه اصلی:
 
 وضعیت نهایی:
 
-- HEAD = `68ab1061797e0548b3cf032910ef1e750865d47c`
+- HEAD = `74bfa5f880fc3518c4875ba3b80be2af3b15039b`
 - `origin/main` = همان Commit
 - `git status --short` = **خالی / Clean**
+- Commit عملیاتی Live Statistics همچنان `68ab1061797e0548b3cf032910ef1e750865d47c` است؛ Commit `74bfa5f` فقط به‌روزرسانی مستندات مرجع پس از Merge است.
 
 پوشه اصلی:
 
