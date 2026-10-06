@@ -1037,10 +1037,10 @@ Worktree مستقل نسخه اصلی:
 
 وضعیت نهایی:
 
-- HEAD = `74bfa5f880fc3518c4875ba3b80be2af3b15039b`
-- `origin/main` = همان Commit
-- `git status --short` = **خالی / Clean**
-- Commit عملیاتی Live Statistics همچنان `68ab1061797e0548b3cf032910ef1e750865d47c` است؛ Commit `74bfa5f` فقط به‌روزرسانی مستندات مرجع پس از Merge است.
+- Worktree مرجع main-sync پس از آخرین همگام‌سازی روی Commit همان زمان قرار گرفت و Clean بود.
+- Commit تثبیت‌کننده کد Live Statistics: `68ab1061797e0548b3cf032910ef1e750865d47c`
+- Mergeهای بعدی PRهای مستنداتی #51 و #52 فقط مستندات را تغییر دادند و منطق عملیاتی Live Statistics را تغییر ندادند.
+- PR #52 با Merge commit `46e8dab40b36fa4eaf9f367e2b31ea2c8fbbea8a` فقط مستندات را نهایی کرد.
 
 پوشه اصلی:
 
