@@ -12,27 +12,33 @@
 ## 2. دو مسیر اصلی داخل لایه AI
 ### مسیر A — Data Intelligence / Statistics / Reports
 هدف: قابل اعتماد کردن داده و تبدیل آن به آمار و گزارش.
+
 زنجیره فعلی:
 Data Snapshot → Matching/Data Intelligence → Statistics Engine → Verified Statistics → Reports
-اجزای انجام‌شده یا در حال توسعه:
+
+اجزای کار:
 - POC-01: Matching Engine
 - POC-02: Data Intelligence
 - Statistics Engine
 - QA/تحلیل Snapshot
 - گزارش مدیریتی در مراحل بعد
 
+نکته وضعیت: Statistics Engine فعلاً در سیستم محلی POC-02 وجود دارد و هنوز در شاخه GitHub مربوط به POC-02 ثبت نشده است.
+
 ### مسیر B — AI Cognitive / Software Control
 هدف: اضافه کردن لایه فهم و تعامل هوشمند روی سامانه.
+
 زنجیره هدف:
 User Input → Intent/Entity Understanding → Deterministic Search/Tool → Result → Explanation/Confirmation → Controlled Action
+
 قابلیت‌های هدف:
 - فهم سؤال طبیعی
 - پیدا کردن شهید با نام و مشخصات محل
 - تشخیص منظور کاربر
 - پاسخ به وضعیت و آمار
 - تولید گزارش/خروجی
-- در مرحله بعد: گفتار به متن
-- در مرحله بعد: اجرای اقدامات مجاز با تأیید و کنترل
+- گفتار به متن
+- اجرای اقدامات مجاز با تأیید و کنترل
 
 نمونه هدف مهم:
 «شهید محمد رضایی، قطعه ۲۴، ردیف ۱۰، شماره ۵»
@@ -47,24 +53,29 @@ User Input → Intent/Entity Understanding → Deterministic Search/Tool → Res
 ## 4. رابطه با سامانه اصلی
 هسته عملیاتی برنامه دارایی محافظت‌شده است.
 قابلیت‌های AI باید تا حد امکان مستقل و افزونه‌ای باشند.
+
 در وضعیت فعلی یک پل ایمن با نام GOLZAR_AI_LAYER در سامانه وجود دارد. این Bridge:
 - به Supabase Write انجام نمی‌دهد.
 - توابع موجود سامانه را جایگزین نمی‌کند.
 - نباید شروع برنامه را متوقف کند.
 - در صورت خرابی AI، سامانه اصلی باید به کار خود ادامه دهد.
-Commit مرجع فعلی Bridge: 236f8c4d0ca7e925ae236b3a828528a973a9fe59
+
+Commit مرجع Bridge:
+236f8c4d0ca7e925ae236b3a828528a973a9fe59
 
 ## 5. منبع داده
 Snapshot فعلی POC:
 martyrs_supabase_snapshot_20261001.json
 تعداد رکورد: 2767
+
 این Snapshot از Supabase تهیه شده و برای POC به‌صورت خواندنی استفاده می‌شود.
 بدون اجازه صریح کاربر هیچ Write یا تغییر Schema در Supabase مجاز نیست.
 
 ## 6. وضعیت Statistics Engine
 نسخه فعلی مورد کار: 0.1.0
 Unit Test: 11/11 PASS
-اجرای موتور روی QA واقعی نیز انجام شده است.
+اجرای موتور روی QA واقعی: انجام شده.
+
 خروجی ثبت‌شده برای همان Snapshot:
 - 2767 رکورد
 - 2763 رکورد رسمی
@@ -74,7 +85,16 @@ Unit Test: 11/11 PASS
 - 23 نوع سنگ نامشخص
 - 1784 رکورد پاک
 - 983 رکورد مسئله‌دار
+
 این اعداد متعلق به Snapshot/QA مورد استفاده‌اند و «آمار زنده فعلی سامانه» تلقی نمی‌شوند.
+
+### وضعیت انتشار فعلی Statistics Engine
+فایل‌های زیر فعلاً در سیستم محلی POC-02 هستند و در شاخه GitHub POC-02 پیدا نشدند:
+- statistics_engine.py
+- test_statistics_engine.py
+
+همچنین برخی اسکریپت‌ها و خروجی‌های QA فقط محلی هستند.
+بنابراین قبل از هر pull/rebase/cleanup باید از این کار محلی Recovery Point تهیه شود.
 
 ## 7. تفکیک از Live Statistics سامانه
 Live Statistics موجود در سامانه عملیاتی با Statistics Engine لایه AI یکی نیست.
@@ -88,18 +108,20 @@ Statistics Engine AI یک لایه تحلیلی مستقل است.
 ## 9. شاخه‌ها
 POC-01: ai/poc-01-matching-v0.1
 POC-02: ai/poc-02-data-intelligence-changes-20261005
-مقایسه فعلی با main نشان می‌دهد هر دو شاخه از یک سابقه مشترک قدیمی منشعب شده‌اند؛ بنابراین Merge/Rebase آن‌ها باید با بررسی Commit پایه، وابستگی‌ها و تست انجام شود و ادغام کور ممنوع است.
+
+هر دو شاخه از سابقه مشترک قدیمی جدا شده‌اند و نسبت به main فعلی عقب هستند. Merge/Rebase باید فقط پس از حفاظت از کار محلی، بررسی Commit پایه، وابستگی‌ها و تست انجام شود.
 
 ## 10. وضعیت تکمیل
 - Matching Engine: POC ساخته و تست شده.
 - Data Intelligence: POC ساخته و تست شده.
-- Statistics Engine: Unit Test و اجرای روی QA انجام شده؛ تطبیق نظام‌مند با مرجع QA هنوز باز است.
+- Statistics Engine: Unit Test و اجرای روی QA انجام شده؛ مقایسه نظام‌مند با مرجع QA و Source of Truth نهایی هنوز باز است؛ کد فعلی Statistics Engine فعلاً local-only است.
 - Intent/Conversational: هنوز وارد پیاده‌سازی اصلی نشده.
 - Voice Input: هدف معماری مشخص است؛ پیاده‌سازی اصلی هنوز شروع نشده.
 - Controlled Actions: برای مرحله بعدی و با کنترل و تأیید.
 
 ## 11. اصل ادامه کار
-مرجع نسخه و کد: GitHub.
+مرجع نسخه و کد منتشرشده: GitHub.
+مرجع وضعیت کار در دست توسعه: GitHub + وضعیت محلی ثبت‌شده.
 مرجع عددی هر تحلیل: Snapshot/QA مشخص‌شده در همان تحلیل.
 مرجع تصمیمات معماری: AI-DECISION-LOG.md.
 در شروع هر چت جدید ابتدا چهار سند AI خوانده شوند و سپس فقط بخش فعال پروژه بررسی شود.
