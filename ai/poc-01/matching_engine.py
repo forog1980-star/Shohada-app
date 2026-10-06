@@ -58,6 +58,23 @@ def compact(value: Any) -> str:
     return re.sub(r"\s+", "", normalize(value))
 
 
+def is_anonymous_identity(value: Any) -> bool:
+    """Detect anonymous-martyr identity forms without semantic overreach."""
+    text = normalize(value)
+    text = re.sub(r"[^\w\s]+", " ", text)
+    tokens = [token for token in re.split(r"\s+", text.strip()) if token]
+    if not tokens:
+        return False
+
+    compact_text = "".join(tokens)
+    if compact_text in {"گمنام", "شهیدگمنام"}:
+        return True
+
+    return "گمنام" in tokens and all(
+        token in {"شهید", "گمنام"} for token in tokens
+    )
+
+
 def normalized_record(record: Mapping[str, Any]) -> dict[str, str]:
     return {
         "name": normalize(_value(record, "name")),
@@ -192,6 +209,66 @@ def classify(input_record: Mapping[str, Any], records: Iterable[Mapping[str, Any
             continue
 
         target = normalized_record(record)
+        if is_anonymous_identity(source["name"]) and is_anonymous_identity(target["name"]):
+            source_location = (
+                source["piece"],
+                source["grave_row"],
+                source["grave_number"],
+            )
+            target_location = (
+                target["piece"],
+                target["grave_row"],
+                target["grave_number"],
+            )
+
+            comparable = sum(
+                bool(source_value and target_value)
+                for source_value, target_value in zip(
+                    source_location, target_location
+                )
+            )
+            matches = sum(
+                bool(
+                    source_value
+                    and target_value
+                    and source_value == target_value
+                )
+                for source_value, target_value in zip(
+                    source_location, target_location
+                )
+            )
+            loc_score = matches / comparable if comparable else 0.0
+
+            complete_same_location = (
+                all(source_location)
+                and all(target_location)
+                and source_location == target_location
+            )
+
+            if complete_same_location:
+                candidates.append(
+                    MatchCandidate(
+                        record=record,
+                        score=1.0,
+                        reasons=("anonymous_identity_and_same_location",),
+                        classification=MATCH_EXACT,
+                    )
+                )
+                continue
+
+            if comparable >= 2 and loc_score >= 0.66:
+                candidates.append(
+                    MatchCandidate(
+                        record=record,
+                        score=loc_score,
+                        reasons=("anonymous_identity_and_similar_location",),
+                        classification=MATCH_SIMILAR,
+                    )
+                )
+                continue
+
+            continue
+
         same_base = (
             source["name"] == target["name"]
             and source["lastname"] == target["lastname"]
@@ -290,12 +367,32 @@ def classify(input_record: Mapping[str, Any], records: Iterable[Mapping[str, Any
 
 def duplicate_groups(records: Iterable[Mapping[str, Any]]) -> dict[str, list[Mapping[str, Any]]]:
     groups: dict[str, list[Mapping[str, Any]]] = {}
+
     for record in records:
-        key = full_key(record)
+        if is_anonymous_identity(_value(record, "name")):
+            normalized = normalized_record(record)
+            location = (
+                normalized["piece"],
+                normalized["grave_row"],
+                normalized["grave_number"],
+            )
+
+            # Anonymous identities are grouped only by a complete exact location.
+            # Name/title variants or decorative symbols must not create duplicates.
+            if not all(location):
+                continue
+
+            key = "ANONYMOUS_LOCATION|" + "|".join(location)
+        else:
+            key = full_key(record)
+
         if key == "||||":
             continue
+
         groups.setdefault(key, []).append(record)
+
     return {key: rows for key, rows in groups.items() if len(rows) > 1}
+
 
 
 def conflict_groups(records: Iterable[Mapping[str, Any]]) -> dict[str, list[Mapping[str, Any]]]:
