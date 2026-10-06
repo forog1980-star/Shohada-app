@@ -53,3 +53,13 @@ Merge/Rebase فقط بعد از مقایسه با main فعلی انجام شو�
 - AI-DECISION-LOG.md
 - AI-SESSION-HANDOFF.md
 در شروع چت جدید ابتدا این چهار سند و سپس کد/QA مرتبط بررسی شوند.
+
+## Decision 010 — Local-only Work Must Be Preserved
+تاریخ: 2026-10-06
+تصمیم: هر فایل AI/QA که فقط در سیستم محلی وجود دارد، تا زمان ثبت Recovery Point و تعیین تکلیف انتشار، دارایی پروژه محسوب می‌شود و نباید حذف، بازنویسی یا با pull/rebase بی‌محابا جابه‌جا شود.
+مورد فعلی:
+- statistics_engine.py
+- test_statistics_engine.py
+- QA outputs و backupهای POC-02
+- تغییرات محلی سه فایل Frontend
+دلیل: جلوگیری از از دست رفتن کار انجام‌شده در چت/محیط قبلی.
