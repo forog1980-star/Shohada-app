@@ -445,6 +445,8 @@
 
 
   const QUALITY_CORRECTIONS_TABLE = "martyr_quality_corrections";
+  const QUALITY_RECORD_CHECKS_VIEW = "martyrs_quality_record_checks";
+  const QUALITY_SUMMARY_VIEW = "martyrs_quality_summary";
   const QUALITY_SUPABASE_URL = "https://bafrksgdcmglahyrppfy.supabase.co";
   const QUALITY_PUBLISHABLE_KEY =
     "sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX";
@@ -635,71 +637,150 @@
     return "";
   }
 
-  function getQaData() {
-    const index = getIndex();
-    if (!index || typeof index.getLiveRows !== "function") return null;
+  async function fetchQualityView(viewName) {
+    const rows = [];
+    let offset = 0;
+    const pageSize = 1000;
+    const maxPages = 20;
 
-    const rows = index.getLiveRows().slice().sort(function(a, b) {
-      return Number(rowValue(a, "id")) - Number(rowValue(b, "id"));
+    for (let page = 0; page < maxPages; page++) {
+      const url =
+        QUALITY_SUPABASE_URL +
+        "/rest/v1/" +
+        viewName +
+        "?select=*" +
+        "&order=id.asc" +
+        "&limit=" + pageSize +
+        "&offset=" + offset;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          apikey: QUALITY_PUBLISHABLE_KEY,
+          Authorization: "Bearer " + QUALITY_PUBLISHABLE_KEY
+        },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Supabase quality view HTTP " + response.status);
+      }
+
+      const batch = await response.json();
+      if (!Array.isArray(batch)) {
+        throw new Error("Supabase quality view returned a non-array page.");
+      }
+
+      rows.push(...batch);
+      if (batch.length < pageSize) break;
+      offset += pageSize;
+    }
+
+    return rows;
+  }
+
+  async function loadServerQualityData() {
+    const records = await fetchQualityView(QUALITY_RECORD_CHECKS_VIEW);
+
+    const summaryUrl =
+      QUALITY_SUPABASE_URL +
+      "/rest/v1/" +
+      QUALITY_SUMMARY_VIEW +
+      "?select=*" +
+      "&order=category.asc,metric_name.asc";
+
+    const response = await fetch(summaryUrl, {
+      method: "GET",
+      headers: {
+        apikey: QUALITY_PUBLISHABLE_KEY,
+        Authorization: "Bearer " + QUALITY_PUBLISHABLE_KEY
+      },
+      cache: "no-store"
     });
 
-    const quality = typeof index.getDataQualityIndex === "function"
-      ? index.getDataQualityIndex()
-      : index.dataQuality;
+    if (!response.ok) {
+      throw new Error("Supabase quality summary HTTP " + response.status);
+    }
 
-    const intelligence = typeof index.getDataIntelligenceIndex === "function"
-      ? index.getDataIntelligenceIndex()
-      : index.dataIntelligence;
+    const summary = await response.json();
+    if (!Array.isArray(summary)) {
+      throw new Error("Supabase quality summary returned a non-array response.");
+    }
 
-    const issueNames = [
-      "ردیف مزار خالی",
-      "شماره مزار خالی",
-      "مرحله خالی",
-      "نام/هویت تکراری یا چندرکوردی",
-      "قطعه خالی",
-      "خارج از محدوده ۸ قطعه آماری",
-      "موقعیت مزار تکراری",
-      "نوع سنگ خالی",
-      "نام خالی"
-    ];
+    return { records, summary };
+  }
+
+  function metricValue(summaryRows, category, name) {
+    const item = summaryRows.find(function(row) {
+      return row.category === category && row.metric_name === name;
+    });
+    return Number(item?.metric_count || 0);
+  }
+
+  async function getQaData() {
+    const server = await loadServerQualityData();
+    const rows = server.records
+      .slice()
+      .sort(function(a, b) {
+        return Number(rowValue(a, "id")) - Number(rowValue(b, "id"));
+      });
+
+    const quality = {
+      totalRecords: metricValue(server.summary, "summary", "کل رکوردها") || rows.length,
+      clean: metricValue(server.summary, "summary", "بدون مشکل"),
+      problem: metricValue(server.summary, "summary", "دارای مشکل"),
+      issueCounts: {}
+    };
+
+    server.summary
+      .filter(function(row) { return row.category === "quality"; })
+      .forEach(function(row) {
+        quality.issueCounts[row.metric_name] = Number(row.metric_count || 0);
+      });
+
+    const intelligence = {
+      duplicateGroups: metricValue(server.summary, "intelligence", "گروه‌های تکراری کامل"),
+      identityConflicts: metricValue(server.summary, "intelligence", "تعارض هویتی"),
+      locationConflicts: metricValue(server.summary, "intelligence", "تعارض محل"),
+      incompleteRecords: metricValue(server.summary, "intelligence", "رکورد ناقص"),
+      stageNormalizations: metricValue(server.summary, "intelligence", "موارد نیازمند یکسان‌سازی مرحله"),
+      stageAnomalies: metricValue(server.summary, "intelligence", "مراحل ناشناخته")
+    };
 
     const issuesById = new Map();
 
-    issueNames.forEach(function(issue) {
-      const ids = quality && typeof quality.getIssueIds === "function"
-        ? quality.getIssueIds(issue)
+    rows.forEach(function(row) {
+      const id = Number(rowValue(row, "id"));
+      const issues = Array.isArray(row.issue_names)
+        ? row.issue_names.slice()
         : [];
 
-      ids.forEach(function(id) {
-        const numericId = Number(id);
-        if (!issuesById.has(numericId)) {
-          issuesById.set(numericId, []);
-        }
-        issuesById.get(numericId).push(issue);
-      });
+      if (Number.isFinite(id)) {
+        issuesById.set(id, issues);
+      }
     });
 
-    const snapshot = typeof index.getSnapshot === "function"
-      ? index.getSnapshot()
-      : null;
-
     return {
-      index: index,
+      index: getIndex(),
       rows: rows,
-      quality: quality && typeof quality.getSummary === "function"
-        ? quality.getSummary()
-        : null,
-      intelligence: intelligence && typeof intelligence.getSummary === "function"
-        ? intelligence.getSummary()
-        : null,
+      quality: quality,
+      intelligence: intelligence,
       issuesById: issuesById,
-      snapshot: snapshot
+      snapshot: {
+        status: "ready",
+        source: "Supabase public.martyrs via server-side PostgreSQL quality views",
+        rowCount: rows.length,
+        updatedAt: new Date().toISOString()
+      }
     };
   }
 
   function qaStatusForIssues(issues) {
     if (!issues.length) return "clean";
-    if (issues.includes("نام/هویت تکراری یا چندرکوردی")) return "duplicate";
+    if (
+      issues.includes("نام/هویت تکراری یا چندرکوردی") ||
+      issues.includes("گروه تکراری کامل")
+    ) return "duplicate";
     if (
       issues.includes("موقعیت مزار تکراری") ||
       issues.includes("خارج از محدوده ۸ قطعه آماری")
@@ -729,6 +810,15 @@
       "نام خالی": "نام خالی"
     }[issue] || issue;
   }
+
+  const qaState = {
+    status: "all",
+    piece: "all",
+    search: "",
+    issue: null,
+    page: 1,
+    pageSize: 25
+  };
 
   function qaFiltered(data) {
     const normalizedSearch = String(qaState.search || "")
@@ -767,6 +857,7 @@
 
       if (qaState.status === "incomplete") {
         const incompleteIssues = [
+          "رکورد ناقص",
           "مرحله خالی",
           "ردیف مزار خالی",
           "شماره مزار خالی",
@@ -784,7 +875,7 @@
       }
 
       if (qaState.piece === "outside") {
-        const official = new Set(["17", "21", "24", "26", "27", "28", "29", "40", "53"]);
+        const official = new Set(["17", "24", "26", "27", "28", "29", "40", "53"]);
         if (!piece || official.has(piece)) return false;
       } else if (qaState.piece !== "all" && piece !== qaState.piece) {
         return false;
@@ -1661,7 +1752,21 @@
     const body = document.querySelector("#golzar-ai-quality-body");
     if (!body) return;
 
-    const data = getQaData();
+    let data = null;
+    try {
+      data = await getQaData();
+    } catch (error) {
+      console.error("[Golzar AI Quality] server-side quality load failed:", error);
+      body.innerHTML =
+        '<div class="golzar-ai-quality-loading">دریافت کنترل کیفیت مستقیم از Supabase انجام نشد.<br>' +
+        escapeHtml(error?.message || String(error)) +
+        '</div>' +
+        '<div class="golzar-ai-quality-footer"><span class="golzar-ai-quality-source">منبع کنترل کیفیت: Supabase / martyrs</span>' +
+        '<div class="golzar-ai-quality-actions"><button class="golzar-ai-quality-action primary" type="button" id="golzar-ai-quality-refresh">تلاش مجدد</button>' +
+        '<button class="golzar-ai-quality-action" type="button" id="golzar-ai-quality-close-2">بستن</button></div></div>';
+      bindModalButtons();
+      return;
+    }
 
     if (!data || !data.quality) {
       body.innerHTML =
@@ -1715,7 +1820,7 @@
       '<div class="golzar-ai-quality-meta">' +
         '<span class="golzar-ai-quality-engine">لایه هوش مصنوعی: تحلیل و پایش کیفیت اطلاعات</span>' +
         '<span class="golzar-ai-quality-engine">تعداد رکورد: <strong>' + formatNumber(total) + '</strong></span>' +
-        '<span class="golzar-ai-quality-engine">نسخه موتور: <strong>0.3.0</strong></span>' +
+        '<span class="golzar-ai-quality-engine">نسخه موتور: <strong>0.5.0</strong></span>' +
         '<span class="golzar-ai-quality-engine">حالت: <strong>گردش‌کار اصلاح و تأیید</strong></span>' +
       '</div>' +
 
@@ -1725,7 +1830,7 @@
         '">● وضعیت شاخص: ' +
           ((data.snapshot && data.snapshot.status === "ready") ? "آماده" : escapeHtml((data.snapshot && data.snapshot.status) || "نامشخص")) +
         '</span>' +
-        '<span class="golzar-ai-quality-pill">منبع: اطلاعات زنده سامانه</span>' +
+        '<span class="golzar-ai-quality-pill">منبع کنترل: PostgreSQL / martyrs</span>' +
         '<span class="golzar-ai-quality-pill">آخرین به‌روزرسانی: ' + escapeHtml(updatedAt) + '</span>' +
       '</div>' +
 
@@ -1783,12 +1888,12 @@
       '<section class="golzar-ai-quality-section"><h3>خلاصه هوشمندی داده</h3>' +
         '<p class="golzar-ai-quality-work-description">این بخش، روابط و تعارض‌های بین رکوردها را از روی اطلاعات زنده سامانه بررسی می‌کند؛ آمار آن مستقل از تعداد درخواست‌های بهسازی است. این شاخص‌ها زنده‌اند: با اصلاح واقعی رکورد در منبع اصلی و سپس به‌روزرسانی شاخص، اعداد ممکن است کم یا زیاد شوند. ثبت اصلاح در صف محلی این صفحه، به‌تنهایی عددها را تغییر نمی‌دهد.</p>' +
         '<div class="golzar-ai-quality-issues">' +
-          '<div class="golzar-ai-quality-issue static"><span>گروه‌های تکراری کامل</span><strong>' + formatNumber(intelligence.duplicateGroups || 0) + '</strong></div>' +
-          '<div class="golzar-ai-quality-issue static"><span>تعارض هویتی</span><strong>' + formatNumber(intelligence.identityConflicts || 0) + '</strong></div>' +
-          '<div class="golzar-ai-quality-issue static"><span>تعارض محل</span><strong>' + formatNumber(intelligence.locationConflicts || 0) + '</strong></div>' +
-          '<div class="golzar-ai-quality-issue static"><span>رکورد ناقص</span><strong>' + formatNumber(intelligence.incompleteRecords || 0) + '</strong></div>' +
-          '<div class="golzar-ai-quality-issue static"><span>موارد نیازمند یکسان‌سازی مرحله</span><strong>' + formatNumber(intelligence.stageNormalizations || 0) + '</strong></div>' +
-          '<div class="golzar-ai-quality-issue static"><span>مراحل ناشناخته</span><strong>' + formatNumber(intelligence.stageAnomalies || 0) + '</strong></div>' +
+          '<button type="button" class="golzar-ai-quality-issue" data-issue-filter="گروه تکراری کامل"><span>گروه‌های تکراری کامل</span><strong>' + formatNumber(intelligence.duplicateGroups || 0) + '</strong></button>' +
+          '<button type="button" class="golzar-ai-quality-issue" data-issue-filter="تعارض هویتی"><span>تعارض هویتی</span><strong>' + formatNumber(intelligence.identityConflicts || 0) + '</strong></button>' +
+          '<button type="button" class="golzar-ai-quality-issue" data-issue-filter="تعارض محل"><span>تعارض محل</span><strong>' + formatNumber(intelligence.locationConflicts || 0) + '</strong></button>' +
+          '<button type="button" class="golzar-ai-quality-issue" data-issue-filter="رکورد ناقص"><span>رکورد ناقص</span><strong>' + formatNumber(intelligence.incompleteRecords || 0) + '</strong></button>' +
+          '<button type="button" class="golzar-ai-quality-issue" data-issue-filter="نیازمند یکسان‌سازی مرحله"><span>موارد نیازمند یکسان‌سازی مرحله</span><strong>' + formatNumber(intelligence.stageNormalizations || 0) + '</strong></button>' +
+          '<button type="button" class="golzar-ai-quality-issue" data-issue-filter="مرحله ناشناخته"><span>مراحل ناشناخته</span><strong>' + formatNumber(intelligence.stageAnomalies || 0) + '</strong></button>' +
         '</div>' +
       '</section>' +
 
@@ -1814,7 +1919,7 @@
       '</section>' +
 
       '<div class="golzar-ai-quality-footer">' +
-        '<span class="golzar-ai-quality-source">پیشنهادهای اصلاح در صف دائمی Supabase نگهداری می‌شوند و فقط تأیید ناظر می‌تواند اصلاح را در اطلاعات اصلی اعمال کند.</span>' +
+        '<span class="golzar-ai-quality-source">کنترل کیفیت مستقیم روی public.martyrs در PostgreSQL انجام می‌شود؛ این صفحه فقط نتایج زنده را نمایش می‌دهد. پیشنهادهای اصلاح در صف دائمی Supabase نگهداری می‌شوند و فقط تأیید ناظر می‌تواند اصلاح را در اطلاعات اصلی اعمال کند.</span>' +
         '<div class="golzar-ai-quality-actions"><button class="golzar-ai-quality-action" type="button" id="golzar-ai-quality-close-2">بستن</button></div>' +
       '</div>';
 
@@ -1908,6 +2013,13 @@
         qaState.page = 1;
         renderQaRecords(data);
         updateActiveQaFilter();
+        const recordsSection = document.getElementById("golzar-ai-quality-records-body");
+        if (recordsSection) {
+          const section = recordsSection.closest(".golzar-ai-quality-section");
+          if (section) {
+            section.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
       };
     });
 
@@ -2050,7 +2162,7 @@
   document.addEventListener("DOMContentLoaded", observeMenu, { once: true });
 
   window.GOLZAR_AI_QUALITY_PANEL = {
-    version: "0.4.0-server-approval-workflow",
+    version: "0.5.0-server-side-quality-checks",
     open: openModal,
     close: closeModal,
     refresh: function () {
