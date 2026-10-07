@@ -76,7 +76,9 @@ jobs:
           HTML
 
       - name: Start static server
-        run: python3 -m http.server 8000 --directory .
+        run: python3 -m http.server 8000 --directory . >/tmp/qa-http.log 2>&1 &
+          sleep 2
+          curl -fsS http://127.0.0.1:8000/qa-harness.html >/dev/null
 
       - name: Browser QA
         shell: bash
