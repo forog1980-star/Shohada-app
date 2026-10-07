@@ -2,7 +2,7 @@
 
 > این فایل مرجع اصلی ادامه پروژه است. در هر گفت‌وگوی جدید ابتدا این فایل خوانده شود و سپس وضعیت زنده GitHub / GitHub Pages / Vercel / Supabase با آن تطبیق داده شود.
 
-**آخرین به‌روزرسانی:** 2026-10-06 — تثبیت آمار زنده Supabase/Realtime و نهایی‌سازی مستندات پس از Merge
+**آخرین به‌روزرسانی:** 2026-10-07 — اتصال Index لایه AI به داده زنده `public.martyrs`
 **مخزن:** `forog1980-star/Shohada-app`
 **نسخه عملیاتی نهایی:** `main`
 **Commit تثبیت‌کننده Live Statistics:** `68ab1061797e0548b3cf032910ef1e750865d47c`
@@ -1276,3 +1276,102 @@ Endpoint محلی:
 `Start QA Local Server → Open QA Page → Verify Live Data → Test Filters → Test Record Details → Test Approval Workflow → Final Human Confirmation`
 
 تا قبل از PASS انسانی، این مرحله نباید به `main` منتقل شود و نباید به‌عنوان قابلیت عملیاتی نهایی معرفی شود.
+
+
+---
+
+## 23. اتصال Index مشترک دو لایه AI به سامانه اصلی — 2026-10-07
+
+### 23-1. هدف
+
+برای جلوگیری از وابستگی به سرورهای موقت QA/POC در زمان تست نهایی، یک لایه داده‌ای مشترک برای AI به نقطه ورود اصلی سامانه اضافه شد.
+
+زنجیره جدید:
+
+`main frontend → AI Live Index Loader → Supabase public.martyrs`
+
+و دو نمای مصرف‌کننده:
+
+`AI Live Index → POC-01 Matching Index`
+
+`AI Live Index → POC-02 Data Intelligence / Data Quality Index`
+
+این اتصال جایگزین موتورهای Python POC نمی‌شود؛ موتورهای Python همچنان مرجع توسعه و تست منطقی هستند.
+
+### 23-2. فایل‌های اجرایی این مرحله
+
+فایل جدید:
+
+`frontend/ai-live-index-loader.js`
+
+این فایل:
+- داده‌های `public.martyrs` را فقط به‌صورت Read-only می‌خواند.
+- دریافت داده را با pagination انجام می‌دهد.
+- Index بر اساس ID، هویت، موقعیت و کلید کامل می‌سازد.
+- خلاصه کیفیت داده و شناسه موارد مشکل‌دار را می‌سازد.
+- Indexهای مورد نیاز Matching و Data Intelligence را از همان مجموعه رکورد تولید می‌کند.
+- تغییرات INSERT / UPDATE / DELETE را با Realtime روی همان Index اعمال می‌کند.
+- در صورت خطای AI، اجرای سامانه اصلی را متوقف نمی‌کند.
+
+فایل موجود که در این مرحله توسعه داده شد:
+
+`frontend/ai-layer-bridge.js`
+
+موارد expose‌شده:
+- `getLiveIndex()`
+- `getMatchingIndex()`
+- `getDataQualityIndex()`
+- `getDataIntelligenceIndex()`
+
+### 23-3. نقطه اتصال به index.html
+
+`frontend/index.html` اکنون بعد از Master Loader و قبل از AI Bridge، لودر زیر را بارگذاری می‌کند:
+
+`ai-live-index-loader.js?v=20261007-ai-index-01`
+
+ترتیب منطقی:
+
+`master-loader → ai-live-index-loader → ai-layer-bridge`
+
+لودر AI نباید Startup عملیاتی را مسدود کند.
+
+### 23-4. قرارداد داده
+
+منبع:
+
+`Supabase public.martyrs`
+
+مرجع داده:
+
+- یک مجموعه Live مشترک برای هر دو مسیر AI
+- عدم کپی‌سازی Snapshot برای اجرای عادی
+- Snapshot فقط برای Offline/Regression/Archive
+
+در تست‌های قبلی، داده زنده 2769 رکورد با بازه ID از 9789 تا 12578 مشاهده شد.
+
+### 23-5. وضعیت تست فنی
+
+تا این نقطه:
+- ساخت لودر: **PASS**
+- افزودن به نقطه ورود main frontend: **PASS**
+- استفاده از همان Publishable Key موجود Frontend: **PASS**
+- Supabase Write: **NONE**
+- Schema/RLS/Policy change: **NONE**
+- تغییر منطق عملیاتی اصلی: **NONE**
+- تست رفتار Realtime این لودر روی داده زنده: **در انتظار تست نهایی**
+- تست انسانی از URL عملیاتی: **در انتظار**
+- Merge نهایی به main: **هنوز انجام نشده**
+
+### 23-6. نکته درباره معماری قبلی
+
+`frontend/statistics-live-bridge-v2.js` نیز از `public.martyrs` داده زنده دریافت می‌کند و `__GOLZAR_LIVE_ROWS__` را در مسیر Statistics می‌سازد.
+
+لودر AI برای صفحه اصلی از همان منطق داده زنده استفاده می‌کند، ولی Indexهای مخصوص AI را جدا نگه می‌دارد تا با محاسبه آمار عملیاتی قاطی نشود.
+
+### 23-7. نقطه ادامه
+
+بعد از تست فنی شاخه:
+
+`Open main URL → verify AI bridge → verify live row count → verify Matching index → verify Data Quality/Data Intelligence index`
+
+در صورت PASS تست انسانی، تصمیم درباره Merge نهایی به `main` گرفته می‌شود.
