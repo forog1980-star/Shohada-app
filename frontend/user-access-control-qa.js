@@ -165,7 +165,7 @@ function runTests(){
   const tests=[];
   const t=(name,fn)=>{try{tests.push({name,ok:!!fn()})}catch(e){tests.push({name,ok:false,error:String(e)})}};
   state.userId="u1";state.userName="u1";state.roles=["viewer"];state.scopes=["assigned_sections"];
-  t("viewer cannot create martyrs",()=>!can("martyrs.create","read_only").allowed);
+  t("viewer cannot create martyrs",()=>!can("martyrs.create","assigned_sections").allowed);
   state.roles=["rehabilitation_operator"];state.scopes=["assigned_records"];
   t("rehabilitation operator can edit with assigned scope",()=>can("martyrs.edit","assigned_records").allowed);
   t("missing global scope is denied",()=>!can("martyrs.edit","global").allowed);
