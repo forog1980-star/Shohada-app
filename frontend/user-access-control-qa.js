@@ -96,7 +96,7 @@ function hasScope(scope){
   return state.scopes.includes(scope);
 }
 
-function can(permission, requiredScope="read_only", targetCreatorId=null){
+function can(permission, requiredScope=null, targetCreatorId=null){
   if(!state.userId) return {allowed:false,reason:"شناسه کاربر وجود ندارد."};
   if(!hasPermission(permission)) return {allowed:false,reason:"Permission اعطا نشده است (deny by default)."};
   if(requiredScope && !hasScope(requiredScope)) return {allowed:false,reason:"Scope داده برای این عملیات کافی نیست."};
@@ -127,7 +127,7 @@ function renderScopes(){
   document.querySelectorAll("[data-scope]").forEach(el=>el.onchange=()=>{
     if(el.checked) state.scopes=[...new Set([...state.scopes,el.dataset.scope])];
     else state.scopes=state.scopes.filter(x=>x!==el.dataset.scope);
-    if(!state.scopes.length) state.scopes=["read_only"];
+    if(!state.scopes.length) state.scopes=["assigned_sections"];
     renderEffective();
   });
 }
