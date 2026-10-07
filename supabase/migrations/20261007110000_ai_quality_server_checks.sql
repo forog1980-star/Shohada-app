@@ -214,5 +214,7 @@ union all
 select metric_name, category, metric_count from quality_metrics
 order by category, metric_name;
 
+revoke all on public.martyrs_quality_record_checks from public, anon, authenticated;
+revoke all on public.martyrs_quality_summary from public, anon, authenticated;
 grant select on public.martyrs_quality_record_checks to anon, authenticated;
 grant select on public.martyrs_quality_summary to anon, authenticated;
