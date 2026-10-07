@@ -1,39 +1,5 @@
 "use strict";
-const rememberedUser = localStorage.getItem("golzar_uac_remembered_user") || "";
-if (rememberedUser) { $("loginUser").value = rememberedUser; $("rememberUser").checked = true; }
 
-function showApp() {
-  $("loginGate").classList.add("hidden");
-  $("appGate").classList.remove("hidden");
-}
-$("loginBtn").onclick = () => {
-  const u = $("loginUser").value.trim();
-  const p = $("loginPassword").value;
-  if (!u || !p) {
-    $("loginMessage").textContent = "نام کاربری و رمز عبور هر دو الزامی هستند.";
-    return;
-  }
-  if ($("rememberUser").checked) localStorage.setItem("golzar_uac_remembered_user", u);
-  else localStorage.removeItem("golzar_uac_remembered_user");
-  // QA simulation only: production will validate credentials through Supabase Auth.
-  $("loginMessage").textContent = "ورود آزمایشی موفق شد؛ در نسخه واقعی اینجا Supabase Auth اعتبارسنجی می‌کند.";
-  state.userId = u;
-  showApp();
-  render();
-  runTests();
-};
-$("forgotBtn").onclick = () => {
-  $("loginMessage").textContent =
-    "بازیابی رمز در نسخه واقعی از مسیر امن انجام می‌شود؛ در صورت فعال بودن پیام‌رسان/ایمیل، لینک یا کد بازیابی ارسال می‌شود، و در غیر این صورت درخواست بازنشانی برای مدیر سیستم ثبت می‌شود. رمز فعلی هرگز نمایش داده نمی‌شود.";
-};
-
-
-/*
- * GolzarStone — User Access Control QA Engine
- * QA-only, deterministic, no Supabase writes.
- * Production authentication / RLS / role administration are intentionally
- * not implemented here because those require an approved backend/Auth schema.
- */
 
 const PERMISSIONS = [
   ["all_martyrs","جستجوی کل شهدا",["view","search","detail","edit_draft","export"]],
@@ -74,6 +40,41 @@ const state = {
 };
 
 const $ = id => document.getElementById(id);
+const rememberedUser = localStorage.getItem("golzar_uac_remembered_user") || "";
+if (rememberedUser) { $("loginUser").value = rememberedUser; $("rememberUser").checked = true; }
+
+function showApp() {
+  $("loginGate").classList.add("hidden");
+  $("appGate").classList.remove("hidden");
+}
+$("loginBtn").onclick = () => {
+  const u = $("loginUser").value.trim();
+  const p = $("loginPassword").value;
+  if (!u || !p) {
+    $("loginMessage").textContent = "نام کاربری و رمز عبور هر دو الزامی هستند.";
+    return;
+  }
+  if ($("rememberUser").checked) localStorage.setItem("golzar_uac_remembered_user", u);
+  else localStorage.removeItem("golzar_uac_remembered_user");
+  // QA simulation only: production will validate credentials through Supabase Auth.
+  $("loginMessage").textContent = "ورود آزمایشی موفق شد؛ در نسخه واقعی اینجا Supabase Auth اعتبارسنجی می‌کند.";
+  state.userId = u;
+  showApp();
+  render();
+  runTests();
+};
+$("forgotBtn").onclick = () => {
+  $("loginMessage").textContent =
+    "بازیابی رمز در نسخه واقعی از مسیر امن انجام می‌شود؛ در صورت فعال بودن پیام‌رسان/ایمیل، لینک یا کد بازیابی ارسال می‌شود، و در غیر این صورت درخواست بازنشانی برای مدیر سیستم ثبت می‌شود. رمز فعلی هرگز نمایش داده نمی‌شود.";
+};
+
+
+/*
+ * GolzarStone — User Access Control QA Engine
+ * QA-only, deterministic, no Supabase writes.
+ * Production authentication / RLS / role administration are intentionally
+ * not implemented here because those require an approved backend/Auth schema.
+ */
 const permKey = (m,a) => m+"."+a;
 
 function allPermissions(){
