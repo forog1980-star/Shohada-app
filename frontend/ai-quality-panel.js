@@ -355,7 +355,10 @@
         .golzar-ai-quality-body{padding:14px}
       }
     `;
-    style.textContent += "      .golzar-ai-quality-filters{grid-template-columns:minmax(260px,1.6fr) minmax(170px,.8fr) minmax(170px,.8fr) auto;align-items:stretch}\n      .golzar-ai-quality-filter-search{display:flex}\n      .golzar-ai-quality-filter-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#403a2a;font:inherit;font-size:11px}\n      .golzar-ai-quality-filter-action{justify-content:center}\n      .golzar-ai-quality-filter-action .golzar-ai-quality-action{white-space:nowrap}\n      .golzar-ai-quality-active-filter{margin-top:8px;padding:7px 10px;border-radius:10px;background:#f6f0d8;border:1px solid #e2d5a5;color:#6b5b1c;font-size:10px}\n      .golzar-ai-quality-issue{width:100%;border:1px solid #eee9d8;color:#5f5946;font:inherit;text-align:right;cursor:pointer;transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease}\n      .golzar-ai-quality-issue:hover{transform:translateY(-1px);border-color:#c9b979;box-shadow:0 4px 12px rgba(120,96,20,.09)}\n      .golzar-ai-quality-issue.static{cursor:default}\n      .golzar-ai-quality-issue.static:hover{transform:none;border-color:#eee9d8;box-shadow:none}\n      .golzar-ai-quality-table th:first-child,.golzar-ai-quality-table td:first-child{position:sticky;right:0;z-index:4;background:#fffef8;min-width:78px;width:78px;text-align:center;box-shadow:-3px 0 6px rgba(0,0,0,.07)}\n      .golzar-ai-quality-table thead th:first-child{z-index:6;background:#f7f3e5}\n      .golzar-ai-quality-related-list{display:grid;gap:8px}\n      .golzar-ai-quality-related-item{padding:10px;border:1px solid #eee8d9;border-radius:11px;background:#fcfbf6}\n      .golzar-ai-quality-related-item>div:first-child{color:#4e493a;font-size:11px;line-height:1.8}\n      .golzar-ai-quality-related-meta{margin-top:4px;color:#7a735d;font-size:10px;line-height:1.8}\n      .golzar-ai-quality-work-list{display:grid;gap:8px;margin-top:10px}\n      .golzar-ai-quality-work-item{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:10px;border:1px solid #eee8d9;border-radius:11px;background:#fcfbf6;font-size:11px;line-height:1.7}\n      .golzar-ai-quality-work-description{margin:0 0 10px;color:#746d59;font-size:11px;line-height:1.8}\n      .golzar-ai-quality-return-box{background:#fffaf2;border-color:#e4d5b8}\n      .golzar-ai-quality-action.correction{border-color:#a67c2e;background:#a67c2e;color:#fff}\n      .golzar-ai-quality-correction-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}\n      .golzar-ai-quality-correction-grid label{display:flex;flex-direction:column;gap:6px;color:#5f5946;font-size:11px;font-weight:700}\n      .golzar-ai-quality-correction-grid label.full{grid-column:1/-1}\n      .golzar-ai-quality-correction-grid input,.golzar-ai-quality-correction-grid textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #d7ceb1;border-radius:8px;background:#fff;color:#403a2a;font:inherit;font-size:12px}\n      .golzar-ai-quality-correction-grid textarea{min-height:110px;resize:vertical}\n      .golzar-ai-quality-compare-header,.golzar-ai-quality-compare-row{display:grid;grid-template-columns:180px 1fr 1fr;gap:8px;align-items:center}\n      .golzar-ai-quality-compare-header{margin-bottom:6px;padding:8px 10px;border-radius:9px;background:#f6f0d8;color:#6b5b1c;font-size:10px;font-weight:800}\n      .golzar-ai-quality-compare-row{padding:8px 10px;border-bottom:1px solid #f0ecdd;font-size:11px}\n      .golzar-ai-quality-compare-row span{padding:7px 9px;border-radius:8px;background:#fcfbf6}\n      @media(max-width:900px){.golzar-ai-quality-filters{grid-template-columns:1fr 1fr}.golzar-ai-quality-filter-search{grid-column:1/-1}}\n      @media(max-width:700px){.golzar-ai-quality-filters{grid-template-columns:1fr}.golzar-ai-quality-filter-search{grid-column:auto}.golzar-ai-quality-work-item{grid-template-columns:1fr}.golzar-ai-quality-correction-grid{grid-template-columns:1fr}.golzar-ai-quality-correction-grid label.full{grid-column:auto}.golzar-ai-quality-compare-header,.golzar-ai-quality-compare-row{grid-template-columns:1fr}}\n      .golzar-ai-quality-modal,.golzar-ai-quality-modal *,.golzar-ai-quality-entry,.golzar-ai-quality-entry *{font-family:\"B Nazanin\",\"B Yekan\",Tahoma,Arial,sans-serif !important}\n      .golzar-ai-quality-issues{column-gap:14px;row-gap:12px}\n      .golzar-ai-quality-issue{min-width:0;box-sizing:border-box;overflow:hidden}\n      .golzar-ai-quality-issue span{min-width:0;overflow-wrap:anywhere;line-height:1.8}\n      .golzar-ai-quality-dialog{overflow-x:hidden;overflow-y:auto}\n      .golzar-ai-quality-head{z-index:20}\n      .golzar-ai-quality-table th:first-child{z-index:7}\n      .golzar-ai-quality-table td:first-child{z-index:1}";
+    style.textContent += "      .golzar-ai-quality-filters{grid-template-columns:minmax(260px,1.6fr) minmax(170px,.8fr) minmax(170px,.8fr) auto;align-items:stretch}\n      .golzar-ai-quality-filter-search{display:flex}\n      .golzar-ai-quality-filter-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#403a2a;font:inherit;font-size:11px}\n      .golzar-ai-quality-filter-action{justify-content:center}\n      .golzar-ai-quality-filter-action .golzar-ai-quality-action{white-space:nowrap}\n      .golzar-ai-quality-active-filter{margin-top:8px;padding:7px 10px;border-radius:10px;background:#f6f0d8;border:1px solid #e2d5a5;color:#6b5b1c;font-size:10px}\n      .golzar-ai-quality-issue{width:100%;border:1px solid #eee9d8;color:#5f5946;font:inherit;text-align:right;cursor:pointer;transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease}\n      .golzar-ai-quality-issue:hover{transform:translateY(-1px);border-color:#c9b979;box-shadow:0 4px 12px rgba(120,96,20,.09)}\n      .golzar-ai-quality-issue.static{cursor:default}\n      .golzar-ai-quality-issue.static:hover{transform:none;border-color:#eee9d8;box-shadow:none}\n      .golzar-ai-quality-table th:first-child,.golzar-ai-quality-table td:first-child{position:sticky;right:0;z-index:4;background:#fffef8;min-width:78px;width:78px;text-align:center;box-shadow:-3px 0 6px rgba(0,0,0,.07)}\n      .golzar-ai-quality-table thead th:first-child{z-index:6;background:#f7f3e5}\n      .golzar-ai-quality-related-list{display:grid;gap:8px}\n      .golzar-ai-quality-related-item{padding:10px;border:1px solid #eee8d9;border-radius:11px;background:#fcfbf6}\n      .golzar-ai-quality-related-item>div:first-child{color:#4e493a;font-size:11px;line-height:1.8}\n      .golzar-ai-quality-related-meta{margin-top:4px;color:#7a735d;font-size:10px;line-height:1.8}\n      .golzar-ai-quality-work-list{display:grid;gap:8px;margin-top:10px}\n      .golzar-ai-quality-work-item{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:10px;border:1px solid #eee8d9;border-radius:11px;background:#fcfbf6;font-size:11px;line-height:1.7}\n      .golzar-ai-quality-work-description{margin:0 0 10px;color:#746d59;font-size:11px;line-height:1.8}\n      .golzar-ai-quality-return-box{background:#fffaf2;border-color:#e4d5b8}\n      .golzar-ai-quality-action.correction{border-color:#a67c2e;background:#a67c2e;color:#fff}\n      .golzar-ai-quality-correction-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}\n      .golzar-ai-quality-correction-grid label{display:flex;flex-direction:column;gap:6px;color:#5f5946;font-size:11px;font-weight:700}\n      .golzar-ai-quality-correction-grid label.full{grid-column:1/-1}\n      .golzar-ai-quality-correction-grid input,.golzar-ai-quality-correction-grid textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #d7ceb1;border-radius:8px;background:#fff;color:#403a2a;font:inherit;font-size:12px}\n      .golzar-ai-quality-correction-grid textarea{min-height:110px;resize:vertical}\n      .golzar-ai-quality-compare-header,.golzar-ai-quality-compare-row{display:grid;grid-template-columns:180px 1fr 1fr;gap:8px;align-items:center}\n      .golzar-ai-quality-compare-header{margin-bottom:6px;padding:8px 10px;border-radius:9px;background:#f6f0d8;color:#6b5b1c;font-size:10px;font-weight:800}\n      .golzar-ai-quality-compare-row{padding:8px 10px;border-bottom:1px solid #f0ecdd;font-size:11px}\n      .golzar-ai-quality-compare-row span{padding:7px 9px;border-radius:8px;background:#fcfbf6}\n      @media(max-width:900px){.golzar-ai-quality-filters{grid-template-columns:1fr 1fr}.golzar-ai-quality-filter-search{grid-column:1/-1}}\n      @media(max-width:700px){.golzar-ai-quality-filters{grid-template-columns:1fr}.golzar-ai-quality-filter-search{grid-column:auto}.golzar-ai-quality-work-item{grid-template-columns:1fr}.golzar-ai-quality-correction-grid{grid-template-columns:1fr}.golzar-ai-quality-correction-grid label.full{grid-column:auto}.golzar-ai-quality-compare-header,.golzar-ai-quality-compare-row{grid-template-columns:1fr}}\n      .golzar-ai-quality-modal,.golzar-ai-quality-modal *,.golzar-ai-quality-entry,.golzar-ai-quality-entry *{font-family:\"B Nazanin\",\"B Yekan\",Tahoma,Arial,sans-serif !important}\n      .golzar-ai-quality-issues{column-gap:14px;row-gap:12px}\n      .golzar-ai-quality-issue{min-width:0;box-sizing:border-box;overflow:hidden}\n      .golzar-ai-quality-issue span{min-width:0;overflow-wrap:anywhere;line-height:1.8}\n      .golzar-ai-quality-dialog{overflow-x:hidden;overflow-y:auto}
+      .golzar-ai-quality-auth{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid #e7dfc6;border-radius:11px;background:#fbfaf3}
+      .golzar-ai-quality-auth strong{color:#4e493a;font-size:11px}
+\n      .golzar-ai-quality-head{z-index:20}\n      .golzar-ai-quality-table th:first-child{z-index:7}\n      .golzar-ai-quality-table td:first-child{z-index:1}";
     document.head.appendChild(style);
   }
 
@@ -443,32 +446,177 @@
   }
 
 
-  const QA_QUEUE_STORAGE_KEY = "golzar_quality_local_workflow_20261007";
-  const qaState = {
-    status: "all",
-    piece: "all",
-    search: "",
-    issue: null,
-    page: 1,
-    pageSize: 25
-  };
+  const QUALITY_CORRECTIONS_TABLE = "martyr_quality_corrections";
+  const QUALITY_SUPABASE_URL = "https://bafrksgdcmglahyrppfy.supabase.co";
+  const QUALITY_PUBLISHABLE_KEY =
+    "sb_publishable_O5CkSuivysXJf-8hu1IUCA_izu8hWiX";
 
-  function loadQaQueue() {
+  let qaSubmitterClient = null;
+  let qaReviewerClient = null;
+
+  function getQualitySubmitterClient() {
     try {
-      const raw = localStorage.getItem(QA_QUEUE_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
+      if (qaSubmitterClient) return qaSubmitterClient;
+      if (
+        !window.supabase ||
+        typeof window.supabase.createClient !== "function"
+      ) {
+        return null;
+      }
+      qaSubmitterClient = window.supabase.createClient(
+        QUALITY_SUPABASE_URL,
+        QUALITY_PUBLISHABLE_KEY,
+        {
+          auth: {
+            storageKey: "golzar_ai_quality_submitter_auth_20261007",
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false
+          }
+        }
+      );
+      return qaSubmitterClient;
     } catch (error) {
-      console.error("[Golzar AI Quality] queue read failed:", error);
-      return {};
+      console.error("[Golzar AI Quality] submitter client failed:", error);
+      return null;
     }
   }
 
-  function saveQaQueue(store) {
+  function getQualityReviewerClient() {
     try {
-      localStorage.setItem(QA_QUEUE_STORAGE_KEY, JSON.stringify(store));
+      if (qaReviewerClient) return qaReviewerClient;
+      if (
+        !window.supabase ||
+        typeof window.supabase.createClient !== "function"
+      ) {
+        return null;
+      }
+      qaReviewerClient = window.supabase.createClient(
+        QUALITY_SUPABASE_URL,
+        QUALITY_PUBLISHABLE_KEY,
+        {
+          auth: {
+            storageKey: "golzar_ai_quality_reviewer_auth_20261007",
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false
+          }
+        }
+      );
+      return qaReviewerClient;
     } catch (error) {
-      console.error("[Golzar AI Quality] queue save failed:", error);
+      console.error("[Golzar AI Quality] reviewer client failed:", error);
+      return null;
     }
+  }
+
+  async function getSubmitterSession() {
+    const client = getQualitySubmitterClient();
+    if (!client) return null;
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+      console.error("[Golzar AI Quality] submitter session read failed:", error);
+      return null;
+    }
+    return data?.session || null;
+  }
+
+  async function ensureSubmitterSession() {
+    const client = getQualitySubmitterClient();
+    if (!client) {
+      throw new Error("اتصال Supabase برای صف اصلاحات آماده نیست.");
+    }
+
+    const existing = await getSubmitterSession();
+    if (existing) return existing;
+
+    const { data, error } = await client.auth.signInAnonymously();
+    if (error) throw error;
+    if (!data?.session) {
+      throw new Error("نشست ثبت اصلاحات در Supabase ایجاد نشد.");
+    }
+    return data.session;
+  }
+
+  function reviewerRole(user) {
+    return String(user?.app_metadata?.role || "").trim().toLowerCase();
+  }
+
+  function isReviewerUser(user) {
+    const role = reviewerRole(user);
+    return role === "reviewer" || role === "admin";
+  }
+
+  async function loadWorkflowState() {
+    const result = {
+      reviewerUser: null,
+      reviewerRows: [],
+      reviewerError: null,
+      submitterUser: null,
+      submitterRows: [],
+      submitterError: null
+    };
+
+    try {
+      const reviewerClient = getQualityReviewerClient();
+      if (reviewerClient) {
+        const { data: sessionData, error: sessionError } =
+          await reviewerClient.auth.getSession();
+
+        if (sessionError) {
+          result.reviewerError = sessionError.message || String(sessionError);
+        } else if (sessionData?.session?.user) {
+          const user = sessionData.session.user;
+          result.reviewerUser = user;
+
+          if (isReviewerUser(user)) {
+            const { data, error } = await reviewerClient
+              .from(QUALITY_CORRECTIONS_TABLE)
+              .select("*")
+              .eq("status", "pending_review")
+              .order("submitted_at", { ascending: false });
+
+            if (error) {
+              result.reviewerError = error.message || String(error);
+            } else {
+              result.reviewerRows = data || [];
+            }
+          }
+        }
+      }
+    } catch (error) {
+      result.reviewerError = error?.message || String(error);
+    }
+
+    try {
+      const submitterClient = getQualitySubmitterClient();
+      if (submitterClient) {
+        const { data: sessionData, error: sessionError } =
+          await submitterClient.auth.getSession();
+
+        if (sessionError) {
+          result.submitterError =
+            sessionError.message || String(sessionError);
+        } else if (sessionData?.session?.user) {
+          result.submitterUser = sessionData.session.user;
+
+          const { data, error } = await submitterClient
+            .from(QUALITY_CORRECTIONS_TABLE)
+            .select("*")
+            .order("submitted_at", { ascending: false });
+
+          if (error) {
+            result.submitterError = error.message || String(error);
+          } else {
+            result.submitterRows = data || [];
+          }
+        }
+      }
+    } catch (error) {
+      result.submitterError = error?.message || String(error);
+    }
+
+    return result;
   }
 
   function rowValue(row, name) {
@@ -855,14 +1003,14 @@
 
           '<section class="golzar-ai-quality-section golzar-ai-quality-return-box">' +
             '<h3>ارجاع برای اصلاح</h3>' +
-            '<p>این ارجاع فقط در صف کاری همین مرورگر ثبت می‌شود و هیچ تغییری در اطلاعات اصلی ایجاد نمی‌کند.</p>' +
+            '<p>این ارجاع در صف دائمی اصلاحات سامانه ثبت می‌شود؛ پس از اصلاح و تأیید ناظر، تغییر در اطلاعات اصلی اعمال خواهد شد.</p>' +
             '<div class="golzar-ai-quality-actions">' +
               '<button type="button" class="golzar-ai-quality-action correction" id="golzar-ai-quality-send-correction">ارسال به رکوردهای برگشتی برای اصلاح</button>' +
             '</div>' +
           '</section>' +
 
           '<div class="golzar-ai-quality-footer">' +
-            '<span class="golzar-ai-quality-source">منبع: اطلاعات زنده سامانه · بدون تغییر در اطلاعات اصلی</span>' +
+            '<span class="golzar-ai-quality-source">منبع: اطلاعات زنده سامانه · اصلاحات پس از تأیید ناظر در Supabase ثبت می‌شوند.</span>' +
             '<div class="golzar-ai-quality-actions"><button class="golzar-ai-quality-action primary" type="button">بستن</button></div>' +
           '</div>' +
         '</div>' +
@@ -891,57 +1039,179 @@
 
     const sendButton = modal.querySelector("#golzar-ai-quality-send-correction");
     if (sendButton) {
-      sendButton.onclick = function() {
-        const store = loadQaQueue();
-        const key = String(id);
-        const existing = store[key];
+      sendButton.onclick = async function() {
+        sendButton.disabled = true;
+        sendButton.textContent = "در حال ارسال برای بررسی...";
+        try {
+          const client = getQualitySubmitterClient();
+          await ensureSubmitterSession();
 
-        if (
-          existing &&
-          (
-            existing.status === "برگشت برای اصلاح" ||
-            existing.status === "در انتظار تأیید نهایی"
-          )
-        ) {
-          alert("این رکورد قبلاً در گردش اصلاح اطلاعات قرار گرفته است.");
-          return;
+          const payload = {
+            target_martyr_id: id,
+            source_edited_at: rowValue(row, "edited_at") || null,
+            original_record: row,
+            proposed_record: row,
+            reason_codes: issues.length ? issues : ["نیازمند بررسی"],
+            submitter_note: "ارجاع برای اصلاح از بخش کنترل کیفیت داده"
+          };
+
+          const { error } = await client
+            .from(QUALITY_CORRECTIONS_TABLE)
+            .insert(payload);
+
+          if (error) {
+            if (String(error.code || "") === "23505") {
+              throw new Error("این رکورد قبلاً در صف اصلاحات قرار گرفته است.");
+            }
+            throw error;
+          }
+
+          alert("رکورد با موفقیت به صف اصلاحات سامانه ارسال شد.");
+          close();
+          await renderModalContent();
+        } catch (error) {
+          console.error("[Golzar AI Quality] correction submit failed:", error);
+          alert(
+            "ارسال اصلاح برای بررسی انجام نشد.\n\n" +
+            (error?.message || String(error))
+          );
+        } finally {
+          if (sendButton && document.body.contains(sendButton)) {
+            sendButton.disabled = false;
+            sendButton.textContent = "ارسال به رکوردهای برگشتی برای اصلاح";
+          }
         }
-
-        store[key] = {
-          recordId: id,
-          status: "برگشت برای اصلاح",
-          originalRecord: row,
-          proposedRecord: row,
-          returnReview: {
-            reasons: ["نیازمند بررسی"],
-            note: "ارجاع برای اصلاح از بخش کنترل کیفیت داده",
-            priority: "عادی",
-            submittedAt: new Date().toISOString()
-          },
-          createdAt: new Date().toISOString(),
-          correctionHistory: []
-        };
-
-        saveQaQueue(store);
-        renderWorkflowSections();
-        alert("رکورد به صف برگشتی برای اصلاح اضافه شد.");
-        close();
       };
     }
 
     document.body.appendChild(modal);
   }
 
-  function openCorrectionForm(recordId) {
-    const store = loadQaQueue();
-    const item = store[String(recordId)];
+  async function openReviewerLogin() {
+    const modal = document.createElement("div");
+    modal.className = "golzar-ai-quality-modal";
+    modal.style.zIndex = "2147483900";
 
-    if (!item || item.status !== "برگشت برای اصلاح") {
-      alert("رکورد برگشتی برای اصلاح پیدا نشد.");
+    modal.innerHTML =
+      '<div class="golzar-ai-quality-dialog" style="max-width:520px">' +
+        '<div class="golzar-ai-quality-head">' +
+          '<div class="golzar-ai-quality-head-icon" aria-hidden="true">🔐</div>' +
+          '<div><h2>ورود ناظر سامانه</h2>' +
+            '<p>فقط ناظر یا مدیر مجاز به تأیید نهایی اصلاحات است.</p></div>' +
+          '<button class="golzar-ai-quality-close" type="button">×</button>' +
+        '</div>' +
+        '<div class="golzar-ai-quality-body">' +
+          '<section class="golzar-ai-quality-section">' +
+            '<div class="golzar-ai-quality-correction-grid">' +
+              '<label class="full">ایمیل<input id="qaReviewerEmail" type="email" autocomplete="username"></label>' +
+              '<label class="full">رمز عبور<input id="qaReviewerPassword" type="password" autocomplete="current-password"></label>' +
+            '</div>' +
+          '</section>' +
+          '<div class="golzar-ai-quality-footer"><div class="golzar-ai-quality-actions">' +
+            '<button type="button" class="golzar-ai-quality-action" id="qaReviewerCancel">انصراف</button>' +
+            '<button type="button" class="golzar-ai-quality-action primary" id="qaReviewerLogin">ورود</button>' +
+          '</div></div>' +
+        '</div>' +
+      '</div>';
+
+    function close() { modal.remove(); }
+
+    modal.addEventListener("click", function(event) {
+      if (event.target === modal) close();
+    });
+
+    modal.querySelector(".golzar-ai-quality-close").onclick = close;
+    modal.querySelector("#qaReviewerCancel").onclick = close;
+
+    modal.querySelector("#qaReviewerLogin").onclick = async function() {
+      const button = this;
+      const email = modal.querySelector("#qaReviewerEmail").value.trim();
+      const password = modal.querySelector("#qaReviewerPassword").value;
+
+      if (!email || !password) {
+        alert("ایمیل و رمز عبور را وارد کنید.");
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "در حال ورود...";
+
+      try {
+        const client = getQualityReviewerClient();
+        if (!client) throw new Error("اتصال Supabase برای ورود ناظر آماده نیست.");
+
+        const { data, error } = await client.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) throw error;
+
+        if (!isReviewerUser(data?.user)) {
+          await client.auth.signOut();
+          throw new Error("این حساب نقش ناظر یا مدیر مجاز ندارد.");
+        }
+
+        close();
+        await renderModalContent();
+      } catch (error) {
+        console.error("[Golzar AI Quality] reviewer login failed:", error);
+        alert(
+          "ورود ناظر انجام نشد.\n\n" +
+          (error?.message || String(error))
+        );
+      } finally {
+        if (document.body.contains(button)) {
+          button.disabled = false;
+          button.textContent = "ورود";
+        }
+      }
+    };
+
+    document.body.appendChild(modal);
+    modal.querySelector("#qaReviewerEmail").focus();
+  }
+
+  async function reviewerSignOut() {
+    const client = getQualityReviewerClient();
+    if (!client) return;
+    const { error } = await client.auth.signOut();
+    if (error) {
+      alert("خروج ناظر انجام نشد.\n\n" + (error.message || String(error)));
+      return;
+    }
+    await renderModalContent();
+  }
+
+  async function openCorrectionForm(correctionId) {
+    const client = getQualitySubmitterClient();
+    if (!client) {
+      alert("اتصال Supabase برای اصلاح آماده نیست.");
       return;
     }
 
-    const record = item.proposedRecord || item.originalRecord || {};
+    const session = await getSubmitterSession();
+    if (!session) {
+      alert("نشست ثبت اصلاحات این مرورگر پیدا نشد.");
+      return;
+    }
+
+    const { data: item, error } = await client
+      .from(QUALITY_CORRECTIONS_TABLE)
+      .select("*")
+      .eq("id", correctionId)
+      .eq("status", "needs_correction")
+      .single();
+
+    if (error || !item) {
+      alert(
+        "رکورد برگشتی برای اصلاح پیدا نشد.\n\n" +
+        (error?.message || "")
+      );
+      return;
+    }
+
+    const record = item.proposed_record || item.original_record || {};
     const modal = document.createElement("div");
     modal.className = "golzar-ai-quality-modal";
     modal.style.zIndex = "2147483700";
@@ -950,17 +1220,17 @@
       '<div class="golzar-ai-quality-dialog" style="max-width:920px">' +
         '<div class="golzar-ai-quality-head">' +
           '<div class="golzar-ai-quality-head-icon" aria-hidden="true">✏️</div>' +
-          '<div><h2>اصلاح اطلاعات رکورد ' + formatNumber(Number(recordId)) + '</h2>' +
+          '<div><h2>اصلاح اطلاعات</h2>' +
             '<p>اطلاعات اصلاح‌شده پس از ارسال برای تأیید نهایی ناظر قرار می‌گیرد.</p></div>' +
           '<button class="golzar-ai-quality-close" type="button">×</button>' +
         '</div>' +
         '<div class="golzar-ai-quality-body">' +
           '<section class="golzar-ai-quality-section"><h3>نظر ناظر</h3>' +
             '<div class="golzar-ai-quality-guide-row"><b>علت</b><span>' +
-              escapeHtml((item.returnReview?.reasons || []).join("، ") || "—") +
+              escapeHtml((item.reason_codes || []).join("، ") || "—") +
             '</span></div>' +
             '<div class="golzar-ai-quality-guide-row"><b>توضیح</b><span>' +
-              escapeHtml(item.returnReview?.note || "—") +
+              escapeHtml(item.reviewer_note || "—") +
             '</span></div>' +
           '</section>' +
           '<section class="golzar-ai-quality-section"><h3>اطلاعات قابل اصلاح</h3>' +
@@ -991,7 +1261,8 @@
     modal.querySelector(".golzar-ai-quality-close").onclick = close;
     modal.querySelector("#qaCancelCorrection").onclick = close;
 
-    modal.querySelector("#qaSubmitCorrection").onclick = function() {
+    modal.querySelector("#qaSubmitCorrection").onclick = async function() {
+      const button = this;
       const updatedRecord = {
         ...record,
         name: modal.querySelector("#qaEditName").value.trim(),
@@ -1005,36 +1276,79 @@
         notes: modal.querySelector("#qaEditNotes").value.trim()
       };
 
-      item.proposedRecord = updatedRecord;
-      item.status = "در انتظار تأیید نهایی";
-      item.resubmittedAt = new Date().toISOString();
-      item.correctionHistory = item.correctionHistory || [];
-      item.correctionHistory.push({
-        submittedAt: item.resubmittedAt,
-        previousStatus: "برگشت برای اصلاح",
-        record: updatedRecord
-      });
+      button.disabled = true;
+      button.textContent = "در حال ارسال...";
 
-      saveQaQueue(store);
-      close();
-      renderWorkflowSections();
-      alert("اصلاحات ثبت شد و رکورد برای تأیید نهایی ناظر ارسال شد.");
+      try {
+        const { error: updateError } = await client
+          .from(QUALITY_CORRECTIONS_TABLE)
+          .update({
+            proposed_record: updatedRecord,
+            status: "pending_review",
+            submitter_note: "اصلاح اطلاعات و ارسال مجدد برای بررسی ناظر"
+          })
+          .eq("id", correctionId)
+          .eq("status", "needs_correction");
+
+        if (updateError) throw updateError;
+
+        alert("اصلاحات ثبت و دوباره برای تأیید ناظر ارسال شد.");
+        close();
+        await renderModalContent();
+      } catch (error) {
+        console.error("[Golzar AI Quality] correction resubmit failed:", error);
+        alert(
+          "ثبت اصلاح انجام نشد.\n\n" +
+          (error?.message || String(error))
+        );
+      } finally {
+        if (document.body.contains(button)) {
+          button.disabled = false;
+          button.textContent = "ثبت اصلاح و ارسال برای تأیید ناظر";
+        }
+      }
     };
 
     document.body.appendChild(modal);
   }
 
-  function openApprovalReview(recordId) {
-    const store = loadQaQueue();
-    const item = store[String(recordId)];
-
-    if (!item || item.status !== "در انتظار تأیید نهایی") {
-      alert("رکوردی برای تأیید نهایی پیدا نشد.");
+  async function openApprovalReview(correctionId) {
+    const client = getQualityReviewerClient();
+    if (!client) {
+      alert("اتصال Supabase برای بررسی ناظر آماده نیست.");
       return;
     }
 
-    const original = item.originalRecord || {};
-    const proposed = item.proposedRecord || {};
+    const { data: sessionData, error: sessionError } =
+      await client.auth.getSession();
+
+    if (sessionError || !sessionData?.session?.user) {
+      alert("ابتدا با حساب ناظر وارد شوید.");
+      return;
+    }
+
+    if (!isReviewerUser(sessionData.session.user)) {
+      alert("این حساب نقش ناظر یا مدیر مجاز ندارد.");
+      return;
+    }
+
+    const { data: item, error } = await client
+      .from(QUALITY_CORRECTIONS_TABLE)
+      .select("*")
+      .eq("id", correctionId)
+      .eq("status", "pending_review")
+      .single();
+
+    if (error || !item) {
+      alert(
+        "رکوردی برای تأیید نهایی پیدا نشد.\n\n" +
+        (error?.message || "")
+      );
+      return;
+    }
+
+    const original = item.original_record || {};
+    const proposed = item.proposed_record || {};
 
     const fields = [
       ["نام", "name"],
@@ -1044,7 +1358,8 @@
       ["ردیف", "grave_row"],
       ["شماره مزار", "grave_number"],
       ["نوع سنگ", "stone_type"],
-      ["مرحله عملیات", "stage"]
+      ["مرحله عملیات", "stage"],
+      ["توضیحات", "notes"]
     ];
 
     const compareHtml = fields.map(function(entry) {
@@ -1067,16 +1382,19 @@
       '<div class="golzar-ai-quality-dialog" style="max-width:980px">' +
         '<div class="golzar-ai-quality-head">' +
           '<div class="golzar-ai-quality-head-icon" aria-hidden="true">✅</div>' +
-          '<div><h2>تأیید اطلاعات رکورد ' + formatNumber(Number(recordId)) + '</h2>' +
+          '<div><h2>تأیید اطلاعات اصلاح‌شده</h2>' +
             '<p>مقایسه اطلاعات قبلی و اطلاعات اصلاح‌شده</p></div>' +
           '<button class="golzar-ai-quality-close" type="button">×</button>' +
         '</div>' +
         '<div class="golzar-ai-quality-body">' +
           '<div class="golzar-ai-quality-compare-header"><span>عنوان</span><span>اطلاعات قبلی</span><span>اطلاعات اصلاح‌شده</span></div>' +
           '<div class="golzar-ai-quality-compare-table">' + compareHtml + '</div>' +
+          '<div class="golzar-ai-quality-section">' +
+            '<label style="display:flex;flex-direction:column;gap:6px;color:#5f5946;font-size:11px;font-weight:700">نظر ناظر<textarea id="qaReviewerNote" style="width:100%;box-sizing:border-box;min-height:90px;padding:9px 10px;border:1px solid #d7ceb1;border-radius:8px;background:#fff;color:#403a2a;font:inherit;font-size:12px"></textarea></label>' +
+          '</div>' +
           '<div class="golzar-ai-quality-footer"><div class="golzar-ai-quality-actions">' +
             '<button type="button" class="golzar-ai-quality-action correction" id="qaReturnAgain">برگشت برای اصلاح</button>' +
-            '<button type="button" class="golzar-ai-quality-action primary" id="qaApproveFinal">تأیید نهایی</button>' +
+            '<button type="button" class="golzar-ai-quality-action primary" id="qaApproveFinal">تأیید نهایی و ثبت در سامانه اصلی</button>' +
           '</div></div>' +
         '</div>' +
       '</div>';
@@ -1088,65 +1406,180 @@
     });
     modal.querySelector(".golzar-ai-quality-close").onclick = close;
 
-    modal.querySelector("#qaApproveFinal").onclick = function() {
-      item.status = "تأیید نهایی شد";
-      item.reviewedAt = new Date().toISOString();
-      item.reviewerNote = "تأیید نهایی توسط ناظر";
-      saveQaQueue(store);
-      close();
-      renderWorkflowSections();
-      alert("تأیید نهایی انجام شد. اطلاعات اصلی سامانه در این نسخه تغییر نکرد.");
+    modal.querySelector("#qaApproveFinal").onclick = async function() {
+      const button = this;
+      const reviewerNote =
+        modal.querySelector("#qaReviewerNote").value.trim();
+
+      if (
+        !confirm(
+          "آیا از تأیید نهایی و ثبت اطلاعات اصلاح‌شده در سامانه اصلی مطمئن هستید؟"
+        )
+      ) {
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "در حال ثبت در سامانه اصلی...";
+
+      try {
+        const { data, error: invokeError } = await client.functions.invoke(
+          "approve-martyr-quality-correction",
+          {
+            body: {
+              correctionId,
+              reviewerNote
+            }
+          }
+        );
+
+        if (invokeError) throw invokeError;
+        if (!data?.ok) {
+          throw new Error(data?.error || "ثبت نهایی انجام نشد.");
+        }
+
+        alert("اطلاعات اصلاح‌شده با موفقیت در سامانه اصلی ثبت شد.");
+        close();
+
+        const index = getIndex();
+        if (index && typeof index.refresh === "function") {
+          await index.refresh();
+        }
+        await renderModalContent();
+      } catch (error) {
+        console.error("[Golzar AI Quality] final approval failed:", error);
+        alert(
+          "تأیید نهایی و ثبت اطلاعات انجام نشد.\n\n" +
+          (error?.message || String(error))
+        );
+      } finally {
+        if (document.body.contains(button)) {
+          button.disabled = false;
+          button.textContent = "تأیید نهایی و ثبت در سامانه اصلی";
+        }
+      }
     };
 
-    modal.querySelector("#qaReturnAgain").onclick = function() {
-      item.status = "برگشت برای اصلاح";
-      item.reviewedAt = new Date().toISOString();
-      item.returnReview = {
-        reasons: ["نیازمند اصلاح مجدد"],
-        note: "بازگشت مجدد توسط ناظر برای اصلاح بیشتر",
-        priority: "مهم",
-        submittedAt: new Date().toISOString()
-      };
-      saveQaQueue(store);
-      close();
-      renderWorkflowSections();
-      alert("رکورد برای اصلاح مجدد برگشت داده شد.");
+    modal.querySelector("#qaReturnAgain").onclick = async function() {
+      const button = this;
+      button.disabled = true;
+
+      try {
+        const note =
+          modal.querySelector("#qaReviewerNote").value.trim() ||
+          "بازگشت مجدد توسط ناظر برای اصلاح بیشتر";
+
+        const { error: updateError } = await client
+          .from(QUALITY_CORRECTIONS_TABLE)
+          .update({
+            status: "needs_correction",
+            reviewer_note: note
+          })
+          .eq("id", correctionId)
+          .eq("status", "pending_review");
+
+        if (updateError) throw updateError;
+
+        alert("رکورد برای اصلاح مجدد برگشت داده شد.");
+        close();
+        await renderModalContent();
+      } catch (error) {
+        console.error("[Golzar AI Quality] return-to-correction failed:", error);
+        alert(
+          "بازگشت برای اصلاح انجام نشد.\n\n" +
+          (error?.message || String(error))
+        );
+      } finally {
+        if (document.body.contains(button)) {
+          button.disabled = false;
+        }
+      }
     };
 
     document.body.appendChild(modal);
   }
 
-  function renderApprovalQueue(data) {
-    const store = loadQaQueue();
-    const items = Object.values(store).filter(function(item) {
-      return item.status === "در انتظار تأیید نهایی";
-    });
+  function renderReviewerAuthState(workflow) {
+    const box = document.getElementById("golzar-ai-quality-reviewer-auth");
+    if (!box) return;
 
+    if (!workflow.reviewerUser) {
+      box.innerHTML =
+        '<div class="golzar-ai-quality-auth">' +
+          '<div><strong>ناظر وارد نشده است.</strong><div class="golzar-ai-quality-related-meta">برای بررسی و تأیید نهایی، ورود با حساب دارای نقش reviewer یا admin لازم است.</div></div>' +
+          '<button type="button" class="golzar-ai-quality-action primary" id="golzar-ai-quality-reviewer-login">ورود ناظر</button>' +
+        '</div>';
+
+      box.querySelector("#golzar-ai-quality-reviewer-login").onclick = openReviewerLogin;
+      return;
+    }
+
+    if (!isReviewerUser(workflow.reviewerUser)) {
+      box.innerHTML =
+        '<div class="golzar-ai-quality-auth">' +
+          '<div><strong>این حساب مجوز بررسی ناظر ندارد.</strong><div class="golzar-ai-quality-related-meta">نقش حساب باید reviewer یا admin باشد.</div></div>' +
+          '<button type="button" class="golzar-ai-quality-action" id="golzar-ai-quality-reviewer-logout">خروج</button>' +
+        '</div>';
+
+      box.querySelector("#golzar-ai-quality-reviewer-logout").onclick = reviewerSignOut;
+      return;
+    }
+
+    const displayName =
+      workflow.reviewerUser.email ||
+      workflow.reviewerUser.id ||
+      "ناظر";
+
+    box.innerHTML =
+      '<div class="golzar-ai-quality-auth">' +
+        '<div><strong>ناظر فعال: ' + escapeHtml(displayName) + '</strong><div class="golzar-ai-quality-related-meta">نقش: ' + escapeHtml(reviewerRole(workflow.reviewerUser)) + '</div></div>' +
+        '<button type="button" class="golzar-ai-quality-action" id="golzar-ai-quality-reviewer-logout">خروج ناظر</button>' +
+      '</div>';
+
+    box.querySelector("#golzar-ai-quality-reviewer-logout").onclick = reviewerSignOut;
+  }
+
+  function renderApprovalQueue(items, workflow) {
     const count = document.getElementById("golzar-ai-quality-approval-count");
     const list = document.getElementById("golzar-ai-quality-approval-list");
 
     if (count) {
-      count.textContent = formatNumber(items.length) + " مورد در انتظار تأیید";
+      count.textContent = formatNumber(items.length);
     }
     if (!list) return;
 
+    if (!workflow.reviewerUser || !isReviewerUser(workflow.reviewerUser)) {
+      list.innerHTML =
+        '<div class="golzar-ai-quality-empty">پس از ورود ناظر، اطلاعات اصلاح‌شده در انتظار بررسی در این بخش نمایش داده می‌شود.</div>';
+      return;
+    }
+
+    if (workflow.reviewerError) {
+      list.innerHTML =
+        '<div class="golzar-ai-quality-empty">دریافت صف تأیید انجام نشد.<br>' +
+        escapeHtml(workflow.reviewerError) +
+        '</div>';
+      return;
+    }
+
     if (!items.length) {
       list.innerHTML =
-        '<div class="golzar-ai-quality-empty">در حال حاضر اطلاعاتی برای تأیید نهایی وجود ندارد.</div>';
+        '<div class="golzar-ai-quality-empty">در حال حاضر اطلاعات اصلاح‌شده‌ای برای تأیید نهایی وجود ندارد.</div>';
       return;
     }
 
     list.innerHTML = items.map(function(item) {
-      const record = item.proposedRecord || item.originalRecord || {};
+      const record = item.proposed_record || item.original_record || {};
       return (
         '<div class="golzar-ai-quality-work-item">' +
-          '<div><strong>شناسه ' + formatNumber(Number(item.recordId)) + '</strong> — ' +
+          '<div><strong>شناسه مزار ' + formatNumber(Number(item.target_martyr_id)) + '</strong> — ' +
             escapeHtml(rowValue(record, "name") || "—") + ' ' +
             escapeHtml(rowValue(record, "lastname") || "") +
+            '<div class="golzar-ai-quality-related-meta">ارسال: ' + escapeHtml(new Date(item.submitted_at).toLocaleString("fa-IR")) + '</div>' +
           '</div>' +
-          '<span class="golzar-ai-quality-status-badge problem">در انتظار تأیید نهایی</span>' +
+          '<span class="golzar-ai-quality-status-badge problem">در انتظار تأیید</span>' +
           '<button type="button" class="golzar-ai-quality-detail" data-approval-review="' +
-            escapeHtml(item.recordId) + '">بررسی</button>' +
+            escapeHtml(item.id) + '">بررسی</button>' +
         '</div>'
       );
     }).join("");
@@ -1158,41 +1591,56 @@
     });
   }
 
-  function renderCorrectionQueue(data) {
-    const store = loadQaQueue();
-    const items = Object.values(store).filter(function(item) {
-      return item.status === "برگشت برای اصلاح";
-    });
-
+  function renderCorrectionQueue(items, workflow) {
     const count = document.getElementById("golzar-ai-quality-correction-count");
     const list = document.getElementById("golzar-ai-quality-correction-list");
 
     if (count) {
-      count.textContent = formatNumber(items.length) + " مورد برگشتی";
+      count.textContent = formatNumber(items.filter(function(item) {
+        return item.status === "needs_correction";
+      }).length);
     }
     if (!list) return;
 
-    if (!items.length) {
+    if (!workflow.submitterUser) {
       list.innerHTML =
-        '<div class="golzar-ai-quality-empty">در حال حاضر رکوردی برای اصلاح وجود ندارد.</div>';
+        '<div class="golzar-ai-quality-empty">رکوردهای برگشتی برای همین ثبت‌کننده در Supabase نگهداری می‌شوند. برای دیدن موارد برگشتی، همان نشست ثبت‌کننده باید فعال باشد.</div>';
       return;
     }
 
-    list.innerHTML = items.map(function(item) {
-      const record = item.proposedRecord || item.originalRecord || {};
-      const review = item.returnReview || {};
+    if (workflow.submitterError) {
+      list.innerHTML =
+        '<div class="golzar-ai-quality-empty">دریافت صف اصلاح انجام نشد.<br>' +
+        escapeHtml(workflow.submitterError) +
+        '</div>';
+      return;
+    }
+
+    const returnItems = items.filter(function(item) {
+      return item.status === "needs_correction";
+    });
+
+    if (!returnItems.length) {
+      list.innerHTML =
+        '<div class="golzar-ai-quality-empty">در حال حاضر رکورد برگشتی برای اصلاح وجود ندارد.</div>';
+      return;
+    }
+
+    list.innerHTML = returnItems.map(function(item) {
+      const record = item.proposed_record || item.original_record || {};
       return (
         '<div class="golzar-ai-quality-work-item">' +
-          '<div><strong>شناسه ' + formatNumber(Number(item.recordId)) + '</strong> — ' +
+          '<div><strong>شناسه مزار ' + formatNumber(Number(item.target_martyr_id)) + '</strong> — ' +
             escapeHtml(rowValue(record, "name") || "—") + ' ' +
             escapeHtml(rowValue(record, "lastname") || "") +
+            '<div class="golzar-ai-quality-related-meta">علت: ' +
+              escapeHtml((item.reason_codes || []).join("، ") || "—") +
+              ' · توضیح ناظر: ' + escapeHtml(item.reviewer_note || "—") +
+            '</div>' +
           '</div>' +
-          '<div class="golzar-ai-quality-related-meta">علت: ' +
-            escapeHtml((review.reasons || []).join("، ") || "—") +
-            ' · اولویت: ' + escapeHtml(review.priority || "عادی") +
-          '</div>' +
+          '<span class="golzar-ai-quality-status-badge problem">برگشتی برای اصلاح</span>' +
           '<button type="button" class="golzar-ai-quality-detail" data-correction-edit="' +
-            escapeHtml(item.recordId) + '">اصلاح اطلاعات</button>' +
+            escapeHtml(item.id) + '">اصلاح اطلاعات</button>' +
         '</div>'
       );
     }).join("");
@@ -1204,14 +1652,14 @@
     });
   }
 
-  function renderWorkflowSections() {
-    const data = getQaData();
-    if (!data) return;
-    renderApprovalQueue(data);
-    renderCorrectionQueue(data);
+  async function renderWorkflowSections(workflow) {
+    const resolved = workflow || await loadWorkflowState();
+    renderReviewerAuthState(resolved);
+    renderApprovalQueue(resolved.reviewerRows, resolved);
+    renderCorrectionQueue(resolved.submitterRows, resolved);
   }
 
-  function renderModalContent() {
+  async function renderModalContent() {
     const body = document.querySelector("#golzar-ai-quality-body");
     if (!body) return;
 
@@ -1259,12 +1707,10 @@
       );
     }).join("");
 
-    const queue = loadQaQueue();
-    const approvalCount = Object.values(queue).filter(function(item) {
-      return item.status === "در انتظار تأیید نهایی";
-    }).length;
-    const correctionCount = Object.values(queue).filter(function(item) {
-      return item.status === "برگشت برای اصلاح";
+    const workflow = await loadWorkflowState();
+    const approvalCount = workflow.reviewerRows.length;
+    const correctionCount = workflow.submitterRows.filter(function(item) {
+      return item.status === "needs_correction";
     }).length;
 
     body.innerHTML =
@@ -1272,7 +1718,7 @@
         '<span class="golzar-ai-quality-engine">لایه هوش مصنوعی: تحلیل و پایش کیفیت اطلاعات</span>' +
         '<span class="golzar-ai-quality-engine">تعداد رکورد: <strong>' + formatNumber(total) + '</strong></span>' +
         '<span class="golzar-ai-quality-engine">نسخه موتور: <strong>0.3.0</strong></span>' +
-        '<span class="golzar-ai-quality-engine">حالت: <strong>فقط خواندنی</strong></span>' +
+        '<span class="golzar-ai-quality-engine">حالت: <strong>گردش‌کار اصلاح و تأیید</strong></span>' +
       '</div>' +
 
       '<div class="golzar-ai-quality-status">' +
@@ -1350,7 +1796,8 @@
 
       '<div class="golzar-ai-quality-two-col">' +
         '<section class="golzar-ai-quality-section"><h3>تأیید اطلاعات وارد شده</h3>' +
-          '<p class="golzar-ai-quality-work-description">اطلاعات اصلاح‌شده پس از ارسال تا زمان بررسی ناظر در این بخش قرار می‌گیرد.</p>' +
+          '<p class="golzar-ai-quality-work-description">اطلاعات اصلاح‌شده پس از ارسال در این صف دائمی Supabase قرار می‌گیرد و تا زمان بررسی ناظر باقی می‌ماند.</p>' +
+          '<div id="golzar-ai-quality-reviewer-auth" style="margin-bottom:10px"></div>' +
           '<div class="golzar-ai-quality-kpis"><div class="golzar-ai-quality-kpi"><span>در انتظار تأیید</span><strong id="golzar-ai-quality-approval-count">' + formatNumber(approvalCount) + '</strong></div></div>' +
           '<div id="golzar-ai-quality-approval-list" class="golzar-ai-quality-work-list"></div>' +
         '</section>' +
@@ -1369,12 +1816,12 @@
       '</section>' +
 
       '<div class="golzar-ai-quality-footer">' +
-        '<span class="golzar-ai-quality-source">این بخش داده اصلی را تغییر نمی‌دهد؛ صف اصلاح و تأیید فقط در مرورگر نگهداری می‌شود.</span>' +
+        '<span class="golzar-ai-quality-source">پیشنهادهای اصلاح در صف دائمی Supabase نگهداری می‌شوند و فقط تأیید ناظر می‌تواند اصلاح را در اطلاعات اصلی اعمال کند.</span>' +
         '<div class="golzar-ai-quality-actions"><button class="golzar-ai-quality-action" type="button" id="golzar-ai-quality-close-2">بستن</button></div>' +
       '</div>';
 
     renderQaRecords(data);
-    renderWorkflowSections();
+    await renderWorkflowSections(workflow);
     bindQaControls(data);
     bindModalButtons();
   }
@@ -1605,7 +2052,7 @@
   document.addEventListener("DOMContentLoaded", observeMenu, { once: true });
 
   window.GOLZAR_AI_QUALITY_PANEL = {
-    version: "0.3.0-full-qa-local-workflow",
+    version: "0.4.0-server-approval-workflow",
     open: openModal,
     close: closeModal,
     refresh: function () {
