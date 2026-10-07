@@ -114,9 +114,7 @@
         color:#8a7424;
       }
 
-      .golzar-ai-quality-modal{font-family:"B Nazanin","B Yekan",Tahoma,Arial,sans-serif}
-      .golzar-ai-quality-modal *{font-family:inherit}
-      .golzar-ai-quality-modal,
+      .golzar-ai-quality-modal{
         position:fixed;
         inset:0;
         z-index:2147483000;
@@ -125,7 +123,9 @@
         padding:18px;
         background:rgba(18,30,24,.48);
         backdrop-filter:blur(3px);
+        font-family:"B Nazanin","B Yekan",Tahoma,Arial,sans-serif;
       }
+      .golzar-ai-quality-modal *{font-family:inherit}
       .golzar-ai-quality-dialog{
         width:min(920px,100%);
         max-height:min(90vh,900px);
