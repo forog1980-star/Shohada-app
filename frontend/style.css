@@ -8,6 +8,8 @@ body {
     direction: rtl;
 
     font-family:
+        "B Nazanin",
+        "B Yekan",
         Tahoma,
         Arial,
         sans-serif;
@@ -33,90 +35,3 @@ body {
 
     background: #263238;
     color: white;
-}
-
-.header h1 {
-    margin: 0 0 8px;
-
-    font-size: 22px;
-}
-
-.header p {
-    margin: 0;
-
-    font-size: 13px;
-
-    opacity: 0.9;
-}
-
-.menu {
-    padding: 20px;
-}
-
-.menu-button {
-    width: 100%;
-
-    min-height: 76px;
-
-    margin-bottom: 14px;
-
-    padding: 16px;
-
-    border: none;
-    border-radius: 14px;
-
-    background: #ffffff;
-
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.08);
-
-    font-family: inherit;
-
-    font-size: 17px;
-
-    font-weight: bold;
-
-    text-align: right;
-
-    cursor: pointer;
-
-    transition: 0.15s;
-}
-
-.menu-button:active {
-    transform: scale(0.98);
-}
-
-.menu-button .icon {
-    display: inline-block;
-
-    width: 45px;
-
-    font-size: 25px;
-
-    text-align: center;
-}
-
-.menu-button .description {
-    display: block;
-
-    margin-top: 6px;
-
-    margin-right: 49px;
-
-    font-size: 12px;
-
-    font-weight: normal;
-
-    color: #777;
-}
-
-.footer {
-    padding: 20px;
-
-    text-align: center;
-
-    font-size: 11px;
-
-    color: #999;
-}
