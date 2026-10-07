@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QA — کاربران، نقش‌ها و مجوزها | GolzarStone</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7f5;color:#26352d;font-family:Tahoma,Arial,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:20px}.header{background:#17633d;color:#fff;border-radius:18px;padding:22px;margin-bottom:16px}
+.header h1{margin:0 0 8px;font-size:25px}.header p{margin:0;line-height:1.9;font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1.4fr;gap:16px}@media(max-width:850px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #dce6df;border-radius:16px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.05);margin-bottom:16px}
+h2,h3{margin-top:0;color:#17633d}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select,input{font:inherit}button{border:0;border-radius:10px;padding:9px 13px;cursor:pointer;background:#17633d;color:#fff}button.secondary{background:#e8f5ed;color:#17633d}button.danger{background:#c84b4b}
+input,select{width:100%;padding:9px;border:1px solid #ccd9d1;border-radius:9px;background:#fff}.field{margin-bottom:10px}
+.permission{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid #edf1ee}
+.group{margin:10px 0}.group-title{font-weight:bold;margin-bottom:5px;color:#2878b8}
+.role{padding:9px;border:1px solid #dce6df;border-radius:10px;margin:6px 0;cursor:pointer}.role.active{border-color:#17633d;background:#e8f5ed}
+.scope{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef3f0;margin:3px;font-size:12px}
+.result{padding:8px;border-radius:8px;margin:5px 0}.pass{background:#e8f5ed;color:#17633d}.fail{background:#fdecec;color:#9b2f2f}
+pre{white-space:pre-wrap;background:#17221c;color:#e8f5ed;padding:12px;border-radius:10px;direction:ltr;text-align:left;font-size:12px}
+.small{font-size:12px;color:#708078;line-height:1.8}.status{font-weight:bold}.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="header">
+<h1>محیط QA — سیستم کاربران، نقش‌ها، مجوزها و Scope</h1>
+<p>نمونه آزمایشی مستقل برای اعتبارسنجی Permission Engine و ماتریس دسترسی. این صفحه عمداً به Supabase متصل نیست و هیچ داده عملیاتی را تغییر نمی‌دهد.</p>
+</div>
+<div class="grid">
+<section>
+<div class="card">
+<h2>کاربر آزمایشی</h2>
+<div class="field"><label>نام کاربر</label><input id="userName" value="کاربر آزمایشی"></div>
+<div class="field"><label>شناسه کاربر</label><input id="userId" value="qa-user-001"></div>
+<div class="field"><label>نقش‌ها</label><div id="roles"></div></div>
+<div class="field"><label>Scope داده</label><div id="scopes"></div></div>
+<div class="row">
+<button id="saveBtn">ذخیره سناریو</button>
+<button id="resetBtn" class="secondary">بازنشانی</button>
+</div>
+</div>
+<div class="card">
+<h2>کنترل دسترسی</h2>
+<div class="field"><label>Permission مورد آزمایش</label><select id="permissionSelect"></select></div>
+<div class="field"><label>Scope مورد آزمایش</label><select id="scopeSelect"></select></div>
+<div class="field"><label>شناسه ایجادکننده رکورد</label><input id="creatorId" value="qa-user-999"></div>
+<button id="checkBtn">بررسی دسترسی</button>
+<div id="decision" class="status" style="margin-top:10px"></div>
+<div id="reason" class="small"></div>
+</div>
+</section>
+<section>
+<div class="card">
+<h2>ماتریس Permission</h2>
+<div id="permissions"></div>
+</div>
+<div class="card">
+<h2>تست خودکار موتور</h2>
+<div id="tests"></div>
+</div>
+<div class="card">
+<h2>Effective Access</h2>
+<pre id="effective"></pre>
+</div>
+</section>
+</div>
+</div>
+<script src="user-access-control-qa.js?v=20261007-01"></script>
+</body>
+</html>
