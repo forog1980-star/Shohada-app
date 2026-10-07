@@ -81,6 +81,38 @@
             console.error("[Golzar AI] live rows unavailable:", error);
             return [];
           }
+        },
+        getLiveIndex: function () {
+          try {
+            return window.GOLZAR_AI_INDEX || null;
+          } catch (error) {
+            console.error("[Golzar AI] live index unavailable:", error);
+            return null;
+          }
+        },
+        getMatchingIndex: function () {
+          try {
+            return window.GOLZAR_AI_INDEX?.matching || null;
+          } catch (error) {
+            console.error("[Golzar AI] matching index unavailable:", error);
+            return null;
+          }
+        },
+        getDataQualityIndex: function () {
+          try {
+            return window.GOLZAR_AI_INDEX?.dataQuality || null;
+          } catch (error) {
+            console.error("[Golzar AI] data quality index unavailable:", error);
+            return null;
+          }
+        },
+        getDataIntelligenceIndex: function () {
+          try {
+            return window.GOLZAR_AI_INDEX?.dataIntelligence || null;
+          } catch (error) {
+            console.error("[Golzar AI] data intelligence index unavailable:", error);
+            return null;
+          }
         }
       };
 
