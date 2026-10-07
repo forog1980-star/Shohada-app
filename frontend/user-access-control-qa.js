@@ -36,14 +36,13 @@ const SCOPES = [
   ["assigned_sections","قطعات تخصیص‌یافته"],
   ["own_records","رکوردهای خود کاربر"],
   ["assigned_records","رکوردهای تخصیص‌یافته"],
-  ["read_only","فقط مشاهده"]
 ];
 
 const state = {
   userId:"qa-user-001",
   userName:"کاربر آزمایشی",
   roles:["viewer"],
-  scopes:["read_only"]
+  scopes:["assigned_sections"]
 };
 
 const $ = id => document.getElementById(id);
@@ -71,7 +70,7 @@ function hasScope(scope){
 function can(permission, requiredScope="read_only", targetCreatorId=null){
   if(!state.userId) return {allowed:false,reason:"شناسه کاربر وجود ندارد."};
   if(!hasPermission(permission)) return {allowed:false,reason:"Permission اعطا نشده است (deny by default)."};
-  if(!hasScope(requiredScope)) return {allowed:false,reason:"Scope داده برای این عملیات کافی نیست."};
+  if(requiredScope && !hasScope(requiredScope)) return {allowed:false,reason:"Scope داده برای این عملیات کافی نیست."};
   if(["quality.approve","martyrs.approve","registration.approve"].includes(permission)
      && targetCreatorId && targetCreatorId===state.userId){
     return {allowed:false,reason:"Separation of Duties: کاربر نمی‌تواند رکورد/پیشنهاد خودش را تأیید نهایی کند."};
@@ -136,7 +135,7 @@ function runTests(){
   const original=JSON.parse(JSON.stringify(state));
   const tests=[];
   const t=(name,fn)=>{try{tests.push({name,ok:!!fn()})}catch(e){tests.push({name,ok:false,error:String(e)})}};
-  state.userId="u1";state.userName="u1";state.roles=["viewer"];state.scopes=["read_only"];
+  state.userId="u1";state.userName="u1";state.roles=["viewer"];state.scopes=["assigned_sections"];
   t("viewer cannot create martyrs",()=>!can("martyrs.create","read_only").allowed);
   state.roles=["rehabilitation_operator"];state.scopes=["assigned_records"];
   t("rehabilitation operator can edit with assigned scope",()=>can("martyrs.edit","assigned_records").allowed);
@@ -168,7 +167,7 @@ $("saveBtn").onclick=()=>{
 };
 $("resetBtn").onclick=()=>{
   localStorage.removeItem("golzar_uac_qa_state");
-  state.userId="qa-user-001";state.userName="کاربر آزمایشی";state.roles=["viewer"];state.scopes=["read_only"];
+  state.userId="qa-user-001";state.userName="کاربر آزمایشی";state.roles=["viewer"];state.scopes=["assigned_sections"];
   render();runTests();
 };
 $("checkBtn").onclick=()=>{
