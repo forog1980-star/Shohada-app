@@ -2,7 +2,7 @@
 
 > این فایل مرجع اصلی ادامه پروژه است. در هر گفت‌وگوی جدید ابتدا این فایل خوانده شود و سپس وضعیت زنده GitHub / GitHub Pages / Vercel / Supabase با آن تطبیق داده شود.
 
-**آخرین به‌روزرسانی:** 2026-10-07 — اتصال Index لایه AI به داده زنده `public.martyrs`
+**آخرین به‌روزرسانی:** 2026-10-07 — تثبیت اتصال Index لایه AI به داده زنده `public.martyrs` و Merge به main
 **مخزن:** `forog1980-star/Shohada-app`
 **نسخه عملیاتی نهایی:** `main`
 **Commit تثبیت‌کننده Live Statistics:** `68ab1061797e0548b3cf032910ef1e750865d47c`
@@ -1358,9 +1358,10 @@ Endpoint محلی:
 - Supabase Write: **NONE**
 - Schema/RLS/Policy change: **NONE**
 - تغییر منطق عملیاتی اصلی: **NONE**
-- تست رفتار Realtime این لودر روی داده زنده: **در انتظار تست نهایی**
-- تست انسانی از URL عملیاتی: **در انتظار**
-- Merge نهایی به main: **هنوز انجام نشده**
+- تست رفتار Realtime این لودر روی داده زنده: **برای مرحله انسانی/کاربردی باقی است**
+- تست انسانی از URL عملیاتی: **در انتظار کاربر**
+- Merge به main: **انجام شد — PR #56**
+- Merge commit: `cf6b9636aca67a23f8a719f9859c344ca2b4853c`
 
 ### 23-6. نکته درباره معماری قبلی
 
@@ -1374,4 +1375,57 @@ Endpoint محلی:
 
 `Open main URL → verify AI bridge → verify live row count → verify Matching index → verify Data Quality/Data Intelligence index`
 
-در صورت PASS تست انسانی، تصمیم درباره Merge نهایی به `main` گرفته می‌شود.
+بعد از Merge، مرحله جاری فقط **تست انسانی از نسخه عملیاتی main** است. در صورت بروز اشکال، اصلاح بعدی باید با Recovery و Branch مستقل انجام شود.
+
+
+### 23-8. وضعیت Merge نهایی — 2026-10-07
+
+PR:
+
+`#56`
+
+عنوان:
+
+`feat(ai): connect matching and data intelligence to live martyrs index`
+
+وضعیت:
+
+**MERGED**
+
+Merge commit:
+
+`cf6b9636aca67a23f8a719f9859c344ca2b4853c`
+
+تغییرات وارد `main`:
+- `frontend/ai-live-index-loader.js`
+- `frontend/ai-layer-bridge.js`
+- `frontend/index.html`
+- همین گزارش فنی
+
+Vercel Checks روی Commit قبل از Merge:
+- `Vercel – shohada-app`: **success**
+- `Vercel – shohada-app-v2-pwa`: **success**
+
+پس از Merge:
+- Supabase Write: **NONE**
+- Schema/RLS/Policy Change: **NONE**
+- تغییر مستقیم در داده‌های `martyrs`: **NONE**
+
+### 23-9. نقطه تست انسانی فعلی
+
+نسخه مورد آزمون:
+
+`main @ cf6b9636`
+
+مرجع عملیاتی:
+
+`https://forog1980-star.github.io/Shohada-app/`
+
+هدف تست کوتاه:
+1. ورود عادی به سامانه و اطمینان از اینکه Startup/جستجو/عملیات اصلی بدون تغییر کار می‌کند.
+2. بررسی اینکه لایه AI در پس‌زمینه خطای مسدودکننده ایجاد نکرده است.
+3. در Console مرورگر، در صورت دسترسی، وجود `window.GOLZAR_AI_INDEX` و وضعیت آماده‌شدن آن بررسی شود.
+4. تعداد رکورد زنده Index باید با وضعیت فعلی `public.martyrs` قابل تطبیق باشد.
+5. یک جستجوی واقعی با نام و محل قبر انجام شود؛ هدف این است که Index زنده در دسترس باشد و عملکرد اصلی سامانه مختل نشود.
+
+**این مرحله هنوز از نظر انسانی نهایی نشده است.**
