@@ -323,10 +323,21 @@
 
   function getIndex() {
     try {
-      return window.GOLZAR_AI_LAYER &&
+      if (
+        window.GOLZAR_AI_INDEX &&
+        typeof window.GOLZAR_AI_INDEX === "object"
+      ) {
+        return window.GOLZAR_AI_INDEX;
+      }
+
+      if (
+        window.GOLZAR_AI_LAYER &&
         typeof window.GOLZAR_AI_LAYER.getDataQualityIndex === "function"
-        ? window.GOLZAR_AI_LAYER
-        : window.GOLZAR_AI_INDEX;
+      ) {
+        return window.GOLZAR_AI_LAYER;
+      }
+
+      return null;
     } catch (error) {
       return null;
     }
