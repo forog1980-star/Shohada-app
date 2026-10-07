@@ -419,6 +419,10 @@
     }
   }
 
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString("fa-IR");
+  }
+
   function formatPercent(value, total) {
     if (!total) return "۰٪";
     return ((value / total) * 100).toLocaleString("fa-IR", {
@@ -1567,7 +1571,7 @@
       <button type="button" class="golzar-ai-quality-button" aria-label="باز کردن کنترل کیفیت داده">
         <span class="golzar-ai-quality-icon" aria-hidden="true">🧭</span>
         <span class="golzar-ai-quality-copy">
-          <strong>کنترل کیفیت داده</strong>
+          <strong>کنترل کیفیت داده <span class="golzar-ai-quality-badge">AI</span></strong>
           <small>بررسی مستقل رکوردهای سالم، مسئله‌دار و تعارض‌های اطلاعاتی</small>
         </span>
         <span class="golzar-ai-quality-arrow" aria-hidden="true">‹</span>
