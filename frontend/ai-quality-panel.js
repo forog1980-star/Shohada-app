@@ -331,7 +331,8 @@
       .golzar-ai-quality-status-badge.duplicate{background:#f7e9d8;color:#8a4e18}
       .golzar-ai-quality-status-badge.invalid{background:#f6dddd;color:#8a3333}
       .golzar-ai-quality-issues-cell{line-height:1.8;min-width:250px}
-      .golzar-ai-quality-detail{border:1px solid #d8ceb1;border-radius:9px;padding:6px 9px;background:#fff;color:#544c37;font:inherit;font-size:10px;cursor:pointer;white-space:nowrap}
+      .golzar-ai-quality-detail{border:1px solid #1f4e79;border-radius:9px;padding:6px 9px;background:#1f4e79;color:#fff;font:inherit;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px rgba(31,78,121,.16)}
+      .golzar-ai-quality-detail:hover{background:#163a5c;border-color:#163a5c}
       .golzar-ai-quality-records-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
       .golzar-ai-quality-records-count{font-size:11px;color:#726b56}
       .golzar-ai-quality-pagination{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:11px}
@@ -1303,7 +1304,7 @@
         '<div class="golzar-ai-quality-filters">' +
           '<div class="golzar-ai-quality-filter golzar-ai-quality-filter-search">' +
             '<label for="golzar-ai-quality-filter-search">جستجو</label>' +
-            '<input id="golzar-ai-quality-filter-search" type="search" placeholder="شناسه، نام، نام خانوادگی، قطعه، ردیف یا شماره مزار">' +
+            '<input id="golzar-ai-quality-filter-search" type="search" placeholder="شناسه، نام، نام خانوادگی، قطعه، ردیف یا شماره مزار را جستجو کنید">' +
           '</div>' +
           '<div class="golzar-ai-quality-filter"><label for="golzar-ai-quality-filter-status">وضعیت</label>' +
             '<select id="golzar-ai-quality-filter-status">' +
@@ -1357,12 +1358,8 @@
         '</section>' +
       '</div>' +
 
-      '<section class="golzar-ai-quality-section"><h3>راهنمای مراحل عملیات</h3>' +
-        '<div class="golzar-ai-quality-two-col">' +
-          '<div class="golzar-ai-quality-guide-row"><b>مرمت</b><span>طرح سنگ به واحد مرمت ارسال شد → سنگ مرمتی آماده است → نصب سنگ مرمت شده</span></div>' +
-          '<div class="golzar-ai-quality-guide-row"><b>تعویض</b><span>طرح سنگ به واحد تعویض ارسال شد → سنگ تعویضی آماده است → سنگ تعویضی نصب شد</span></div>' +
-        '</div>' +
-        '<div class="golzar-ai-quality-guide" style="margin-top:8px">' +
+      '<section class="golzar-ai-quality-section"><h3>راهنمای مراحل</h3>' +
+        '<div class="golzar-ai-quality-guide">' +
           '<div class="golzar-ai-quality-guide-row"><b>مرحله ثبت‌شده</b><span>مقدار ثبت‌شده در رکورد اصلی و ثبت‌های قدیمی، بدون تغییر.</span></div>' +
           '<div class="golzar-ai-quality-guide-row"><b>مرحله استاندارد</b><span>عنوان استانداردشده برای یکسان‌سازی تحلیل و گزارش‌گیری؛ مقدار ثبت‌شده اصلی تغییر نمی‌کند.</span></div>' +
         '</div>' +
