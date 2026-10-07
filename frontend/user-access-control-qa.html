@@ -23,7 +23,7 @@ pre{white-space:pre-wrap;background:#17221c;color:#e8f5ed;padding:12px;border-ra
 </style>
 </head>
 <body>
-<div class="wrap">
+<div id="loginGate" class="wrap"><div class="card" style="max-width:520px;margin:70px auto"><h1 style="color:#17633d">ورود به سامانه</h1><p class="small">در نسخه واقعی، هر کاربر داخلی حساب شخصی خواهد داشت. نام کاربری می‌تواند روی همین دستگاه به خاطر سپرده شود، اما رمز عبور در سامانه ذخیره نمی‌شود.</p><div class="field"><label>نام کاربری</label><input id="loginUser" autocomplete="username" placeholder="نام کاربری"></div><div class="field"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="رمز عبور"></div><label class="small"><input id="rememberUser" type="checkbox" checked> نام کاربری روی این دستگاه به خاطر سپرده شود</label><div class="row" style="margin-top:12px"><button id="loginBtn">ورود</button><button id="forgotBtn" class="secondary">فراموشی رمز عبور</button></div><div id="loginMessage" class="small" style="margin-top:10px"></div></div></div><div id="appGate" class="wrap hidden">
 <div class="header">
 <h1>محیط QA — سیستم کاربران، نقش‌ها، مجوزها و Scope</h1>
 <p>نمونه آزمایشی مستقل برای اعتبارسنجی Permission Engine و ماتریس دسترسی. این صفحه عمداً به Supabase متصل نیست و هیچ داده عملیاتی را تغییر نمی‌دهد.</p>
@@ -67,6 +67,6 @@ pre{white-space:pre-wrap;background:#17221c;color:#e8f5ed;padding:12px;border-ra
 </section>
 </div>
 </div>
-<script src="user-access-control-qa.js?v=20261007-01"></script>
+<script src="user-access-control-qa.js?v=20261007-02"></script>
 </body>
 </html>
