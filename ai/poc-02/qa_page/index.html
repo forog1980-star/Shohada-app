@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کنترل کیفیت داده‌ها</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<header class="page-header">
+    <div>
+        <h1>کنترل کیفیت داده‌ها</h1>
+        <p>لایه هوش مصنوعی: تحلیل و پایش کیفیت اطلاعات</p>
+    </div>
+    <div class="readonly-badge">فقط خواندنی</div>
+</header>
+
+<main>
+
+    <section id="sourceInfo" class="source-info"></section>
+
+    <section id="summaryCards" class="summary-cards"></section>
+
+    <section>
+        <h2>نوع مشکلات</h2>
+        <div id="issueCards" class="issue-cards"></div>
+    </section>
+
+    <section class="controls">
+        <input
+            id="searchInput"
+            type="search"
+            placeholder="جستجو بر اساس ID، نام، نام خانوادگی، قطعه، ردیف یا شماره مزار..."
+        >
+
+        <select id="qualityFilter">
+            <option value="">همه وضعیت‌ها</option>
+            <option value="کامل">کامل</option>
+            <option value="ناقص">ناقص</option>
+            <option value="تکراری/چندرکوردی">تکراری/چندرکوردی</option>
+            <option value="متناقض/نامعتبر">متناقض/نامعتبر</option>
+            <option value="نیازمند بررسی">نیازمند بررسی</option>
+        </select>
+
+        <select id="pieceFilter">
+            <option value="">همه قطعات</option>
+        </select>
+
+        <button id="clearFilters">پاک کردن فیلترها</button>
+    </section>
+
+    <section>
+        <div class="table-header">
+            <h2>رکوردها</h2>
+            <span id="resultCount"></span>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>جزئیات</th>
+                        <th>ID</th>
+                        <th>نام</th>
+                        <th>نام خانوادگی</th>
+                        <th>قطعه</th>
+                        <th>ردیف</th>
+                        <th>شماره</th>
+                        <th>نوع سنگ</th>
+                        <th>مرحله</th>
+                        <th>وضعیت کنترل کیفیت</th>
+                        <th>مشکلات</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsBody"></tbody>
+            </table>
+        </div>
+
+        <div id="pagination" class="pagination"></div>
+    </section>
+
+</main>
+
+<section id="approvalSection" class="approval-section">
+    <div class="table-header">
+        <div>
+            <h2>تأیید اطلاعات وارد شده</h2>
+            <p class="approval-description">
+                اطلاعات ثبت یا اصلاح‌شده پس از ارسال، تا زمان بررسی ناظر در این بخش باقی می‌ماند.
+            </p>
+        </div>
+        <span id="approvalCount" class="approval-count">۰ مورد در انتظار تأیید</span>
+    </div>
+
+    <div id="approvalList" class="approval-list">
+        <div class="approval-empty">
+            در حال حاضر اطلاعاتی برای تأیید نهایی وجود ندارد.
+        </div>
+    </div>
+</section>
+<section id="correctionSection" class="correction-section">
+    <div class="table-header">
+        <div>
+            <h2>رکوردهای برگشتی برای اصلاح</h2>
+            <p class="correction-description">
+                رکوردهایی که توسط ناظر برای اصلاح برگشت داده شده‌اند در این بخش نمایش داده می‌شوند.
+            </p>
+        </div>
+        <span id="correctionCount" class="correction-count">۰ مورد برگشتی</span>
+    </div>
+
+    <div id="correctionList" class="correction-list">
+        <div class="correction-empty">
+            در حال حاضر رکوردی برای اصلاح وجود ندارد.
+        </div>
+    </div>
+</section>
+<section class="stage-guide">
+    <h2>راهنمای مراحل عملیات:</h2>
+    <p><strong>مرحله ثبت‌شده:</strong> مقدار ثبت‌شده در رکورد اصلی و ثبت‌های قدیمی، بدون تغییر.</p>
+    <p><strong>مرحله استاندارد:</strong> نام استانداردشده در مرحله یکسان‌سازی تحلیل و گزارش‌گیری؛ ممکن است چند عنوان قدیمی یا متفاوت به یک عنوان استاندارد تبدیل شده باشند.</p>
+</section>
+<div id="detailModal" class="modal hidden">
+    <div class="modal-content">
+        <button id="closeModal" class="close-button">×</button>
+        <div id="detailContent"></div>
+    </div>
+</div>
+
+<script src="./app.js"></script>
+</body>
+</html>
+
+
+
